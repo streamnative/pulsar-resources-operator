@@ -1,3 +1,5 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
 apiVersion: scorecard.operatorframework.io/v1alpha3
 kind: Configuration
 metadata:

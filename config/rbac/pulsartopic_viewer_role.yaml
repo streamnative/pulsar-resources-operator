@@ -1,0 +1,22 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
+# permissions for end users to edit pulsartopics.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pulsartopic-viewer-role
+rules:
+- apiGroups:
+  - pulsar.streamnative.io
+  resources:
+  - pulsartopics
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - pulsar.streamnative.io
+  resources:
+  - pulsartopics/status
+  verbs:
+  - get

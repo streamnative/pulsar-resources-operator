@@ -1,3 +1,4 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
 
 # Prometheus Monitor Service (Metrics)
 apiVersion: monitoring.coreos.com/v1

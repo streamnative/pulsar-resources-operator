@@ -1,0 +1,8 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
+apiVersion: pulsar.streamnative.io/v1alpha1
+kind: PulsarTopic
+metadata:
+  name: pulsartopic-sample
+spec:
+  # Add fields here

@@ -1,0 +1,9 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
+## Append samples you want in your CSV to this file as resources ##
+resources:
+- pulsar_v1alpha1_pulsarconnection.yaml
+- pulsar_v1alpha1_pulsarnamespace.yaml
+- pulsar_v1alpha1_pulsartenant.yaml
+- pulsar_v1alpha1_pulsartopic.yaml
+#+kubebuilder:scaffold:manifestskustomizesamples
