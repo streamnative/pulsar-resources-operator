@@ -1,0 +1,6 @@
+apiVersion: pulsar.streamnative.io/v1alpha1
+kind: PulsarPermission
+metadata:
+  name: pulsarpermission-sample
+spec:
+  # Add fields here

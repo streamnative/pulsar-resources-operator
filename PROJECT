@@ -40,4 +40,12 @@ resources:
   kind: PulsarTopic
   path: github.com/streamnative/resources-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: pulsar
+  kind: PulsarPermission
+  path: github.com/streamnative/resources-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

@@ -1,0 +1,24 @@
+# permissions for end users to edit pulsarpermissions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pulsarpermission-editor-role
+rules:
+- apiGroups:
+  - pulsar.streamnative.io
+  resources:
+  - pulsarpermissions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - pulsar.streamnative.io
+  resources:
+  - pulsarpermissions/status
+  verbs:
+  - get
