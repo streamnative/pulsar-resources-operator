@@ -37,6 +37,18 @@ type PulsarConnectionReconciler struct {
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarconnections,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarconnections/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarconnections/finalizers,verbs=update
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsartenants,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsartenants/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsartenants/finalizers,verbs=update
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarnamespaces,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarnamespaces/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarnamespaces/finalizers,verbs=update
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsartopics,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsartopics/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsartopics/finalizers,verbs=update
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
