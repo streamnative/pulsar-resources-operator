@@ -34,3 +34,5 @@ bundle
 bundle.Dockerfile
 build
 
+# husky
+node_modules/

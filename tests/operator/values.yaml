@@ -1,0 +1,217 @@
+# Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
+namespace: %q
+initialize:
+  true
+auth:
+  authentication:
+    enabled: false
+  authorization:
+    enabled: false
+components:
+  # vault
+  vault: false
+  # zookeeper
+  zookeeper: true
+  # bookkeeper
+  bookkeeper: true
+  # bookkeeper - autorecovery
+  autorecovery: true
+  # broker
+  broker: true
+  # functions
+  functions: false
+  # proxy
+  proxy: true
+  # toolset
+  toolset: true
+  # streamnative console
+  streamnative_console: false
+  # pulsar sql
+  sql_worker: false
+  # kop
+  kop: false
+  # pulsar detector
+  pulsar_detector: false
+  # superset
+  superset: false
+vault:
+  volume:
+    persistence: true
+    name: "raft"
+    size: 10Gi
+    local_storage: true
+    # set your own storage class name or use the default storage class
+    #storageClassName: "local-hdd"
+
+  volumeMounts:
+    - name: vault-raft
+      mountPath: /vault/file
+
+  # use raft protocol for a vault cluster
+  config:
+    storage:
+      raft:
+        path: "/vault/file"
+    listener:
+      tcp:
+        tls_disable: true
+        address: "0.0.0.0:8200"
+    api_addr: "http://${.Env.POD_NAME}:8200"
+    cluster_addr: "http://${.Env.POD_NAME}:8201"
+    ui: true
+    telemetry:
+      statsd_address: localhost:9125
+zookeeper:
+  operator:
+    enabled: false
+    adopt_existing: false
+    updatePolicy: >
+      - ""
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 0.05
+  ## Retention Policy
+  resourcePolicy:
+    keep: true
+  serverCnxnFactory: org.apache.zookeeper.server.NIOServerCnxnFactory
+  volumes:
+    useSeparateDiskForTxlog: true
+    data:
+      name: data
+      size: 1Gi
+    dataLog:
+      name: datalog
+      size: 1Gi
+bookkeeper:
+  replicaCount: 3
+  operator:
+    enabled: false
+    adopt_existing: false
+    updatePolicy: >
+      - finalizers
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 0.1
+  volumes:
+    journal:
+      name: journal
+      size: 1Gi
+    ledgers:
+      name: ledgers
+      size: 1Gi
+  ## Retention Policy
+  resourcePolicy:
+    keep: true
+  configData:
+    diskUsageThreshold: "0.9999"
+    BOOKIE_MEM: >
+      -Xms256m -Xmx384m -XX:MaxDirectMemorySize=128m
+    PULSAR_GC: >
+      -XX:+UseG1GC
+      -XX:MaxGCPauseMillis=10
+      -XX:+ParallelRefProcEnabled
+      -XX:+UnlockExperimentalVMOptions
+      -XX:+AggressiveOpts
+      -XX:+DoEscapeAnalysis
+      -XX:ParallelGCThreads=4
+      -XX:ConcGCThreads=4
+      -XX:G1NewSizePercent=50
+      -XX:+DisableExplicitGC
+      -XX:-ResizePLAB
+      -XX:+ExitOnOutOfMemoryError
+      -XX:+PerfDisableSharedMem
+      -XX:+PrintGCDetails
+      -verbosegc
+      -Xloggc:/var/log/bookie-gc.log
+autorecovery:
+  operator:
+    enabled: false
+    adopt_existing: false
+    updatePolicy: >
+      - ""
+  ## Retention Policy
+  resourcePolicy:
+    keep: true
+broker:
+  replicaCount: 1
+  operator:
+    enabled: false
+    adopt_existing: false
+    updatePolicy: >
+      - finalizers
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 0.1
+  ## Retention Policy
+  resourcePolicy:
+    keep: true
+  kop:
+    enabled: false
+  functionmesh:
+    enabled: false
+  configData:
+    PULSAR_MEM: >
+      -Xms256m -Xmx256m -XX:MaxDirectMemorySize=256m
+    PULSAR_GC: >
+      -XX:+UseG1GC
+      -XX:MaxGCPauseMillis=10
+      -Dio.netty.leakDetectionLevel=disabled
+      -Dio.netty.recycler.linkCapacity=1024
+      -XX:+ParallelRefProcEnabled
+      -XX:+UnlockExperimentalVMOptions
+      -XX:+AggressiveOpts
+      -XX:+DoEscapeAnalysis
+      -XX:ParallelGCThreads=4
+      -XX:ConcGCThreads=4
+      -XX:G1NewSizePercent=50
+      -XX:+DisableExplicitGC
+      -XX:-ResizePLAB
+      -XX:+ExitOnOutOfMemoryError
+      -XX:+PerfDisableSharedMem
+    managedLedgerDefaultEnsembleSize: "3"
+    managedLedgerDefaultWriteQuorum: "3"
+    managedLedgerDefaultAckQuorum: "2"
+    brokerDeleteInactiveTopicsEnabled: "false"
+proxy:
+  replicaCount: 1
+  operator:
+    enabled: false
+    adopt_existing: false
+    updatePolicy: >
+      - finalizers
+  resources:
+    requests:
+      memory: 256Mi
+      cpu: 0.1
+  ## Retention Policy
+  resourcePolicy:
+    keep: true
+images:
+  zookeeper:
+    repository: streamnative/sn-platform
+    tag: 2.8.1.0
+  autorecovery:
+    repository: streamnative/sn-platform
+    tag: 2.8.1.0
+  bookie:
+    repository: streamnative/sn-platform
+    tag: 2.8.1.0
+  broker:
+    repository: streamnative/sn-platform
+    tag: 2.8.1.0
+  proxy:
+    repository: streamnative/sn-platform
+    tag: 2.8.1.0
+pulsar_metadata:
+  image:
+    repository: streamnative/sn-platform
+    tag: 2.8.1.0
+
+monitoring:
+  prometheus: false
+  grafana: false
+  node_exporter: false
+  alert_manager: false
