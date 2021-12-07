@@ -1,3 +1,5 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
 apiVersion: pulsar.streamnative.io/v1alpha1
 kind: PulsarPermission
 metadata:
