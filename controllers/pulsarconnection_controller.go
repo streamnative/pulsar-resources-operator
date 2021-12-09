@@ -34,6 +34,7 @@ type PulsarConnectionReconciler struct {
 	PulsarAdminCreator admin.PulsarAdminCreator
 }
 
+//nolint:lll
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarconnections,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarconnections/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarconnections/finalizers,verbs=update

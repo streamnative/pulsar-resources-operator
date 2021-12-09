@@ -14,7 +14,7 @@ type PulsarConnectionRefMapper struct {
 }
 
 func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Request {
-	var ref *corev1.LocalObjectReference = nil
+	var ref *corev1.LocalObjectReference
 	if tenant, ok := object.(*pulsarv1alpha1.PulsarTenant); ok {
 		ref = &tenant.Spec.ConnectionRef
 	} else if namespace, ok := object.(*pulsarv1alpha1.PulsarNamespace); ok {
@@ -40,7 +40,7 @@ func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Reques
 // var _ handler.Mapper = &PulsarConnectionRefMapper{}
 
 func ConnectionRefMapper(object client.Object) []reconcile.Request {
-	var ref *corev1.LocalObjectReference = nil
+	var ref *corev1.LocalObjectReference
 	if tenant, ok := object.(*pulsarv1alpha1.PulsarTenant); ok {
 		ref = &tenant.Spec.ConnectionRef
 	} else if namespace, ok := object.(*pulsarv1alpha1.PulsarNamespace); ok {
