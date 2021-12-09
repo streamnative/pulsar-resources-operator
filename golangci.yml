@@ -1,0 +1,33 @@
+# Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
+
+run:
+  deadline: 6m
+
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - deadcode
+    - gocritic
+    - goimports
+    - revive
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - staticcheck
+    - structcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - lll
+    - prealloc
+
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA1019:"
