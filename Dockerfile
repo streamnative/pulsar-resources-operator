@@ -7,8 +7,6 @@ RUN go env -w GOPRIVATE=github.com/streamnative \
     && apk add --no-cache ca-certificates git \
     && git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
 
-COPY commons /commons/
-
 WORKDIR /workspace
 # Copy the Go Modules manifests
 COPY go.mod go.mod
