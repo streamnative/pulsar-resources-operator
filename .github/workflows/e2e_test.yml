@@ -1,0 +1,77 @@
+# Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
+
+name: Operator E2e tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - './**'
+      - '.github/workflows/**'
+jobs:
+  e2e-test:
+    name: E2e tests for Operators
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/streamnative
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      IMAGE: apachepulsar/pulsar:latest
+      WATCH_CERT_MANAGER_CRDS: "false"
+    steps:
+      - name: clean disk
+        run: |
+          df -h
+          sudo swapoff -a
+          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt clean
+          docker rmi $(docker images -q) -f
+          df -h
+
+      - name: Set up Go 1.16
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16
+        id: go
+
+      - name: Set up Git token
+        run: |
+          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+
+      - name: Set up Ginkgo
+        run: |
+          go get github.com/onsi/ginkgo/ginkgo
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # TODO the k8s version should be configurable
+      - name: Setup K8s cluster
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+          chmod +x ./kind
+          export PATH="$PWD:$PATH"
+          kind version
+          ./hack/kind-cluster-build.sh --nodeNum 1
+          docker pull "$IMAGE"
+          kind load docker-image --name pulsar-dev --nodes pulsar-dev-worker "$IMAGE"
+          df -h
+
+
+      - name: Setup Operators
+        run: |
+          make manifests
+          make install
+          make manager -j3
+          RUN_PARAMS="--metrics-addr :0" make run -j3 &
+          kubectl get crds
+          mkdir -p /tmp/.helmcache
+          df -h
+
+      - name: Run Operator Test
+        run: |
+          cd test
+          ~/go/bin/ginkgo --succinct ./operator/zookeeper
+          ~/go/bin/ginkgo --succinct ./operator/bookkeeper
+          ls /tmp/.helmcache
+          ~/go/bin/ginkgo --trace --progress ./operator/pulsar
