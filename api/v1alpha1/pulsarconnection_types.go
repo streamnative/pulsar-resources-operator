@@ -45,7 +45,7 @@ type PulsarConnectionStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:categories=pulsar;pulsarres,shortName=pconn
-//+kubebuilder:printcolumn:name="ADMIN_SERVICE_URL",type=string,JSONPath=`.spec.adminServiceUrl`
+//+kubebuilder:printcolumn:name="ADMIN_SERVICE_URL",type=string,JSONPath=`.spec.adminServiceURL`
 //+kubebuilder:printcolumn:name="GENERATION",type=string,JSONPath=`.metadata.generation`
 //+kubebuilder:printcolumn:name="OBSERVED_GENERATION",type=string,JSONPath=`.status.observedGeneration`
 //+kubebuilder:printcolumn:name="READY",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
