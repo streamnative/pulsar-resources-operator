@@ -1,4 +1,4 @@
-# resources operator
+# pulsar resources operator
 
 Pulsar Resources Management on Kubernetes. 
 
