@@ -9,8 +9,8 @@ import (
 	"k8s.io/utils/pointer"
 
 	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
-	"github.com/streamnative/resources-operator/pkg/admin"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"

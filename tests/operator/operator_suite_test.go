@@ -22,7 +22,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
 
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 
 	helmRepo "helm.sh/helm/v3/pkg/repo"
 

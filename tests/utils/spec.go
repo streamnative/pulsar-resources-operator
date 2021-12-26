@@ -4,7 +4,7 @@ package utils
 import (
 	"time"
 
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

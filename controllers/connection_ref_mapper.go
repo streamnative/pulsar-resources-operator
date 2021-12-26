@@ -3,7 +3,7 @@
 package controllers
 
 import (
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"

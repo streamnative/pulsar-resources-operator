@@ -21,9 +21,9 @@ import (
 	k8szap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	"github.com/streamnative/pulsar-operators/commons/pkg/trace"
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
-	"github.com/streamnative/resources-operator/controllers"
-	"github.com/streamnative/resources-operator/pkg/admin"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/controllers"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	//+kubebuilder:scaffold:imports
 )
 

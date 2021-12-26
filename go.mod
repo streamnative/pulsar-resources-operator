@@ -1,4 +1,4 @@
-module github.com/streamnative/resources-operator
+module github.com/streamnative/pulsar-resources-operator
 
 go 1.16
 

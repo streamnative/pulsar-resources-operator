@@ -4,8 +4,8 @@ layout:
 plugins:
   manifests.sdk.operatorframework.io/v2: {}
   scorecard.sdk.operatorframework.io/v2: {}
-projectName: resources-operator
-repo: github.com/streamnative/resources-operator
+projectName: pulsar-resources-operator
+repo: github.com/streamnative/pulsar-resources-operator
 resources:
 - api:
     crdVersion: v1
@@ -14,7 +14,7 @@ resources:
   domain: streamnative.io
   group: pulsar
   kind: PulsarConnection
-  path: github.com/streamnative/resources-operator/api/v1alpha1
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -22,7 +22,7 @@ resources:
   domain: streamnative.io
   group: pulsar
   kind: PulsarNamespace
-  path: github.com/streamnative/resources-operator/api/v1alpha1
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -30,7 +30,7 @@ resources:
   domain: streamnative.io
   group: pulsar
   kind: PulsarTenant
-  path: github.com/streamnative/resources-operator/api/v1alpha1
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -38,7 +38,7 @@ resources:
   domain: streamnative.io
   group: pulsar
   kind: PulsarTopic
-  path: github.com/streamnative/resources-operator/api/v1alpha1
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
@@ -46,6 +46,6 @@ resources:
   domain: streamnative.io
   group: pulsar
   kind: PulsarPermission
-  path: github.com/streamnative/resources-operator/api/v1alpha1
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

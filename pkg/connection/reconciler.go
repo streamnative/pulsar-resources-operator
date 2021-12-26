@@ -9,8 +9,8 @@ import (
 	"github.com/go-logr/logr"
 	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
 
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
-	"github.com/streamnative/resources-operator/pkg/admin"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

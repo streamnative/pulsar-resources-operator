@@ -16,7 +16,7 @@ import (
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	//+kubebuilder:scaffold:imports
 )
 

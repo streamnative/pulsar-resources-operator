@@ -19,10 +19,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	"github.com/go-logr/logr"
-	pulsarv1alpha1 "github.com/streamnative/resources-operator/api/v1alpha1"
-	"github.com/streamnative/resources-operator/pkg/admin"
-	"github.com/streamnative/resources-operator/pkg/connection"
-	"github.com/streamnative/resources-operator/pkg/utils"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/connection"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
