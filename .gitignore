@@ -19,9 +19,6 @@ testbin/*
 !vendor/**/zz_generated.*
 
 # Generated files while build the operator
-config/crd/bases/
-config/rbac/role.yaml
-config/webhook/manifests.yaml
 
 # editor and IDE paraphernalia
 .idea
