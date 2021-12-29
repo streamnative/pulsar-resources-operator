@@ -125,6 +125,10 @@ nodes:
     hostPort: 5000
     listenAddress: 127.0.0.1
     protocol: TCP
+  - containerPort: 30080
+    hostPort: 30080
+    listenAddress: 127.0.0.1
+    protocol: TCP
 EOF
 
 for ((i=0;i<${nodeNum};i++))
