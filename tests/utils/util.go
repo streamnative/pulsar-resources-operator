@@ -4,13 +4,14 @@ package utils
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 	bkv1alpha1 "github.com/streamnative/pulsar-operators/bookkeeper-operator/api/v1alpha1"
 	commonv1alpha1 "github.com/streamnative/pulsar-operators/commons/api/v1alpha1"
 	pulsarv1alpha1 "github.com/streamnative/pulsar-operators/pulsar-operator/api/v1alpha1"
 	zkv1alpha1 "github.com/streamnative/pulsar-operators/zookeeper-operator/api/v1alpha1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 // CreateBKCluster creates a bookkeeper cluster in k8s, with 3 replicas.

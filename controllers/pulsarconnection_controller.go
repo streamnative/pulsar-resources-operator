@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -18,7 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	"github.com/go-logr/logr"
 	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/connection"

@@ -5,9 +5,10 @@ package v1alpha1
 import (
 	"reflect"
 
-	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
 )
 
 type SecretKeyRef struct {

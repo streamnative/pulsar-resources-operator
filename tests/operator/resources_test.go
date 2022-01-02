@@ -8,12 +8,13 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
+
+	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
 
 var _ = Describe("Resources", func() {

@@ -7,10 +7,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
-
-	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -18,6 +14,10 @@ import (
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
+	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
 type PulsarConnectionReconciler struct {

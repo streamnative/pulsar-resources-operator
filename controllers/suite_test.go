@@ -17,7 +17,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	//+kubebuilder:scaffold:imports
 )
 
 // These tests use Ginkgo (BDD-style Go testing framework). Refer to

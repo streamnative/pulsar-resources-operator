@@ -4,15 +4,16 @@ package utils
 import (
 	"time"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	bkv1alpha1 "github.com/streamnative/pulsar-operators/bookkeeper-operator/api/v1alpha1"
 	commonv1alpha1 "github.com/streamnative/pulsar-operators/commons/api/v1alpha1"
 	pulsarv1alpha1 "github.com/streamnative/pulsar-operators/pulsar-operator/api/v1alpha1"
 	zkv1alpha1 "github.com/streamnative/pulsar-operators/zookeeper-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-operators/zookeeper-operator/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // MakeZKCluster will generate a object of ZooKeeperCluster
