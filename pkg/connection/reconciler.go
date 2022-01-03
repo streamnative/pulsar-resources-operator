@@ -20,6 +20,7 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
+// PulsarConnectionReconciler reconciles a PulsarConnection object
 type PulsarConnectionReconciler struct {
 	connection         *pulsarv1alpha1.PulsarConnection
 	log                logr.Logger
@@ -37,6 +38,7 @@ type PulsarConnectionReconciler struct {
 
 var _ commonsreconciler.Interface = &PulsarConnectionReconciler{}
 
+// MakeReconciler creates resource reconcilers
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
 	connection *pulsarv1alpha1.PulsarConnection) commonsreconciler.Interface {
 	r := &PulsarConnectionReconciler{
@@ -55,6 +57,7 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 	return r
 }
 
+// Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.Observe(ctx); err != nil {
@@ -64,6 +67,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 	return nil
 }
 
+// Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
 	if !r.hasUnreadyResource {
@@ -135,6 +139,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// NewErrorCondition create a condition with error
 func NewErrorCondition(generation int64, msg string) *metav1.Condition {
 	return &metav1.Condition{
 		Type:               pulsarv1alpha1.ConditionReady,
@@ -145,6 +150,7 @@ func NewErrorCondition(generation int64, msg string) *metav1.Condition {
 	}
 }
 
+// GetValue get the authentication token value or secret
 func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 	vRef *pulsarv1alpha1.ValueOrSecretRef) (*string, error) {
 	if value := vRef.Value; value != nil {
@@ -161,6 +167,7 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 	return nil, nil
 }
 
+// MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
 	cfg := admin.PulsarAdminConfig{
 		WebServiceURL: r.connection.Spec.AdminServiceURL,
@@ -193,6 +200,7 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 	return &cfg, nil
 }
 
+// NewReadyCondition make condition with ready info
 func NewReadyCondition(generation int64) *metav1.Condition {
 	return &metav1.Condition{
 		Type:               pulsarv1alpha1.ConditionReady,

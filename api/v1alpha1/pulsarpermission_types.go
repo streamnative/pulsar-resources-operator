@@ -20,7 +20,7 @@ type PulsarPermissionSpec struct {
 
 	// +kubebuilder:validation:Enum=namespace;topic
 	// ResourceType indicates the resource type, the options include namespace and topic
-	ResoureType PulsarResoureType `json:"resourceType"`
+	ResoureType PulsarResourceType `json:"resourceType"`
 	// Roles contains a list of role which will be granted the same permissions
 	// for the same target
 	Roles []string `json:"roles"`
@@ -35,11 +35,13 @@ type PulsarPermissionSpec struct {
 }
 
 // PulsarResourceType indicates the resource type, the options include namespace and topic
-type PulsarResoureType string
+type PulsarResourceType string
 
 const (
-	PulsarResourceTypeNamespace PulsarResoureType = "namespace"
-	PulsarResourceTypeTopic     PulsarResoureType = "topic"
+	// PulsarResourceTypeNamespace resource type namespace
+	PulsarResourceTypeNamespace PulsarResourceType = "namespace"
+	// PulsarResourceTypeTopic resource type topic
+	PulsarResourceTypeTopic PulsarResourceType = "topic"
 )
 
 // PulsarPermissionStatus defines the observed state of PulsarPermission

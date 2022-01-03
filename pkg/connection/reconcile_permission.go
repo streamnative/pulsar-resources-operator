@@ -29,6 +29,7 @@ func makePermissionsReconciler(r *PulsarConnectionReconciler) commonsreconciler.
 	}
 }
 
+// Observe checks the updates of object
 func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	log := r.log.WithValues("Observe Namespace", r.conn.connection.Namespace)
 	log.V(1).Info("Start Observe")
@@ -56,6 +57,7 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	return nil
 }
 
+// Reconcile reconciles all permissions
 func (r *PulsarPermissionReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.permissions {
 		perm := &r.conn.permissions[i]
@@ -67,6 +69,7 @@ func (r *PulsarPermissionReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// ReconcilePermission move the current state of the toic closer to the desired state
 func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	permission *pulsarv1alpha1.PulsarPermission) error {
 	log := r.log.WithValues("PulsarPermission", permission.Name)

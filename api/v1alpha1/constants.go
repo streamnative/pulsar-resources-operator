@@ -3,6 +3,8 @@
 package v1alpha1
 
 const (
+	// ConditionReady indicates status condition ready
 	ConditionReady string = "Ready"
-	FinalizerName  string = "cloud.streamnative.io/finalizer"
+	// FinalizerName is the finalizer string that add to object
+	FinalizerName string = "cloud.streamnative.io/finalizer"
 )

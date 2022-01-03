@@ -11,9 +11,11 @@ import (
 	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 )
 
+// PulsarConnectionRefMapper maps resource requests to PulsarConnection
 type PulsarConnectionRefMapper struct {
 }
 
+// Map maps resource object to PulsarConnection request
 func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Request {
 	var ref *corev1.LocalObjectReference
 	if tenant, ok := object.(*pulsarv1alpha1.PulsarTenant); ok {
@@ -40,6 +42,7 @@ func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Reques
 
 // var _ handler.Mapper = &PulsarConnectionRefMapper{}
 
+// ConnectionRefMapper maps resource object to PulsarConnection request
 func ConnectionRefMapper(object client.Object) []reconcile.Request {
 	var ref *corev1.LocalObjectReference
 	if tenant, ok := object.(*pulsarv1alpha1.PulsarTenant); ok {

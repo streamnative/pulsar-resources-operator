@@ -15,11 +15,13 @@ import (
 	pulsarctlcommon "github.com/streamnative/pulsarctl/pkg/pulsar/common"
 )
 
+// TenantParams indicates the parameters for creating a tenant
 type TenantParams struct {
 	AdminRoles      []string
 	AllowedClusters []string
 }
 
+// NamespaceParams indicates the parameters for creating a namespace
 type NamespaceParams struct {
 	Bundles                     *int32
 	MaxProducersPerTopic        *int32
@@ -33,6 +35,7 @@ type NamespaceParams struct {
 	BacklogQuotaRetentionPolicy *string
 }
 
+// TopicParams indicates the parameters for creating a topic
 type TopicParams struct {
 	Persistent                        *bool
 	Partitions                        *int32
@@ -48,17 +51,24 @@ type TopicParams struct {
 	BacklogQuotaRetentionPolicy       *string
 }
 
+// PulsarAdmin is the interface that defines the functions to call pulsar admin
 type PulsarAdmin interface {
+	// ApplyTenant creates a tenant with parameters
 	ApplyTenant(name string, params *TenantParams) error
 
+	// DeleteTenant delete a specific tenant
 	DeleteTenant(name string) error
 
+	// ApplyNamespace creates a namespace with parameters
 	ApplyNamespace(name string, params *NamespaceParams) error
 
+	// DeleteNamespace delete a specific namespace
 	DeleteNamespace(name string) error
 
+	// ApplyTopic creates a topic with parameters
 	ApplyTopic(name string, params *TopicParams) error
 
+	// DeleteTopic delete a specific topic
 	DeleteTopic(name string) error
 
 	// GrantPermissions grants permissions to multiple role with multiple actions
@@ -69,11 +79,14 @@ type PulsarAdmin interface {
 	// it will revoke all actions which granted to a role on a namespace or topic
 	RevokePermissions(p Permissioner) error
 
+	// Close releases the connection with pulsar admin
 	Close() error
 }
 
+// PulsarAdminCreator is the function type to create a PulsarAdmin with config
 type PulsarAdminCreator func(config PulsarAdminConfig) (PulsarAdmin, error)
 
+// PulsarAdminConfig indicates the configurations which are needed to initialize the pulsar admin
 type PulsarAdminConfig struct {
 
 	// WebServiceURL to connect to Pulsar.
@@ -97,6 +110,7 @@ type PulsarAdminConfig struct {
 	Key            string
 }
 
+// NewPulsarAdmin initialize a pulsar admin client with configuration
 func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	var keyFile *os.File
 	var keyFilePath string
@@ -150,24 +164,21 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	return pulsarAdminClient, nil
 }
 
-type PermissionParams struct {
-	ResourceName string
-	ResourceType string
-	Roles        []string
-	Actions      []string
-}
-
+// NamespacePermission is the parameters to grant permission for a namespace
 type NamespacePermission struct {
 	ResourceName string
 	Roles        []string
 	Actions      []string
 }
+
+// TopicPermission is the parameters to grant permission for a topic
 type TopicPermission struct {
 	ResourceName string
 	Roles        []string
 	Actions      []string
 }
 
+// Permissioner implements the functions to grant and revoke permission for namespace and topic
 type Permissioner interface {
 	// Grant grants permission to role on a resource
 	Grant(client pulsar.Client) error

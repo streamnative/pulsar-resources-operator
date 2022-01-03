@@ -15,17 +15,22 @@ import (
 	pulsarutils "github.com/streamnative/pulsarctl/pkg/pulsar/utils"
 )
 
+// PulsarAdminClient define the client to call pulsar
 type PulsarAdminClient struct {
 	adminClient pulsar.Client
 	keyFile     *os.File
 }
 
 const (
-	TopicDomainSeparator     = "://"
-	TopicDomainPersistent    = "persistent"
+	// TopicDomainSeparator is the separator to separate the topic name
+	TopicDomainSeparator = "://"
+	// TopicDomainPersistent is the prefix for persistent topic
+	TopicDomainPersistent = "persistent"
+	// TopicDomainNonPersistent is the prefix for non persistent topic
 	TopicDomainNonPersistent = "non-persistent"
 )
 
+// ApplyTenant creates a tenant, if AllowdClusters is not provided, it will list all clusters in pular
 func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error {
 	param := pulsarutils.TenantData{
 		Name:       name,
@@ -52,6 +57,7 @@ func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error
 	return nil
 }
 
+// ApplyNamespace creates a namespace with policies
 func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams) error {
 	if params.Bundles == nil {
 		params.Bundles = pointer.Int32Ptr(4)
@@ -76,6 +82,7 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 	return nil
 }
 
+// ApplyTopic creates a topic with policies
 func (p *PulsarAdminClient) ApplyTopic(name string, params *TopicParams) error {
 	completeTopicName := makeCompleteTopicName(name, params.Persistent)
 	topicName, err := pulsarutils.GetTopicName(completeTopicName)
@@ -95,6 +102,7 @@ func (p *PulsarAdminClient) ApplyTopic(name string, params *TopicParams) error {
 	return nil
 }
 
+// DeleteTenant deletes a specific tenant
 func (p *PulsarAdminClient) DeleteTenant(name string) error {
 	if err := p.adminClient.Tenants().Delete(name); err != nil {
 		return err
@@ -102,6 +110,7 @@ func (p *PulsarAdminClient) DeleteTenant(name string) error {
 	return nil
 }
 
+// DeleteNamespace deletes a specific namespace
 func (p *PulsarAdminClient) DeleteNamespace(name string) error {
 	if err := p.adminClient.Namespaces().DeleteNamespace(name); err != nil {
 		return err
@@ -109,6 +118,7 @@ func (p *PulsarAdminClient) DeleteNamespace(name string) error {
 	return nil
 }
 
+// DeleteTopic deletes a specific topic
 func (p *PulsarAdminClient) DeleteTopic(name string) error {
 	topic, err := pulsarutils.GetTopicName(name)
 	if err != nil {
@@ -128,6 +138,7 @@ func (p *PulsarAdminClient) DeleteTopic(name string) error {
 	return nil
 }
 
+// Close do nothing for now
 func (p *PulsarAdminClient) Close() error {
 	return nil
 }
@@ -414,6 +425,7 @@ func (t *TopicPermission) Revoke(client pulsar.Client) error {
 	return nil
 }
 
+// IsPermissionNotFound returns true if the permission is not set
 func IsPermissionNotFound(err error) bool {
 	return strings.Contains(err.Error(), "Permissions are not set at the topic level")
 }

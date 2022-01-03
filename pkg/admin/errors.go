@@ -6,6 +6,7 @@ import (
 	pulsarcli "github.com/streamnative/pulsarctl/pkg/cli"
 )
 
+// Reason indicates the status code
 type Reason int
 
 const (
@@ -53,7 +54,7 @@ func IsAlreadyExist(err error) bool {
 	return ErrorReason(err) == ReasonAlreadyExist
 }
 
-// IsAlreadyExist returns true if the error indicates the resource already exist
+// IsInternalServerError returns true if the error indicates the resource already exist
 func IsInternalServerError(err error) bool {
 	return ErrorReason(err) == ReasonInternalServerError
 }

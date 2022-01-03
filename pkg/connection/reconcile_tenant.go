@@ -15,6 +15,7 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
+// PulsarTenantReconciler reconciles a PulsarTenant object
 type PulsarTenantReconciler struct {
 	conn *PulsarConnectionReconciler
 }
@@ -25,6 +26,7 @@ func makeTenantsReconciler(r *PulsarConnectionReconciler) commonsreconciler.Inte
 	}
 }
 
+// Observe checks the updates of object
 func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 	tenantList := &pulsarv1alpha1.PulsarTenantList{}
 	if err := r.conn.client.List(ctx, tenantList, client.InNamespace(r.conn.connection.Namespace),
@@ -45,6 +47,7 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 	return nil
 }
 
+// Reconcile reconciles all tenants
 func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.tenants {
 		tenant := &r.conn.tenants[i]
@@ -55,6 +58,7 @@ func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// ReconcileTenant move the current state of the toic closer to the desired state
 func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	tenant *pulsarv1alpha1.PulsarTenant) error {
 	if !tenant.DeletionTimestamp.IsZero() {

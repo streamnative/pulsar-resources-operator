@@ -16,6 +16,7 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
+// PulsarTopicReconciler reconciles a PulsarTopic object
 type PulsarTopicReconciler struct {
 	conn *PulsarConnectionReconciler
 }
@@ -26,6 +27,7 @@ func makeTopicsReconciler(r *PulsarConnectionReconciler) commonsreconciler.Inter
 	}
 }
 
+// Observe checks the updates of object
 func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 	topicsList := &pulsarv1alpha1.PulsarTopicList{}
 	if err := r.conn.client.List(ctx, topicsList, client.InNamespace(r.conn.connection.Namespace),
@@ -46,6 +48,7 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 	return nil
 }
 
+// Reconcile reconciles all topics
 func (r *PulsarTopicReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.topics {
 		topic := &r.conn.topics[i]
@@ -56,6 +59,7 @@ func (r *PulsarTopicReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// ReconcileTopic move the current state of the toic closer to the desired state
 func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	topic *pulsarv1alpha1.PulsarTopic) error {
 	if !topic.DeletionTimestamp.IsZero() {

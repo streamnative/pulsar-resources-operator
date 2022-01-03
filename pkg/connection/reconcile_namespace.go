@@ -15,6 +15,7 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
+// PulsarNamespaceReconciler reconciles a PulsarNamespace object
 type PulsarNamespaceReconciler struct {
 	conn *PulsarConnectionReconciler
 }
@@ -25,6 +26,7 @@ func makeNamespacesReconciler(r *PulsarConnectionReconciler) commonsreconciler.I
 	}
 }
 
+// Observe checks the updates of object
 func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	namespaceList := &pulsarv1alpha1.PulsarNamespaceList{}
 	if err := r.conn.client.List(ctx, namespaceList, client.InNamespace(r.conn.connection.Namespace),
@@ -45,6 +47,7 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	return nil
 }
 
+// Reconcile reconciles all namespaces
 func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.namespaces {
 		namespace := &r.conn.namespaces[i]
@@ -55,6 +58,7 @@ func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// ReconcileNamespace move the current state of the toic closer to the desired state
 func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	namespace *pulsarv1alpha1.PulsarNamespace) error {
 	if !namespace.DeletionTimestamp.IsZero() {
