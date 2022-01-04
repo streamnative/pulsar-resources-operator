@@ -72,6 +72,9 @@ spec:
                     type: string
                 type: object
               lifecyclePolicy:
+                description: PulsarResourceLifeCyclePolicy indicates whether it will
+                  keep or delete the resource in pulsar cluster after resource is
+                  deleted by controller KeepAfterDeletion or CleanUpAfterDeletion
                 enum:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion

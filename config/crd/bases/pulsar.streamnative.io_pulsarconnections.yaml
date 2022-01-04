@@ -63,6 +63,8 @@ spec:
                 description: Authentication defines authentication configurations
                 properties:
                   oauth2:
+                    description: PulsarAuthenticationOAuth2 indicates the parameters
+                      which are need by pulsar OAuth2
                     properties:
                       audience:
                         type: string
@@ -71,8 +73,12 @@ spec:
                       issuerEndpoint:
                         type: string
                       key:
+                        description: ValueOrSecretRef is a string or a secret reference
+                          of the authentication
                         properties:
                           secretRef:
+                            description: SecretKeyRef indicates a secret name and
+                              key
                             properties:
                               key:
                                 type: string
@@ -92,8 +98,11 @@ spec:
                     - key
                     type: object
                   token:
+                    description: ValueOrSecretRef is a string or a secret reference
+                      of the authentication
                     properties:
                       secretRef:
+                        description: SecretKeyRef indicates a secret name and key
                         properties:
                           key:
                             type: string
