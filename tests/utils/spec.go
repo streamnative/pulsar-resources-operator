@@ -204,7 +204,7 @@ func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v
 }
 
 // MakePulsarPermission will generate a object of PulsarPermission
-func MakePulsarPermission(namespace, name, resourceName, connectionName string, resourceType v1alpha1.PulsarResoureType,
+func MakePulsarPermission(namespace, name, resourceName, connectionName string, resourceType v1alpha1.PulsarResourceType,
 	roles, actions []string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarPermission {
 	return &v1alpha1.PulsarPermission{
 		ObjectMeta: metav1.ObjectMeta{
