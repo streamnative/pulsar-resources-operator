@@ -35,7 +35,7 @@ func TestLicense(t *testing.T) {
 				return nil
 			}
 
-			src, err := os.ReadFile(path)
+			src, err := os.ReadFile(filepath.Clean(path))
 			if err != nil {
 				return err
 			}
@@ -45,9 +45,8 @@ func TestLicense(t *testing.T) {
 				t.Errorf("%v: license header not present", path)
 				return nil
 			}
-		case ".yml":
-			fallthrough
-		case ".yaml":
+
+		case ".yml", ".yaml":
 			if strings.Contains(path, "vendor") {
 				return nil
 			}
@@ -71,7 +70,7 @@ func TestLicense(t *testing.T) {
 			// }
 			fallthrough
 		case ".conf":
-			src, err := os.ReadFile(path)
+			src, err := os.ReadFile(filepath.Clean(path))
 			if err != nil {
 				return err
 			}

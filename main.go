@@ -19,11 +19,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	k8szap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	//+kubebuilder:scaffold:imports
 	"github.com/streamnative/pulsar-operators/commons/pkg/trace"
 	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/controllers"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
-	//+kubebuilder:scaffold:imports
 )
 
 var (

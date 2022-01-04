@@ -17,16 +17,7 @@ type PulsarConnectionRefMapper struct {
 
 // Map maps resource object to PulsarConnection request
 func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Request {
-	var ref *corev1.LocalObjectReference
-	if tenant, ok := object.(*pulsarv1alpha1.PulsarTenant); ok {
-		ref = &tenant.Spec.ConnectionRef
-	} else if namespace, ok := object.(*pulsarv1alpha1.PulsarNamespace); ok {
-		ref = &namespace.Spec.ConnectionRef
-	} else if topic, ok := object.(*pulsarv1alpha1.PulsarTopic); ok {
-		ref = &topic.Spec.ConnectionRef
-	} else if permission, ok := object.(*pulsarv1alpha1.PulsarPermission); ok {
-		ref = &permission.Spec.ConnectionRef
-	}
+	ref := getConnectionRef(object)
 	if ref == nil {
 		return nil
 	}
@@ -44,16 +35,7 @@ func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Reques
 
 // ConnectionRefMapper maps resource object to PulsarConnection request
 func ConnectionRefMapper(object client.Object) []reconcile.Request {
-	var ref *corev1.LocalObjectReference
-	if tenant, ok := object.(*pulsarv1alpha1.PulsarTenant); ok {
-		ref = &tenant.Spec.ConnectionRef
-	} else if namespace, ok := object.(*pulsarv1alpha1.PulsarNamespace); ok {
-		ref = &namespace.Spec.ConnectionRef
-	} else if topic, ok := object.(*pulsarv1alpha1.PulsarTopic); ok {
-		ref = &topic.Spec.ConnectionRef
-	} else if permission, ok := object.(*pulsarv1alpha1.PulsarPermission); ok {
-		ref = &permission.Spec.ConnectionRef
-	}
+	ref := getConnectionRef(object)
 	if ref == nil {
 		return nil
 	}
@@ -64,5 +46,20 @@ func ConnectionRefMapper(object client.Object) []reconcile.Request {
 				Name:      ref.Name,
 			},
 		},
+	}
+}
+
+func getConnectionRef(object client.Object) *corev1.LocalObjectReference {
+	switch v := object.(type) {
+	case *pulsarv1alpha1.PulsarTenant:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarNamespace:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarTopic:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarPermission:
+		return &v.Spec.ConnectionRef
+	default:
+		return nil
 	}
 }
