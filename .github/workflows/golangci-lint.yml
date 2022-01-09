@@ -17,7 +17,14 @@ jobs:
   golangci:
     name: lint
     runs-on: ubuntu-latest
+    env:
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      GOPRIVATE: github.com/streamnative
     steps:
+      - name: Set up git token
+        run: |
+          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+
       - uses: actions/checkout@v2
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v2
