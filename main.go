@@ -47,9 +47,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	opts := k8szap.Options{
-		Development: true,
-	}
+	opts := k8szap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
