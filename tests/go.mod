@@ -3,7 +3,7 @@ module github.com/streamnative/pulsar-resources-operator/tests
 go 1.16
 
 require (
-	github.com/onsi/ginkgo v1.16.6-0.20211118180735-4e1925ba4c95
+	github.com/onsi/ginkgo/v2 v2.0.0
 	github.com/onsi/gomega v1.17.0
 	github.com/sirupsen/logrus v1.8.1
 	github.com/streamnative/pulsar-operators/bookkeeper-operator v0.0.0-20211228075820-f17e933b1e80
@@ -21,7 +21,7 @@ require (
 
 replace (
 	github.com/streamnative/pulsar-operators/commons => github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80
-	github.com/streamnative/pulsar-resources-operator => ../
 	github.com/streamnative/pulsar-operators/pulsar-operator => ../../pulsar-operators/pulsar-operator
+	github.com/streamnative/pulsar-resources-operator => ../
 	k8s.io/client-go => k8s.io/client-go v0.22.4
 )

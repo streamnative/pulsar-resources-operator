@@ -779,6 +779,7 @@ github.com/nakagami/firebirdsql v0.0.0-20190310045651-3c02a58cfed8/go.mod h1:86w
 github.com/ncw/swift v1.0.47/go.mod h1:23YIA4yWVnGwv2dQlN4bB7egfYX6YLn0Yo/S6zZO/ZM=
 github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e/go.mod h1:zD1mROLANZcx1PVRCS0qkT7pwLkGfwJo4zjcN/Tysno=
 github.com/nxadm/tail v1.4.4/go.mod h1:kenIhsEOeOJmVchQTgglprH7qJGnHDVpk1VPCcaMI8A=
+github.com/nxadm/tail v1.4.8 h1:nPr65rt6Y5JFSKQO7qToXr7pePgD6Gwiw05lkbyAQTE=
 github.com/nxadm/tail v1.4.8/go.mod h1:+ncqLTQzXmGhMZNUePPaPqPvBxHAIsmXswZKocGu+AU=
 github.com/oklog/run v1.0.0/go.mod h1:dlhp/R75TPv97u0XWUtDeV/lRKWPKSdTuV0TZvrmrQA=
 github.com/oklog/ulid v0.0.0-20170117200651-66bb6560562f/go.mod h1:CirwcVhetQ6Lv90oh/F+FBtV6XMibvdAFo93nm5qn4U=
@@ -799,9 +800,10 @@ github.com/onsi/ginkgo v1.12.0/go.mod h1:oUhWkIvk5aDxtKvDDuw8gItl8pKl42LzjC9KZE0
 github.com/onsi/ginkgo v1.12.1/go.mod h1:zj2OWP4+oCPe1qIXoGWkgMRwljMUYCdkwsT2108oapk=
 github.com/onsi/ginkgo v1.14.0/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9klQyY=
 github.com/onsi/ginkgo v1.14.1/go.mod h1:iSB4RoI2tjJc9BBv4NKIKWKya62Rps+oPG/Lv9klQyY=
+github.com/onsi/ginkgo v1.16.4 h1:29JGrr5oVBm5ulCWet69zQkzWipVXIol6ygQUe/EzNc=
 github.com/onsi/ginkgo v1.16.4/go.mod h1:dX+/inL/fNMqNlz0e9LfyB9TswhZpCVdJM/Z6Vvnwo0=
-github.com/onsi/ginkgo v1.16.6-0.20211118180735-4e1925ba4c95 h1:PiyFAUyeIURxGPqHQAvBbu3lRgq6QX6cTrKVFEUJXQQ=
-github.com/onsi/ginkgo v1.16.6-0.20211118180735-4e1925ba4c95/go.mod h1:4mgyWSAqTEjzHhpWb8/4aNJ6fWDhKU6xdNqdMzXknbs=
+github.com/onsi/ginkgo/v2 v2.0.0 h1:CcuG/HvWNkkaqCUpJifQY8z7qEMBJya6aLPx6ftGyjQ=
+github.com/onsi/ginkgo/v2 v2.0.0/go.mod h1:vw5CSIxN1JObi/U8gcbwft7ZxR2dgaR70JSE3/PpL4c=
 github.com/onsi/gomega v0.0.0-20170829124025-dcabb60a477c/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
 github.com/onsi/gomega v0.0.0-20190113212917-5533ce8a0da3/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/onsi/gomega v1.3.0/go.mod h1:C1qb7wdrVGGVU+Z6iS04AVkA3Q65CEZX59MT0QO5uiA=
@@ -994,8 +996,6 @@ github.com/streamnative/pulsar-operators/bookkeeper-operator v0.0.0-202112280758
 github.com/streamnative/pulsar-operators/bookkeeper-operator v0.0.0-20211228075820-f17e933b1e80/go.mod h1:Sgc/eOJNvpmYG2jxmdQ6yaPAWZHNuQH+tFS7WXFGSqM=
 github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80 h1:b2lb3seGh0nHbJqkifQsqobvNN1LN+7IcZiS4oy/c5k=
 github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80/go.mod h1:aCQGpoGwYoZPOE6Fq/E4YR1CHgq6HgGQlhsqcgy1GYA=
-github.com/streamnative/pulsar-operators/pulsar-operator v0.0.0-20211228075820-f17e933b1e80 h1:I4A4Q3wcfMviY+TQJ6o/xkij9WyMJshPBCdNGwhC870=
-github.com/streamnative/pulsar-operators/pulsar-operator v0.0.0-20211228075820-f17e933b1e80/go.mod h1:GoONF/e4LB3o8yt58ONdNJJADW4U2VBqXi25sHwKQjI=
 github.com/streamnative/pulsar-operators/zookeeper-operator v0.0.0-20211228075820-f17e933b1e80 h1:SFKDOyxTfdTbGYn867oZ7sjPizBuq+eHkHlqgg5kU1I=
 github.com/streamnative/pulsar-operators/zookeeper-operator v0.0.0-20211228075820-f17e933b1e80/go.mod h1:uPVWBZdvFnzv30qQifOxNA4JQ9m3Kv4QW+MFtdBHMdc=
 github.com/streamnative/pulsarctl v0.4.3-0.20211125034318-d6febda9e96b/go.mod h1:bKjFz2cl1TnHv5hMLR7rc+taLB0RjBPVtquwrUuqM1Q=
@@ -1660,6 +1660,7 @@ gopkg.in/op/go-logging.v1 v1.0.0-20160211212156-b2cb9fa56473/go.mod h1:N1eN2tsCx
 gopkg.in/resty.v1 v1.12.0/go.mod h1:mDo4pnntr5jdWRML875a/NmxYqAlA73dVijT2AXvQQo=
 gopkg.in/square/go-jose.v2 v2.2.2/go.mod h1:M9dMgbHiYLoDGQrXy7OpJDJWiKiU//h+vD76mk0e1AI=
 gopkg.in/square/go-jose.v2 v2.3.1/go.mod h1:M9dMgbHiYLoDGQrXy7OpJDJWiKiU//h+vD76mk0e1AI=
+gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 h1:uRGJdciOHaEIrze2W8Q3AKkepLTh2hOroT7a+7czfdQ=
 gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7/go.mod h1:dt/ZhP58zS4L8KSrWDmTeBkI65Dw0HsyUHuEVlX15mw=
 gopkg.in/yaml.v2 v2.0.0-20170812160011-eb3733d160e7/go.mod h1:JAlM8MvJe8wmxCU4Bli9HhUf9+ttbYbLASfIpnQbh74=
 gopkg.in/yaml.v2 v2.0.0/go.mod h1:JAlM8MvJe8wmxCU4Bli9HhUf9+ttbYbLASfIpnQbh74=
