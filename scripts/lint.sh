@@ -19,4 +19,4 @@ if [ ! -f ${POP_HOME}/bin/golangci-lint ]; then
     cd -
 fi
 ${POP_HOME}/bin/golangci-lint --version
-${POP_HOME}/bin/golangci-lint run -c ${POP_HOME}/golangci.yml $@
+${POP_HOME}/bin/golangci-lint run -c ${POP_HOME}/.golangci.yml $@
