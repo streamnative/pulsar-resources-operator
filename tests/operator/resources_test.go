@@ -41,9 +41,9 @@ var _ = Describe("Resources", func() {
 	BeforeEach(func() {
 		ctx = context.TODO()
 		// use ClusterIP svc when run operator in k8s
-		adminServiceURL := fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName)
+		// adminServiceURL := fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName)
 		// use NodePort svc when cluster is kind cluster and run operator locally, the nodePort need to be setup in kind
-		// adminServiceURL := fmt.Sprintf("http://127.0.0.1:%d", nodePort)
+		adminServiceURL := fmt.Sprintf("http://127.0.0.1:%d", nodePort)
 		pconn = utils.MakePulsarConnection(namespaceName, pconnName, adminServiceURL)
 		adminRoles := []string{"superman"}
 		allowedClusters := []string{}
