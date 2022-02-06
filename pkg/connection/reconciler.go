@@ -16,20 +16,20 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
-	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	pulsarv1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
 type PulsarConnectionReconciler struct {
-	connection         *pulsarv1alpha1.PulsarConnection
+	connection         *pulsarv1alpha2.PulsarConnection
 	log                logr.Logger
 	client             client.Client
 	creator            admin.PulsarAdminCreator
-	tenants            []pulsarv1alpha1.PulsarTenant
-	namespaces         []pulsarv1alpha1.PulsarNamespace
-	topics             []pulsarv1alpha1.PulsarTopic
-	permissions        []pulsarv1alpha1.PulsarPermission
+	tenants            []pulsarv1alpha2.PulsarTenant
+	namespaces         []pulsarv1alpha2.PulsarNamespace
+	topics             []pulsarv1alpha2.PulsarTopic
+	permissions        []pulsarv1alpha2.PulsarPermission
 	hasUnreadyResource bool
 
 	pulsarAdmin admin.PulsarAdmin
@@ -40,7 +40,7 @@ var _ commonsreconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
-	connection *pulsarv1alpha1.PulsarConnection) commonsreconciler.Interface {
+	connection *pulsarv1alpha2.PulsarConnection) commonsreconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:                log,
 		connection:         connection,
@@ -76,7 +76,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 				// keep the connection until all resources has been removed
 
 				// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-				controllerutil.RemoveFinalizer(r.connection, pulsarv1alpha1.FinalizerName)
+				controllerutil.RemoveFinalizer(r.connection, pulsarv1alpha2.FinalizerName)
 				if err := r.client.Update(ctx, r.connection); err != nil {
 					return err
 				}
@@ -95,7 +95,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	controllerutil.AddFinalizer(r.connection, pulsarv1alpha1.FinalizerName)
+	controllerutil.AddFinalizer(r.connection, pulsarv1alpha2.FinalizerName)
 	if err := r.client.Update(ctx, r.connection); err != nil {
 		return err
 	}
@@ -142,7 +142,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 // NewErrorCondition create a condition with error
 func NewErrorCondition(generation int64, msg string) *metav1.Condition {
 	return &metav1.Condition{
-		Type:               pulsarv1alpha1.ConditionReady,
+		Type:               pulsarv1alpha2.ConditionReady,
 		Status:             metav1.ConditionFalse,
 		ObservedGeneration: generation,
 		Reason:             "ReconcileError",
@@ -152,7 +152,7 @@ func NewErrorCondition(generation int64, msg string) *metav1.Condition {
 
 // GetValue get the authentication token value or secret
 func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
-	vRef *pulsarv1alpha1.ValueOrSecretRef) (*string, error) {
+	vRef *pulsarv1alpha2.ValueOrSecretRef) (*string, error) {
 	if value := vRef.Value; value != nil {
 		return value, nil
 	} else if ref := vRef.SecretRef; ref != nil {
@@ -203,7 +203,7 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 // NewReadyCondition make condition with ready info
 func NewReadyCondition(generation int64) *metav1.Condition {
 	return &metav1.Condition{
-		Type:               pulsarv1alpha1.ConditionReady,
+		Type:               pulsarv1alpha2.ConditionReady,
 		Status:             metav1.ConditionTrue,
 		ObservedGeneration: generation,
 		Reason:             "Reconciled",

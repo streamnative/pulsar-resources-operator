@@ -20,7 +20,7 @@ import (
 	commonsv1alpha1 "github.com/streamnative/pulsar-operators/commons/api/v1alpha1"
 	pulsarv1alpha1 "github.com/streamnative/pulsar-operators/pulsar-operator/api/v1alpha1"
 	zkv1alpha1 "github.com/streamnative/pulsar-operators/zookeeper-operator/api/v1alpha1"
-	v1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	v1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
 
@@ -52,7 +52,7 @@ var _ = BeforeSuite(func() {
 	Expect(bkv1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
 	Expect(pulsarv1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
 	Expect(zkv1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
-	Expect(v1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
+	Expect(v1alpha2.AddToScheme(scheme.Scheme)).Should(Succeed())
 
 	k8sClient, err = client.New(k8sConfig, client.Options{})
 	Expect(err).Should(Succeed())

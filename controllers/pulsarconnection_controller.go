@@ -19,7 +19,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
 
-	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	pulsarv1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/connection"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
@@ -50,6 +50,8 @@ type PulsarConnectionReconciler struct {
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions/finalizers,verbs=update
+//+kubebuilder:rbac:groups=pulsar.streamnative.io,resources=pulsarpermissions/finalizers,verbs=update
+//+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -63,7 +65,7 @@ type PulsarConnectionReconciler struct {
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("pulsarconnection", req.NamespacedName)
 
-	pulsarConnection := &pulsarv1alpha1.PulsarConnection{}
+	pulsarConnection := &pulsarv1alpha2.PulsarConnection{}
 	if err := r.Get(ctx, req.NamespacedName, pulsarConnection); err != nil {
 		if apierrors.IsNotFound(err) {
 			return ctrl.Result{}, nil
@@ -89,50 +91,50 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
-	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha1.PulsarTenant{}, ".spec.connectionRef.name",
+	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha2.PulsarTenant{}, ".spec.connectionRef.name",
 		func(object client.Object) []string {
 			return []string{
-				object.(*pulsarv1alpha1.PulsarTenant).Spec.ConnectionRef.Name,
+				object.(*pulsarv1alpha2.PulsarTenant).Spec.ConnectionRef.Name,
 			}
 		}); err != nil {
 		return err
 	}
-	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha1.PulsarNamespace{}, ".spec.connectionRef.name",
+	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha2.PulsarNamespace{}, ".spec.connectionRef.name",
 		func(object client.Object) []string {
 			return []string{
-				object.(*pulsarv1alpha1.PulsarNamespace).Spec.ConnectionRef.Name,
+				object.(*pulsarv1alpha2.PulsarNamespace).Spec.ConnectionRef.Name,
 			}
 		}); err != nil {
 		return err
 	}
-	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha1.PulsarTopic{}, ".spec.connectionRef.name",
+	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha2.PulsarTopic{}, ".spec.connectionRef.name",
 		func(object client.Object) []string {
 			return []string{
-				object.(*pulsarv1alpha1.PulsarTopic).Spec.ConnectionRef.Name,
+				object.(*pulsarv1alpha2.PulsarTopic).Spec.ConnectionRef.Name,
 			}
 		}); err != nil {
 		return err
 	}
-	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha1.PulsarPermission{}, ".spec.connectionRef.name",
+	if err := mgr.GetCache().IndexField(context.TODO(), &pulsarv1alpha2.PulsarPermission{}, ".spec.connectionRef.name",
 		func(object client.Object) []string {
 			return []string{
-				object.(*pulsarv1alpha1.PulsarPermission).Spec.ConnectionRef.Name,
+				object.(*pulsarv1alpha2.PulsarPermission).Spec.ConnectionRef.Name,
 			}
 		}); err != nil {
 		return err
 	}
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&pulsarv1alpha1.PulsarConnection{}).
-		Watches(&source.Kind{Type: &pulsarv1alpha1.PulsarTenant{}},
+		For(&pulsarv1alpha2.PulsarConnection{}).
+		Watches(&source.Kind{Type: &pulsarv1alpha2.PulsarTenant{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &pulsarv1alpha1.PulsarNamespace{}},
+		Watches(&source.Kind{Type: &pulsarv1alpha2.PulsarNamespace{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &pulsarv1alpha1.PulsarTopic{}},
+		Watches(&source.Kind{Type: &pulsarv1alpha2.PulsarTopic{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &pulsarv1alpha1.PulsarPermission{}},
+		Watches(&source.Kind{Type: &pulsarv1alpha2.PulsarPermission{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(options).

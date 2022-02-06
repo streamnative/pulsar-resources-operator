@@ -1,0 +1,15 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
+apiVersion: pulsar.streamnative.io/v1alpha2
+kind: PulsarConnection
+metadata:
+  name: pulsarconnection-sample
+  namespace: pulsar
+spec:
+  adminServiceURL: http://c-sn-platform-broker.pulsar.svc.cluster.local:8080
+  authentication:
+    token:
+      secretRef:
+        name: c-sn-platform-vault-secret-env-injection
+        key: brokerClientAuthenticationParameters
+

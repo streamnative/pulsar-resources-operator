@@ -7,4 +7,9 @@ resources:
 - pulsar_v1alpha1_pulsartenant.yaml
 - pulsar_v1alpha1_pulsartopic.yaml
 - pulsar_v1alpha1_pulsarpermission.yaml
+- pulsar_v1alpha2_pulsarconnection.yaml
+- pulsar_v1alpha2_pulsarnamespace.yaml
+- pulsar_v1alpha2_pulsartenant.yaml
+- pulsar_v1alpha2_pulsartopic.yaml
+- pulsar_v1alpha2_pulsarpermission.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

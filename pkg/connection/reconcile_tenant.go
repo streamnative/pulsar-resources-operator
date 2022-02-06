@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
-	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	pulsarv1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
@@ -28,7 +28,7 @@ func makeTenantsReconciler(r *PulsarConnectionReconciler) commonsreconciler.Inte
 
 // Observe checks the updates of object
 func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
-	tenantList := &pulsarv1alpha1.PulsarTenantList{}
+	tenantList := &pulsarv1alpha2.PulsarTenantList{}
 	if err := r.conn.client.List(ctx, tenantList, client.InNamespace(r.conn.connection.Namespace),
 		client.MatchingFields(map[string]string{
 			".spec.connectionRef.name": r.conn.connection.Name,
@@ -38,7 +38,7 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 	r.conn.tenants = tenantList.Items
 	if !r.conn.hasUnreadyResource {
 		for i := range r.conn.tenants {
-			if !pulsarv1alpha1.IsPulsarResourceReady(&r.conn.tenants[i]) {
+			if !pulsarv1alpha2.IsPulsarResourceReady(&r.conn.tenants[i]) {
 				r.conn.hasUnreadyResource = true
 				break
 			}
@@ -60,16 +60,16 @@ func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
 
 // ReconcileTenant move the current state of the toic closer to the desired state
 func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
-	tenant *pulsarv1alpha1.PulsarTenant) error {
+	tenant *pulsarv1alpha2.PulsarTenant) error {
 	if !tenant.DeletionTimestamp.IsZero() {
-		if tenant.Spec.LifecyclePolicy == pulsarv1alpha1.CleanUpAfterDeletion {
+		if tenant.Spec.LifecyclePolicy == pulsarv1alpha2.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && admin.IsNotFound(err) {
 				return err
 			}
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(tenant, pulsarv1alpha1.FinalizerName)
+		controllerutil.RemoveFinalizer(tenant, pulsarv1alpha2.FinalizerName)
 		if err := r.conn.client.Update(ctx, tenant); err != nil {
 			return err
 		}
@@ -78,12 +78,12 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	}
 
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	controllerutil.AddFinalizer(tenant, pulsarv1alpha1.FinalizerName)
+	controllerutil.AddFinalizer(tenant, pulsarv1alpha2.FinalizerName)
 	if err := r.conn.client.Update(ctx, tenant); err != nil {
 		return err
 	}
 
-	if pulsarv1alpha1.IsPulsarResourceReady(tenant) {
+	if pulsarv1alpha2.IsPulsarResourceReady(tenant) {
 		return nil
 	}
 

@@ -13,7 +13,7 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
-	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	v1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
 
@@ -21,39 +21,39 @@ var _ = Describe("Resources", func() {
 
 	var (
 		ctx                 context.Context
-		pconn               *v1alphav1.PulsarConnection
+		pconn               *v1alpha2.PulsarConnection
 		pconnName           string = "test-connection"
-		ptenant             *v1alphav1.PulsarTenant
+		ptenant             *v1alpha2.PulsarTenant
 		ptenantName         string = "test-tenant"
 		tenantName          string = "cloud"
-		lifecyclePolicy     v1alphav1.PulsarResourceLifeCyclePolicy
-		pnamespace          *v1alphav1.PulsarNamespace
+		lifecyclePolicy     v1alpha2.PulsarResourceLifeCyclePolicy
+		pnamespace          *v1alpha2.PulsarNamespace
 		pnamespaceName      string = "test-namespace"
 		pulsarNamespaceName string = "cloud/stage"
-		ptopic              *v1alphav1.PulsarTopic
+		ptopic              *v1alpha2.PulsarTopic
 		ptopicName          string = "test-topic"
 		topicName           string = "persistent://cloud/stage/user"
 		nodePort            int32  = 30080
-		ppermission         *v1alphav1.PulsarPermission
+		ppermission         *v1alpha2.PulsarPermission
 		ppermissionName     string = "test-permission"
 	)
 
 	BeforeEach(func() {
 		ctx = context.TODO()
 		// use ClusterIP svc when run operator in k8s
-		// adminServiceURL := fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName)
+		adminServiceURL := fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName)
 		// use NodePort svc when cluster is kind cluster and run operator locally, the nodePort need to be setup in kind
-		adminServiceURL := fmt.Sprintf("http://127.0.0.1:%d", nodePort)
+		// adminServiceURL := fmt.Sprintf("http://127.0.0.1:%d", nodePort)
 		pconn = utils.MakePulsarConnection(namespaceName, pconnName, adminServiceURL)
 		adminRoles := []string{"superman"}
 		allowedClusters := []string{}
-		lifecyclePolicy = v1alphav1.CleanUpAfterDeletion
+		lifecyclePolicy = v1alpha2.CleanUpAfterDeletion
 		ptenant = utils.MakePulsarTenant(namespaceName, ptenantName, tenantName, pconnName, adminRoles, allowedClusters, lifecyclePolicy)
 		pnamespace = utils.MakePulsarNamespace(namespaceName, pnamespaceName, pulsarNamespaceName, pconnName, lifecyclePolicy)
 		ptopic = utils.MakePulsarTopic(namespaceName, ptopicName, topicName, pconnName, lifecyclePolicy)
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
-		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
+		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alpha2.PulsarResourceTypeTopic, roles, actions, v1alpha2.CleanUpAfterDeletion)
 	})
 
 	Describe("Basic resource operations", Ordered, func() {
@@ -109,10 +109,10 @@ var _ = Describe("Resources", func() {
 
 			It("should be ready", func() {
 				Eventually(func() bool {
-					t := &v1alphav1.PulsarTenant{}
+					t := &v1alpha2.PulsarTenant{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: ptenantName}
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
-					return v1alphav1.IsPulsarResourceReady(t)
+					return v1alpha2.IsPulsarResourceReady(t)
 				}, "240s", "100ms").Should(BeTrue())
 			})
 		})
@@ -125,10 +125,10 @@ var _ = Describe("Resources", func() {
 
 			It("should be ready", func() {
 				Eventually(func() bool {
-					ns := &v1alphav1.PulsarNamespace{}
+					ns := &v1alpha2.PulsarNamespace{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: pnamespaceName}
 					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
-					return v1alphav1.IsPulsarResourceReady(ns)
+					return v1alpha2.IsPulsarResourceReady(ns)
 				}, "20s", "100ms").Should(BeTrue())
 			})
 		})
@@ -141,10 +141,10 @@ var _ = Describe("Resources", func() {
 
 			It("should be ready", func() {
 				Eventually(func() bool {
-					t := &v1alphav1.PulsarTopic{}
+					t := &v1alpha2.PulsarTopic{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
-					return v1alphav1.IsPulsarResourceReady(t)
+					return v1alpha2.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
 			})
 		})
@@ -157,44 +157,44 @@ var _ = Describe("Resources", func() {
 
 			It("should be ready", func() {
 				Eventually(func() bool {
-					t := &v1alphav1.PulsarPermission{}
+					t := &v1alpha2.PulsarPermission{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
-					return v1alphav1.IsPulsarResourceReady(t)
+					return v1alpha2.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
 			})
 		})
 		AfterAll(func() {
 			Eventually(func(g Gomega) {
-				t := &v1alphav1.PulsarTopic{}
+				t := &v1alpha2.PulsarTopic{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
 				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				ns := &v1alphav1.PulsarNamespace{}
+				ns := &v1alpha2.PulsarNamespace{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: pnamespaceName}
 				g.Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				t := &v1alphav1.PulsarTenant{}
+				t := &v1alpha2.PulsarTenant{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: ptenantName}
 				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				conn := &v1alphav1.PulsarConnection{}
+				conn := &v1alpha2.PulsarConnection{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: pconnName}
 				g.Expect(k8sClient.Get(ctx, tns, conn)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, conn)).Should(Succeed())
 			}).Should(Succeed())
 
 			Eventually(func(g Gomega) {
-				perm := &v1alphav1.PulsarPermission{}
+				perm := &v1alpha2.PulsarPermission{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
 				g.Expect(k8sClient.Get(ctx, tns, perm)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, perm)).Should(Succeed())

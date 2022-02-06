@@ -12,7 +12,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
-	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	pulsarv1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
@@ -34,7 +34,7 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	log := r.log.WithValues("Observe Namespace", r.conn.connection.Namespace)
 	log.V(1).Info("Start Observe")
 
-	permissionList := &pulsarv1alpha1.PulsarPermissionList{}
+	permissionList := &pulsarv1alpha2.PulsarPermissionList{}
 	if err := r.conn.client.List(ctx, permissionList, client.InNamespace(r.conn.connection.Namespace),
 		client.MatchingFields(map[string]string{
 			".spec.connectionRef.name": r.conn.connection.Name,
@@ -46,7 +46,7 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 
 	if !r.conn.hasUnreadyResource {
 		for i := range r.conn.permissions {
-			if !pulsarv1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
+			if !pulsarv1alpha2.IsPulsarResourceReady(&r.conn.permissions[i]) {
 				r.conn.hasUnreadyResource = true
 				break
 			}
@@ -71,14 +71,14 @@ func (r *PulsarPermissionReconciler) Reconcile(ctx context.Context) error {
 
 // ReconcilePermission move the current state of the toic closer to the desired state
 func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
-	permission *pulsarv1alpha1.PulsarPermission) error {
+	permission *pulsarv1alpha2.PulsarPermission) error {
 	log := r.log.WithValues("PulsarPermission", permission.Name)
 	log.V(1).Info("Start Reconcile")
 
 	per := GetPermissioner(permission)
 
 	if !permission.DeletionTimestamp.IsZero() {
-		if permission.Spec.LifecyclePolicy == pulsarv1alpha1.CleanUpAfterDeletion {
+		if permission.Spec.LifecyclePolicy == pulsarv1alpha2.CleanUpAfterDeletion {
 			log.Info("Revoking permission", "LifecyclePolicy", permission.Spec.LifecyclePolicy)
 
 			if err := pulsarAdmin.RevokePermissions(per); err != nil && admin.IsNotFound(err) {
@@ -86,22 +86,22 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(permission, pulsarv1alpha1.FinalizerName)
+		controllerutil.RemoveFinalizer(permission, pulsarv1alpha2.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	if permission.Spec.LifecyclePolicy == pulsarv1alpha1.CleanUpAfterDeletion {
+	if permission.Spec.LifecyclePolicy == pulsarv1alpha2.CleanUpAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.AddFinalizer(permission, pulsarv1alpha1.FinalizerName)
+		controllerutil.AddFinalizer(permission, pulsarv1alpha2.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
 			return err
 		}
 	}
 
-	if pulsarv1alpha1.IsPulsarResourceReady(permission) {
+	if pulsarv1alpha2.IsPulsarResourceReady(permission) {
 		return nil
 	}
 
@@ -129,9 +129,9 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 }
 
 // GetPermissioner will return Permissioner according resource type
-func GetPermissioner(p *pulsarv1alpha1.PulsarPermission) admin.Permissioner {
+func GetPermissioner(p *pulsarv1alpha2.PulsarPermission) admin.Permissioner {
 	switch p.Spec.ResoureType {
-	case pulsarv1alpha1.PulsarResourceTypeNamespace:
+	case pulsarv1alpha2.PulsarResourceTypeNamespace:
 		ns := &admin.NamespacePermission{
 			ResourceName: p.Spec.ResourceName,
 			Roles:        p.Spec.Roles,
@@ -139,7 +139,7 @@ func GetPermissioner(p *pulsarv1alpha1.PulsarPermission) admin.Permissioner {
 		}
 		return ns
 
-	case pulsarv1alpha1.PulsarResourceTypeTopic:
+	case pulsarv1alpha2.PulsarResourceTypeTopic:
 		topic := admin.TopicPermission{
 			ResourceName: p.Spec.ResourceName,
 			Roles:        p.Spec.Roles,

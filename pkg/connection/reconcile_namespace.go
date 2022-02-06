@@ -11,7 +11,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
-	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	pulsarv1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
@@ -28,7 +28,7 @@ func makeNamespacesReconciler(r *PulsarConnectionReconciler) commonsreconciler.I
 
 // Observe checks the updates of object
 func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
-	namespaceList := &pulsarv1alpha1.PulsarNamespaceList{}
+	namespaceList := &pulsarv1alpha2.PulsarNamespaceList{}
 	if err := r.conn.client.List(ctx, namespaceList, client.InNamespace(r.conn.connection.Namespace),
 		client.MatchingFields(map[string]string{
 			".spec.connectionRef.name": r.conn.connection.Name,
@@ -38,7 +38,7 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	r.conn.namespaces = namespaceList.Items
 	if !r.conn.hasUnreadyResource {
 		for i := range r.conn.namespaces {
-			if !pulsarv1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
+			if !pulsarv1alpha2.IsPulsarResourceReady(&r.conn.namespaces[i]) {
 				r.conn.hasUnreadyResource = true
 				break
 			}
@@ -60,15 +60,15 @@ func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
 
 // ReconcileNamespace move the current state of the toic closer to the desired state
 func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
-	namespace *pulsarv1alpha1.PulsarNamespace) error {
+	namespace *pulsarv1alpha2.PulsarNamespace) error {
 	if !namespace.DeletionTimestamp.IsZero() {
-		if namespace.Spec.LifecyclePolicy == pulsarv1alpha1.CleanUpAfterDeletion {
+		if namespace.Spec.LifecyclePolicy == pulsarv1alpha2.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && admin.IsNotFound(err) {
 				return err
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(namespace, pulsarv1alpha1.FinalizerName)
+		controllerutil.RemoveFinalizer(namespace, pulsarv1alpha2.FinalizerName)
 		if err := r.conn.client.Update(ctx, namespace); err != nil {
 			return err
 		}
@@ -76,15 +76,15 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		return nil
 	}
 
-	if namespace.Spec.LifecyclePolicy == pulsarv1alpha1.CleanUpAfterDeletion {
+	if namespace.Spec.LifecyclePolicy == pulsarv1alpha2.CleanUpAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.AddFinalizer(namespace, pulsarv1alpha1.FinalizerName)
+		controllerutil.AddFinalizer(namespace, pulsarv1alpha2.FinalizerName)
 		if err := r.conn.client.Update(ctx, namespace); err != nil {
 			return err
 		}
 	}
 
-	if pulsarv1alpha1.IsPulsarResourceReady(namespace) {
+	if pulsarv1alpha2.IsPulsarResourceReady(namespace) {
 		return nil
 	}
 

@@ -48,4 +48,44 @@ resources:
   kind: PulsarPermission
   path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: pulsar
+  kind: PulsarConnection
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: pulsar
+  kind: PulsarNamespace
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: pulsar
+  kind: PulsarTenant
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: pulsar
+  kind: PulsarTopic
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha2
+  version: v1alpha2
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: pulsar
+  kind: PulsarPermission
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha2
+  version: v1alpha2
 version: "3"

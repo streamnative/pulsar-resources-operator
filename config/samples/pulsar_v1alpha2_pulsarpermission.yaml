@@ -1,0 +1,37 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
+apiVersion: pulsar.streamnative.io/v1alpha2
+kind: PulsarPermission
+metadata:
+  name: pulsarpermission-sample-namespace
+  namespace: pulsar
+spec:
+  connectionRef:
+    name: pulsarconnection-sample
+  resourceType: namespace
+  resourceName: tenant-one/testns
+  lifecyclePolicy: CleanUpAfterDeletion
+  roles:
+  - ironman
+  actions:
+  - produce
+  - consume
+
+---
+apiVersion: pulsar.streamnative.io/v1alpha2
+kind: PulsarPermission
+metadata:
+  name: pulsarpermission-sample-topic
+  namespace: pulsar
+spec:
+  connectionRef:
+    name: pulsarconnection-sample
+  resourceType: topic
+  resourceName: persistent://tenant-one/testns/topic123
+  lifecyclePolicy: CleanUpAfterDeletion
+  roles:
+  - superman
+  actions:
+  - produce
+  - consume
+  - functions

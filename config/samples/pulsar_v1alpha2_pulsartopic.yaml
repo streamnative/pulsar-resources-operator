@@ -1,0 +1,24 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
+apiVersion: pulsar.streamnative.io/v1alpha2
+kind: PulsarTopic
+metadata:
+  name: pulsartopic-sample
+  namespace: pulsar
+spec:
+  name: persistent://tenant-one/testns/topic123
+  connectionRef:
+    name: pulsarconnection-sample
+  # persistent: true
+  # partitions: 8
+  maxProducers: 4
+  maxConsumers: 9
+  messageTTL: 1h
+  # maxUnAckedMessagesPerConsumer: 11
+  # maxUnAckedMessagesPerSubscription: 4
+  # retentionTime: 1h
+  # retentionSize: 10Gi
+  # backlogQuotaLimitTime: 24h
+  # backlogQuotaLimitSize: 1Gi
+  # backlogQuotaRetentionPolicy: producer_request_hold
+  lifecyclePolicy: CleanUpAfterDeletion

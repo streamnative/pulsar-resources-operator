@@ -13,7 +13,7 @@ import (
 	pulsarv1alpha1 "github.com/streamnative/pulsar-operators/pulsar-operator/api/v1alpha1"
 	zkv1alpha1 "github.com/streamnative/pulsar-operators/zookeeper-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-operators/zookeeper-operator/pkg/utils"
-	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 )
 
 // MakeZKCluster will generate a object of ZooKeeperCluster
@@ -130,26 +130,26 @@ func MakeBookKeeperCluster(namespace, name, zkServers, image string, replicas in
 }
 
 // MakePulsarConnection will generate a object of PulsarConnection, without authentication
-func MakePulsarConnection(namespace, name, adminServiceURL string) *v1alpha1.PulsarConnection {
-	return &v1alpha1.PulsarConnection{
+func MakePulsarConnection(namespace, name, adminServiceURL string) *v1alpha2.PulsarConnection {
+	return &v1alpha2.PulsarConnection{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Spec: v1alpha1.PulsarConnectionSpec{
+		Spec: v1alpha2.PulsarConnectionSpec{
 			AdminServiceURL: adminServiceURL,
 		},
 	}
 }
 
 // MakePulsarTenant will generate a object of PulsarTenant
-func MakePulsarTenant(namespace, name, tenantName, connectionName string, adminRoles, allowedClusters []string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTenant {
-	return &v1alpha1.PulsarTenant{
+func MakePulsarTenant(namespace, name, tenantName, connectionName string, adminRoles, allowedClusters []string, policy v1alpha2.PulsarResourceLifeCyclePolicy) *v1alpha2.PulsarTenant {
+	return &v1alpha2.PulsarTenant{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Spec: v1alpha1.PulsarTenantSpec{
+		Spec: v1alpha2.PulsarTenantSpec{
 			Name: tenantName,
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
@@ -162,15 +162,15 @@ func MakePulsarTenant(namespace, name, tenantName, connectionName string, adminR
 }
 
 // MakePulsarNamespace will generate a object of PulsarNamespace
-func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
+func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, policy v1alpha2.PulsarResourceLifeCyclePolicy) *v1alpha2.PulsarNamespace {
 	backlogSize := resource.MustParse("1Gi")
 	bundle := int32(16)
-	return &v1alpha1.PulsarNamespace{
+	return &v1alpha2.PulsarNamespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Spec: v1alpha1.PulsarNamespaceSpec{
+		Spec: v1alpha2.PulsarNamespaceSpec{
 			Name: namespaceName,
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
@@ -188,13 +188,13 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 }
 
 // MakePulsarTopic will generate a object of PulsarTopic
-func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
-	return &v1alpha1.PulsarTopic{
+func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v1alpha2.PulsarResourceLifeCyclePolicy) *v1alpha2.PulsarTopic {
+	return &v1alpha2.PulsarTopic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Spec: v1alpha1.PulsarTopicSpec{
+		Spec: v1alpha2.PulsarTopicSpec{
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
@@ -204,14 +204,14 @@ func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v
 }
 
 // MakePulsarPermission will generate a object of PulsarPermission
-func MakePulsarPermission(namespace, name, resourceName, connectionName string, resourceType v1alpha1.PulsarResourceType,
-	roles, actions []string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarPermission {
-	return &v1alpha1.PulsarPermission{
+func MakePulsarPermission(namespace, name, resourceName, connectionName string, resourceType v1alpha2.PulsarResourceType,
+	roles, actions []string, policy v1alpha2.PulsarResourceLifeCyclePolicy) *v1alpha2.PulsarPermission {
+	return &v1alpha2.PulsarPermission{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
 			Name:      name,
 		},
-		Spec: v1alpha1.PulsarPermissionSpec{
+		Spec: v1alpha2.PulsarPermissionSpec{
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},

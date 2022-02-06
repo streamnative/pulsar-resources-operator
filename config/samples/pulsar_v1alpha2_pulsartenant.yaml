@@ -1,0 +1,18 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
+apiVersion: pulsar.streamnative.io/v1alpha2
+kind: PulsarTenant
+metadata:
+  name: pulsartenant-sample
+  namespace: pulsar
+spec:
+  name: tenant-one
+  connectionRef:
+    name: pulsarconnection-sample
+  adminRoles:
+  - admin
+  - ops
+  - devops
+  # allowedClusters:
+  # - c-sn-platform
+  lifecyclePolicy: CleanUpAfterDeletion

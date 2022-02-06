@@ -22,6 +22,7 @@ import (
 	//+kubebuilder:scaffold:imports
 	"github.com/streamnative/pulsar-operators/commons/pkg/trace"
 	pulsarv1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	pulsarv1alpha2 "github.com/streamnative/pulsar-resources-operator/api/v1alpha2"
 	"github.com/streamnative/pulsar-resources-operator/controllers"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
@@ -35,6 +36,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(pulsarv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(pulsarv1alpha2.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
