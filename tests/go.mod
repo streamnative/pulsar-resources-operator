@@ -21,7 +21,6 @@ require (
 
 replace (
 	github.com/streamnative/pulsar-operators/commons => github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80
-	github.com/streamnative/pulsar-operators/pulsar-operator => ../../pulsar-operators/pulsar-operator
 	github.com/streamnative/pulsar-resources-operator => ../
 	k8s.io/client-go => k8s.io/client-go v0.22.4
 )
