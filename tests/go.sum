@@ -996,6 +996,8 @@ github.com/streamnative/pulsar-operators/bookkeeper-operator v0.0.0-202112280758
 github.com/streamnative/pulsar-operators/bookkeeper-operator v0.0.0-20211228075820-f17e933b1e80/go.mod h1:Sgc/eOJNvpmYG2jxmdQ6yaPAWZHNuQH+tFS7WXFGSqM=
 github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80 h1:b2lb3seGh0nHbJqkifQsqobvNN1LN+7IcZiS4oy/c5k=
 github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80/go.mod h1:aCQGpoGwYoZPOE6Fq/E4YR1CHgq6HgGQlhsqcgy1GYA=
+github.com/streamnative/pulsar-operators/pulsar-operator v0.0.0-20211228075820-f17e933b1e80 h1:I4A4Q3wcfMviY+TQJ6o/xkij9WyMJshPBCdNGwhC870=
+github.com/streamnative/pulsar-operators/pulsar-operator v0.0.0-20211228075820-f17e933b1e80/go.mod h1:GoONF/e4LB3o8yt58ONdNJJADW4U2VBqXi25sHwKQjI=
 github.com/streamnative/pulsar-operators/zookeeper-operator v0.0.0-20211228075820-f17e933b1e80 h1:SFKDOyxTfdTbGYn867oZ7sjPizBuq+eHkHlqgg5kU1I=
 github.com/streamnative/pulsar-operators/zookeeper-operator v0.0.0-20211228075820-f17e933b1e80/go.mod h1:uPVWBZdvFnzv30qQifOxNA4JQ9m3Kv4QW+MFtdBHMdc=
 github.com/streamnative/pulsarctl v0.4.3-0.20211125034318-d6febda9e96b/go.mod h1:bKjFz2cl1TnHv5hMLR7rc+taLB0RjBPVtquwrUuqM1Q=
