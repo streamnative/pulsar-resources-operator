@@ -147,7 +147,6 @@ linters-settings:
     - regexpSimplify
     - sloppyReassign
     - truncateCmp
-    - typeDefFirst
     - unnamedResult
     - unnecessaryDefer
     - whyNoLint
