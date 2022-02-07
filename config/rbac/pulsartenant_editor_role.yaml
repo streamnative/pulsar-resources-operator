@@ -1,0 +1,24 @@
+# permissions for end users to edit pulsartenants.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pulsartenant-editor-role
+rules:
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartenants
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartenants/status
+  verbs:
+  - get

@@ -1,0 +1,24 @@
+# permissions for end users to edit pulsarnamespaces.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pulsarnamespace-editor-role
+rules:
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarnamespaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarnamespaces/status
+  verbs:
+  - get

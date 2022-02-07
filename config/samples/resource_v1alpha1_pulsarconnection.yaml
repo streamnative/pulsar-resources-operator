@@ -1,0 +1,6 @@
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarConnection
+metadata:
+  name: pulsarconnection-sample
+spec:
+  # TODO(user): Add fields here

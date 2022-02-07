@@ -1,0 +1,6 @@
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarTopic
+metadata:
+  name: pulsartopic-sample
+spec:
+  # TODO(user): Add fields here

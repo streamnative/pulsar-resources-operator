@@ -1,0 +1,51 @@
+domain: streamnative.io
+layout:
+- go.kubebuilder.io/v3
+plugins:
+  manifests.sdk.operatorframework.io/v2: {}
+  scorecard.sdk.operatorframework.io/v2: {}
+projectName: pulsar-resources-operator
+repo: github.com/streamnative/pulsar-resources-operator
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: streamnative.io
+  group: resource
+  kind: PulsarConnection
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: resource
+  kind: PulsarNamespace
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: resource
+  kind: PulsarTenant
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: resource
+  kind: PulsarTopic
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: resource
+  kind: PulsarPermission
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
+  version: v1alpha1
+version: "3"

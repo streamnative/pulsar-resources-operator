@@ -1,0 +1,20 @@
+# permissions for end users to view pulsarnamespaces.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: pulsarnamespace-viewer-role
+rules:
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarnamespaces
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarnamespaces/status
+  verbs:
+  - get
