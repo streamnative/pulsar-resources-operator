@@ -1,3 +1,5 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -32,6 +34,7 @@ spec:
         args:
         - --leader-elect
         image: controller:latest
+        imagePullPolicy: IfNotPresent
         name: manager
         securityContext:
           allowPrivilegeEscalation: false

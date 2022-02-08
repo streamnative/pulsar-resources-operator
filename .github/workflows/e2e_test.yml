@@ -1,0 +1,84 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
+name: Operator E2e tests
+
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - './**'
+      - '.github/workflows/**'
+jobs:
+  e2e-test:
+    name: E2e tests for Operators
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/streamnative
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      IMAGE: apachepulsar/pulsar:latest
+      WATCH_CERT_MANAGER_CRDS: "false"
+    steps:
+      - name: clean disk
+        run: |
+          df -h
+          sudo swapoff -a
+          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc
+          sudo apt clean
+          docker rmi $(docker images -q) -f
+          df -h
+
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+        id: go
+
+      - name: Set up Git token
+        run: |
+          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+
+      - name: Set up Ginkgo
+        run: |
+          go get github.com/onsi/ginkgo/ginkgo
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      # TODO the k8s version should be configurable
+      - name: Setup K8s cluster
+        run: |
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+          chmod +x ./kind
+          export PATH="$PWD:$PATH"
+          kind version
+          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion v1.21.2
+
+      - name: Initialize K8s cluster
+        run: |
+          docker pull "$IMAGE"
+          kind load docker-image --name pulsar-dev --nodes pulsar-dev-worker "$IMAGE"
+          docker pull docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.8.0
+          kind load docker-image --name pulsar-dev docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.8.0
+          helm repo add streamnative https://charts.streamnative.io
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo update
+          kubectl create namespace sn-system
+          helm install pulsar-operators --namespace sn-system streamnative/pulsar-operator
+          helm install cert-manager --namespace sn-system jetstack/cert-manager --set installCRDs=true
+          df -h
+
+
+      - name: Setup Operators
+        run: |
+          make docker-build
+          kind load docker-image --name pulsar-dev controller:latest
+          make deploy
+          kubectl get crds
+          kubectl wait --for condition=available --timeout=360s deployment/pulsar-resources-operator-controller-manager -npulsar-resources-operator-system
+          df -h
+
+      - name: Run Operator Test
+        run: |
+          cd tests
+          ~/go/bin/ginkgo --trace --progress ./operator

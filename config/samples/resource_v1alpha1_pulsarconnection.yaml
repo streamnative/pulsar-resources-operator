@@ -1,3 +1,5 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
