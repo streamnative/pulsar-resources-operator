@@ -1,3 +1,5 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
 resources:
 - manager.yaml
 

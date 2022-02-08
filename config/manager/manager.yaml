@@ -1,3 +1,5 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
 apiVersion: v1
 kind: Namespace
 metadata:
