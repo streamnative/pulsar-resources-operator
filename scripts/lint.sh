@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
 
 #!/usr/bin/env bash
 # exit immediately when a command fails

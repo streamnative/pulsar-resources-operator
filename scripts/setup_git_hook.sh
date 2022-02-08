@@ -1,5 +1,5 @@
 #!/usr/bin/bash
-# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
 
 # Install husky locally
 npm install husky -D

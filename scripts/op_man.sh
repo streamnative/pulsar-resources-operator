@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
 
 set -euo pipefail
 
