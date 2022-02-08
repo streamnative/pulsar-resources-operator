@@ -107,7 +107,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build -t ${IMG} . --build-arg ACCESS_TOKEN=${ACCESS_TOKEN}
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
