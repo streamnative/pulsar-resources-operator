@@ -12,8 +12,7 @@ import (
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
+	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.) to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
@@ -21,7 +20,6 @@ import (
 	k8szap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	//+kubebuilder:scaffold:imports
-
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/controllers"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -65,11 +63,6 @@ func main() {
 	}
 
 	ctrl.SetLogger(k8szap.New(k8szap.UseFlagOptions(&opts), k8szap.Encoder(encoder)))
-
-	// if err := trace.InitTracingProvider(); err != nil {
-	// 	setupLog.Error(err, "unable to set cloud tracing provider")
-	// 	os.Exit(1)
-	// }
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:             scheme,
