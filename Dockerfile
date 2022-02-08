@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM golang:1.16-alpine as builder
+FROM golang:1.17-alpine as builder
 
 ARG ACCESS_TOKEN="none"
 
