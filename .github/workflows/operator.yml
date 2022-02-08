@@ -1,0 +1,42 @@
+# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+
+name: Precommit - Resources Operator
+on:
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - './**'
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/streamnative
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+    steps:
+
+    - name: Set up Go 1.16
+      uses: actions/setup-go@v1
+      with:
+        go-version: 1.16
+      id: go
+
+    - name: Set up Git token
+      run: |
+        git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v1
+
+    - name: Install kubebuilder
+      run: |
+        ./scripts/op_man.sh kubebuilder
+        ls -l bin
+        sudo mv bin/kubebuilder /usr/local/kubebuilder
+
+    - name: Run build image and tests
+      run: |
+        cd pulsar-operator
+        make docker-build
+
