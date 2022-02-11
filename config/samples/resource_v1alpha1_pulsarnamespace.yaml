@@ -4,5 +4,19 @@ apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarNamespace
 metadata:
   name: pulsarnamespace-sample
+  namespace: pulsar
 spec:
-  # TODO(user): Add fields here
+  name: tenant-one/testns
+  connectionRef:
+    name: pulsarconnection-sample
+  backlogQuotaLimitSize: 1Gi
+  backlogQuotaLimitTime: 2h
+  backlogQuotaRetentionPolicy: producer_request_hold
+  bundles: 16
+  messageTTL: 1h
+  maxProducersPerTopic: 2
+  maxConsumersPerTopic: 12
+  maxConsumersPerSubscription: 4
+  retentionTime: 20h
+  retentionSize: 2Gi
+  lifecyclePolicy: CleanUpAfterDeletion

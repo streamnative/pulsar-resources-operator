@@ -4,5 +4,15 @@ apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarTenant
 metadata:
   name: pulsartenant-sample
+  namespace: pulsar
 spec:
-  # TODO(user): Add fields here
+  name: tenant-one
+  connectionRef:
+    name: pulsarconnection-sample
+  adminRoles:
+  - admin
+  - ops
+  - devops
+  # allowedClusters:
+  # - c-sn-platform
+  lifecyclePolicy: CleanUpAfterDeletion

@@ -3,6 +3,35 @@
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarPermission
 metadata:
-  name: pulsarpermission-sample
+  name: pulsarpermission-namespace
+  namespace: pulsar
 spec:
-  # TODO(user): Add fields here
+  connectionRef:
+    name: pulsarconnection-sample
+  resourceType: namespace
+  resourceName: tenant-one/testns
+  lifecyclePolicy: CleanUpAfterDeletion
+  roles:
+  - ironman
+  actions:
+  - produce
+  - consume
+
+---
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarPermission
+metadata:
+  name: pulsarpermission-topic
+  namespace: pulsar
+spec:
+  connectionRef:
+    name: pulsarconnection-sample
+  resourceType: topic
+  resourceName: persistent://tenant-one/testns/topic123
+  lifecyclePolicy: CleanUpAfterDeletion
+  roles:
+  - superman
+  actions:
+  - produce
+  - consume
+  - functions

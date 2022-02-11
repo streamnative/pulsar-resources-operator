@@ -4,5 +4,11 @@ apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
   name: pulsarconnection-sample
+  namespace: pulsar
 spec:
-  # TODO(user): Add fields here
+  adminServiceURL: http://c-sn-platform-broker.pulsar.svc.cluster.local:8080
+  authentication:
+    token:
+      secretRef:
+        name: c-sn-platform-vault-secret-env-injection
+        key: brokerClientAuthenticationParameters
