@@ -1,0 +1,55 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+-?*'
+
+jobs:
+  build:
+    name: Build image and bundle
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: github.com/streamnative
+      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      IMAGE_TAG_BASE: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
+
+    steps:
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.17
+        id: go
+
+      - name: Set up Git token
+        run: |
+          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v2
+
+      - name: Setup operator-sdk
+        run: |
+          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.17.0/operator-sdk_linux_amd64 -O operator-sdk
+          chmod +x operator-sdk
+          mv operator-sdk /usr/local/bin/
+          operator-sdk version
+
+      - name: Login to CloudSmith
+        uses: docker/login-action@v1
+        with:
+          registry: docker.cloudsmith.io
+          username: ${{ secrets.CLOUDSMITH_USERNAME }}
+          password: ${{ secrets.CLOUDSMITH_PASSWORD }}
+
+      - name: Build
+        run: |
+          _tag_version=${GITHUB_REF##*/}
+          export VERSION=${_tag_version/v/}
+          echo $_tag_version, $VERSION
+          export IMG=$IMAGE_TAG_BASE:v$VERSION
+          make docker-build
+          make docker-push
+          make bundle
+          make bundle-build
+          make bundle-push
