@@ -1,5 +1,3 @@
-# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
-
 apiVersion: operators.coreos.com/v1alpha1
 kind: ClusterServiceVersion
 metadata:
@@ -37,7 +35,7 @@ spec:
       kind: PulsarTopic
       name: pulsartopics.resource.streamnative.io
       version: v1alpha1
-  description: pulsar resources operator
+  description: Create pulsar resources by defining manifests
   displayName: Pulsar Resources Operator
   icon:
   - base64data: ""
@@ -56,8 +54,8 @@ spec:
   - supported: true
     type: AllNamespaces
   keywords:
-  - resources
   - pulsar
+  - resources
   - streamnative
   links:
   - name: Pulsar Resources Operator
