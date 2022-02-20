@@ -220,3 +220,10 @@ catalog-build: opm ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+# Setup husky for git hook
+.PHONY: husky
+husky:
+	npm install husky -D
+	npm run prepare
+
