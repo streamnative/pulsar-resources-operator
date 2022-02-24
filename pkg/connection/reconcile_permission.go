@@ -82,12 +82,14 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 			log.Info("Revoking permission", "LifecyclePolicy", permission.Spec.LifecyclePolicy)
 
 			if err := pulsarAdmin.RevokePermissions(per); err != nil && admin.IsNotFound(err) {
+				log.Error(err, "Failed to delete namespace", "Namespace", permission.Namespace, "Name", permission.Name)
 				return err
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
+			r.conn.log.Error(err, "Failed to remove finalizer", "Namespace", permission.Namespace, "Name", permission.Name)
 			return err
 		}
 		return nil
@@ -97,11 +99,13 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
+			r.conn.log.Error(err, "Failed to add finalizer", "Namespace", permission.Namespace, "Name", permission.Name)
 			return err
 		}
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(permission) {
+		r.conn.log.V(1).Info("Resource is ready", "Namespace", permission.Namespace, "Name", permission.Name)
 		return nil
 	}
 
@@ -111,7 +115,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		log.Error(err, "Grant permission failed", "Name", permission.Name, "Error", err)
 		meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
 		if err := r.conn.client.Status().Update(ctx, permission); err != nil {
-			log.Error(err, "Failed to update PulsarPermission status", "Namespace", r.conn.connection.Namespace,
+			log.Error(err, "Failed to update permission status", "Namespace", permission.Namespace,
 				"Name", permission.Name)
 			return err
 		}
@@ -121,6 +125,8 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	permission.Status.ObservedGeneration = permission.Generation
 	meta.SetStatusCondition(&permission.Status.Conditions, *NewReadyCondition(permission.Generation))
 	if err := r.conn.client.Status().Update(ctx, permission); err != nil {
+		log.Error(err, "Failed to update permission status", "Namespace", permission.Namespace,
+			"Name", permission.Name)
 		return err
 	}
 

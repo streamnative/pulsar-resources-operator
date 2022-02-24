@@ -64,6 +64,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	if !tenant.DeletionTimestamp.IsZero() {
 		if tenant.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && admin.IsNotFound(err) {
+				r.conn.log.Error(err, "Failed to delete tenant", "Namespace", tenant.Namespace, "Name", tenant.Name)
 				return err
 			}
 		}
@@ -71,6 +72,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(tenant, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, tenant); err != nil {
+			r.conn.log.Error(err, "Failed to remove finalizer", "Namespace", tenant.Namespace, "Name", tenant.Name)
 			return err
 		}
 
@@ -80,10 +82,12 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 	controllerutil.AddFinalizer(tenant, resourcev1alpha1.FinalizerName)
 	if err := r.conn.client.Update(ctx, tenant); err != nil {
+		r.conn.log.Error(err, "Failed to add finalizer", "Namespace", tenant.Namespace, "Name", tenant.Name)
 		return err
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(tenant) {
+		r.conn.log.V(1).Info("Resource is ready", "Namespace", tenant.Namespace, "Name", tenant.Name)
 		return nil
 	}
 
@@ -93,9 +97,10 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	}
 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {
 		meta.SetStatusCondition(&tenant.Status.Conditions, *NewErrorCondition(tenant.Generation, err.Error()))
+		r.conn.log.Error(err, "Failed to apply tenant", "Namespace", tenant.Namespace, "Name", tenant.Name)
 		if err := r.conn.client.Status().Update(ctx, tenant); err != nil {
-			r.conn.log.Error(err, "Failed to update connection status", "Namespace", r.conn.connection.Namespace,
-				"Name", r.conn.connection.Name)
+			r.conn.log.Error(err, "Failed to update the tenant status", "Namespace", tenant.Namespace,
+				"Name", tenant.Name)
 			return nil
 		}
 		return err
@@ -104,6 +109,8 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	tenant.Status.ObservedGeneration = tenant.Generation
 	meta.SetStatusCondition(&tenant.Status.Conditions, *NewReadyCondition(tenant.Generation))
 	if err := r.conn.client.Status().Update(ctx, tenant); err != nil {
+		r.conn.log.Error(err, "Failed to update the tenant status", "Namespace", tenant.Namespace,
+			"Name", tenant.Name)
 		return err
 	}
 

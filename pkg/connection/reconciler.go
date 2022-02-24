@@ -106,6 +106,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 	r.pulsarAdmin, err = r.creator(*pulsarConfig)
 	if err != nil {
+		r.log.Error(err, "create pulsar admin", "Namespace", r.connection.Namespace, "Name", r.connection.Name)
 		return err
 	}
 	defer func() {
