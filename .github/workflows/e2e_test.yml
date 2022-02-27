@@ -7,7 +7,7 @@ on:
     branches:
       - '*'
     paths:
-      - './**'
+      - '**.go'
       - '.github/workflows/**'
 jobs:
   e2e-test:
