@@ -31,8 +31,7 @@ func makePermissionsReconciler(r *PulsarConnectionReconciler) commonsreconciler.
 
 // Observe checks the updates of object
 func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
-	log := r.log.WithValues("Observe Namespace", r.conn.connection.Namespace)
-	log.V(1).Info("Start Observe")
+	r.log.V(1).Info("Start Observe")
 
 	permissionList := &resourcev1alpha1.PulsarPermissionList{}
 	if err := r.conn.client.List(ctx, permissionList, client.InNamespace(r.conn.connection.Namespace),
@@ -41,7 +40,7 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 		})); err != nil {
 		return fmt.Errorf("list permission [%w]. connection[%s]", err, r.conn.connection.Name)
 	}
-	log.V(1).Info("Observed permissions items", "Count", len(permissionList.Items))
+	r.log.V(1).Info("Observed permissions items", "Count", len(permissionList.Items))
 	r.conn.permissions = permissionList.Items
 
 	if !r.conn.hasUnreadyResource {
@@ -53,7 +52,7 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 		}
 	}
 
-	log.V(1).Info("Observe Done")
+	r.log.V(1).Info("Observe Done")
 	return nil
 }
 
@@ -72,7 +71,7 @@ func (r *PulsarPermissionReconciler) Reconcile(ctx context.Context) error {
 // ReconcilePermission move the current state of the toic closer to the desired state
 func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	permission *resourcev1alpha1.PulsarPermission) error {
-	log := r.log.WithValues("PulsarPermission", permission.Name)
+	log := r.log.WithValues("pulsarpermission", permission.Name, "namespace", permission.Namespace)
 	log.V(1).Info("Start Reconcile")
 
 	per := GetPermissioner(permission)
@@ -82,12 +81,14 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 			log.Info("Revoking permission", "LifecyclePolicy", permission.Spec.LifecyclePolicy)
 
 			if err := pulsarAdmin.RevokePermissions(per); err != nil && admin.IsNotFound(err) {
+				log.Error(err, "Failed to revoke permission")
 				return err
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
+			r.conn.log.Error(err, "Failed to remove finalizer")
 			return err
 		}
 		return nil
@@ -97,22 +98,23 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
+			r.conn.log.Error(err, "Failed to add finalizer")
 			return err
 		}
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(permission) {
+		r.conn.log.V(1).Info("Resource is ready")
 		return nil
 	}
 
 	log.V(1).Info("Granting permission", "ResourceName", permission.Spec.ResourceName,
 		"ResourceType", permission.Spec.ResoureType, "Roles", permission.Spec.Roles, "Actions", permission.Spec.Actions)
 	if err := pulsarAdmin.GrantPermissions(per); err != nil {
-		log.Error(err, "Grant permission failed", "Name", permission.Name, "Error", err)
+		log.Error(err, "Grant permission failed")
 		meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
 		if err := r.conn.client.Status().Update(ctx, permission); err != nil {
-			log.Error(err, "Failed to update PulsarPermission status", "Namespace", r.conn.connection.Namespace,
-				"Name", permission.Name)
+			log.Error(err, "Failed to update permission status")
 			return err
 		}
 		return err
@@ -121,6 +123,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	permission.Status.ObservedGeneration = permission.Generation
 	meta.SetStatusCondition(&permission.Status.Conditions, *NewReadyCondition(permission.Generation))
 	if err := r.conn.client.Status().Update(ctx, permission); err != nil {
+		log.Error(err, "Failed to update permission status")
 		return err
 	}
 

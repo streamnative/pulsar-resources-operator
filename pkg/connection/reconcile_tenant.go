@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -18,16 +19,20 @@ import (
 // PulsarTenantReconciler reconciles a PulsarTenant object
 type PulsarTenantReconciler struct {
 	conn *PulsarConnectionReconciler
+	log  logr.Logger
 }
 
 func makeTenantsReconciler(r *PulsarConnectionReconciler) commonsreconciler.Interface {
 	return &PulsarTenantReconciler{
 		conn: r,
+		log:  r.log.WithName("PulsarTenant"),
 	}
 }
 
 // Observe checks the updates of object
 func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
+	r.log.V(1).Info("Start Observe")
+
 	tenantList := &resourcev1alpha1.PulsarTenantList{}
 	if err := r.conn.client.List(ctx, tenantList, client.InNamespace(r.conn.connection.Namespace),
 		client.MatchingFields(map[string]string{
@@ -35,6 +40,8 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 		})); err != nil {
 		return fmt.Errorf("list tenants [%w]", err)
 	}
+	r.log.V(1).Info("Observed tenants items", "Count", len(tenantList.Items))
+
 	r.conn.tenants = tenantList.Items
 	if !r.conn.hasUnreadyResource {
 		for i := range r.conn.tenants {
@@ -44,6 +51,8 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 			}
 		}
 	}
+
+	r.log.V(1).Info("Observe Done")
 	return nil
 }
 
@@ -61,9 +70,14 @@ func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
 // ReconcileTenant move the current state of the toic closer to the desired state
 func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	tenant *resourcev1alpha1.PulsarTenant) error {
+	log := r.log.WithValues("pulsartenant", tenant.Name, "namespace", tenant.Namespace)
+	log.V(1).Info("Start Reconcile")
+
 	if !tenant.DeletionTimestamp.IsZero() {
+		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
 		if tenant.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && admin.IsNotFound(err) {
+				log.Error(err, "Failed to delete tenant")
 				return err
 			}
 		}
@@ -71,6 +85,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(tenant, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, tenant); err != nil {
+			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
 
@@ -80,10 +95,12 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 	controllerutil.AddFinalizer(tenant, resourcev1alpha1.FinalizerName)
 	if err := r.conn.client.Update(ctx, tenant); err != nil {
+		log.Error(err, "Failed to add finalizer")
 		return err
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(tenant) {
+		log.V(1).Info("Resource is ready")
 		return nil
 	}
 
@@ -93,9 +110,9 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	}
 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {
 		meta.SetStatusCondition(&tenant.Status.Conditions, *NewErrorCondition(tenant.Generation, err.Error()))
+		log.Error(err, "Failed to apply tenant")
 		if err := r.conn.client.Status().Update(ctx, tenant); err != nil {
-			r.conn.log.Error(err, "Failed to update connection status", "Namespace", r.conn.connection.Namespace,
-				"Name", r.conn.connection.Name)
+			log.Error(err, "Failed to update the tenant status")
 			return nil
 		}
 		return err
@@ -104,6 +121,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	tenant.Status.ObservedGeneration = tenant.Generation
 	meta.SetStatusCondition(&tenant.Status.Conditions, *NewReadyCondition(tenant.Generation))
 	if err := r.conn.client.Status().Update(ctx, tenant); err != nil {
+		log.Error(err, "Failed to update the tenant status")
 		return err
 	}
 
