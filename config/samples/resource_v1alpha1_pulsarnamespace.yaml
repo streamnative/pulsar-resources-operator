@@ -12,6 +12,8 @@ spec:
   backlogQuotaLimitSize: 1Gi
   backlogQuotaLimitTime: 2h
   backlogQuotaRetentionPolicy: producer_request_hold
+  # default is destination_storage
+  # backlogQuotaType: message_age
   bundles: 16
   messageTTL: 1h
   maxProducersPerTopic: 2
