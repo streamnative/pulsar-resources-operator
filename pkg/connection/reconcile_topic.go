@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -19,16 +20,20 @@ import (
 // PulsarTopicReconciler reconciles a PulsarTopic object
 type PulsarTopicReconciler struct {
 	conn *PulsarConnectionReconciler
+	log  logr.Logger
 }
 
 func makeTopicsReconciler(r *PulsarConnectionReconciler) commonsreconciler.Interface {
 	return &PulsarTopicReconciler{
 		conn: r,
+		log:  r.log.WithName("PulsarTopic"),
 	}
 }
 
 // Observe checks the updates of object
 func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
+	r.log.V(1).Info("Start Observe")
+
 	topicsList := &resourcev1alpha1.PulsarTopicList{}
 	if err := r.conn.client.List(ctx, topicsList, client.InNamespace(r.conn.connection.Namespace),
 		client.MatchingFields(map[string]string{
@@ -36,6 +41,8 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 		})); err != nil {
 		return fmt.Errorf("list topics [%w]", err)
 	}
+	r.log.V(1).Info("Observed topic items", "Count", len(topicsList.Items))
+
 	r.conn.topics = topicsList.Items
 	if !r.conn.hasUnreadyResource {
 		for i := range r.conn.topics {
@@ -45,6 +52,8 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 			}
 		}
 	}
+
+	r.log.V(1).Info("Observe Done")
 	return nil
 }
 
@@ -62,10 +71,14 @@ func (r *PulsarTopicReconciler) Reconcile(ctx context.Context) error {
 // ReconcileTopic move the current state of the toic closer to the desired state
 func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	topic *resourcev1alpha1.PulsarTopic) error {
+	log := r.log.WithValues("pulsartopic", topic.Name, "namespace", topic.Namespace)
+	log.V(1).Info("Start Reconcile")
+
 	if !topic.DeletionTimestamp.IsZero() {
+		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
 		if topic.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteTopic(topic.Spec.Name); err != nil && admin.IsNotFound(err) {
-				r.conn.log.Error(err, "Failed to delete topic", "Namespace", topic.Namespace, "Name", topic.Name)
+				log.Error(err, "Failed to delete topic")
 				return err
 			}
 		}
@@ -73,7 +86,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(topic, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, topic); err != nil {
-			r.conn.log.Error(err, "Failed to remove finalizer", "Namespace", topic.Namespace, "Name", topic.Name)
+			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
 		return nil
@@ -83,13 +96,13 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(topic, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, topic); err != nil {
-			r.conn.log.Error(err, "Failed to add finalizer", "Namespace", topic.Namespace, "Name", topic.Name)
+			log.Error(err, "Failed to add finalizer")
 			return err
 		}
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(topic) {
-		r.conn.log.V(1).Info("Resource is ready", "Namespace", topic.Namespace, "Name", topic.Name)
+		log.V(1).Info("Resource is ready")
 		return nil
 	}
 
@@ -111,10 +124,9 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	r.applyDefault(params)
 	if err := pulsarAdmin.ApplyTopic(topic.Spec.Name, params); err != nil {
 		meta.SetStatusCondition(&topic.Status.Conditions, *NewErrorCondition(topic.Generation, err.Error()))
-		r.conn.log.Error(err, "Failed to apply topic", "Namespace", topic.Namespace, "Name", topic.Name)
+		log.Error(err, "Failed to apply topic")
 		if err := r.conn.client.Status().Update(ctx, topic); err != nil {
-			r.conn.log.Error(err, "Failed to update the topic status", "Namespace", topic.Namespace,
-				"Name", topic.Name)
+			log.Error(err, "Failed to update the topic status")
 			return nil
 		}
 		return err
@@ -123,8 +135,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	topic.Status.ObservedGeneration = topic.Generation
 	meta.SetStatusCondition(&topic.Status.Conditions, *NewReadyCondition(topic.Generation))
 	if err := r.conn.client.Status().Update(ctx, topic); err != nil {
-		r.conn.log.Error(err, "Failed to update the topic status", "Namespace", topic.Namespace,
-			"Name", topic.Name)
+		log.Error(err, "Failed to update the topic status")
 		return err
 	}
 	return nil

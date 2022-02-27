@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -18,16 +19,20 @@ import (
 // PulsarNamespaceReconciler reconciles a PulsarNamespace object
 type PulsarNamespaceReconciler struct {
 	conn *PulsarConnectionReconciler
+	log  logr.Logger
 }
 
 func makeNamespacesReconciler(r *PulsarConnectionReconciler) commonsreconciler.Interface {
 	return &PulsarNamespaceReconciler{
 		conn: r,
+		log:  r.log.WithName("PulsarNamespace"),
 	}
 }
 
 // Observe checks the updates of object
 func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
+	r.log.V(1).Info("Start Observe")
+
 	namespaceList := &resourcev1alpha1.PulsarNamespaceList{}
 	if err := r.conn.client.List(ctx, namespaceList, client.InNamespace(r.conn.connection.Namespace),
 		client.MatchingFields(map[string]string{
@@ -35,6 +40,8 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 		})); err != nil {
 		return fmt.Errorf("list namespaces [%w]", err)
 	}
+	r.log.V(1).Info("Observed namespace items", "Count", len(namespaceList.Items))
+
 	r.conn.namespaces = namespaceList.Items
 	if !r.conn.hasUnreadyResource {
 		for i := range r.conn.namespaces {
@@ -44,6 +51,8 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 			}
 		}
 	}
+
+	r.log.V(1).Info("Observe Done")
 	return nil
 }
 
@@ -61,17 +70,21 @@ func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
 // ReconcileNamespace move the current state of the toic closer to the desired state
 func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	namespace *resourcev1alpha1.PulsarNamespace) error {
+	log := r.log.WithValues("pulsarnamespace", namespace.Name, "namespace", namespace.Namespace)
+	log.V(1).Info("Start Reconcile")
+
 	if !namespace.DeletionTimestamp.IsZero() {
+		log.Info("Deleting namespace", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
 		if namespace.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && admin.IsNotFound(err) {
-				r.conn.log.Error(err, "Failed to delete namespace", "Namespace", namespace.Namespace, "Name", namespace.Name)
+				log.Error(err, "Failed to delete namespace")
 				return err
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(namespace, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, namespace); err != nil {
-			r.conn.log.Error(err, "Failed to remove finalizer", "Namespace", namespace.Namespace, "Name", namespace.Name)
+			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
 
@@ -82,13 +95,13 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(namespace, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, namespace); err != nil {
-			r.conn.log.Error(err, "Failed to add finalizer", "Namespace", namespace.Namespace, "Name", namespace.Name)
+			log.Error(err, "Failed to add finalizer")
 			return err
 		}
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(namespace) {
-		r.conn.log.V(1).Info("Resource is ready", "Namespace", namespace.Namespace, "Name", namespace.Name)
+		log.V(1).Info("Resource is ready")
 		return nil
 	}
 
@@ -107,10 +120,9 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 
 	if err := pulsarAdmin.ApplyNamespace(namespace.Spec.Name, params); err != nil {
 		meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
-		r.conn.log.Error(err, "Failed to apply namespace", "Namespace", namespace.Namespace, "Name", namespace.Name)
+		log.Error(err, "Failed to apply namespace")
 		if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
-			r.conn.log.Error(err, "Failed to update the namespace status", "Namespace", namespace.Namespace,
-				"Name", namespace.Name)
+			log.Error(err, "Failed to update the namespace status")
 			return nil
 		}
 		return err
@@ -119,8 +131,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 	namespace.Status.ObservedGeneration = namespace.Generation
 	meta.SetStatusCondition(&namespace.Status.Conditions, *NewReadyCondition(namespace.Generation))
 	if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
-		r.conn.log.Error(err, "Failed to update the namespace status", "Namespace", namespace.Namespace,
-			"Name", namespace.Name)
+		log.Error(err, "Failed to update the namespace status")
 		return err
 	}
 
