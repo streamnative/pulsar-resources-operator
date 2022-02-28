@@ -289,9 +289,7 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 			LimitSize: backlogSize,
 			Policy:    pulsarutils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
 		}
-		// TODO After upgrade pulsarctl to latest version. It should be expose to spec of PulsarNamespace
-		// SetBacklogQuota has a new parameter BacklogQuotaType, use pulsarutils.DestinationStorage by default
-		//
+
 		var backlogQuotaType pulsarutils.BacklogQuotaType
 		if params.BacklogQuotaType != nil {
 			backlogQuotaType, err = pulsarutils.ParseBacklogQuotaType(*params.BacklogQuotaType)
