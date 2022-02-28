@@ -11,9 +11,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
 
 // PulsarNamespaceReconciler reconciles a PulsarNamespace object
@@ -22,7 +22,7 @@ type PulsarNamespaceReconciler struct {
 	log  logr.Logger
 }
 
-func makeNamespacesReconciler(r *PulsarConnectionReconciler) commonsreconciler.Interface {
+func makeNamespacesReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarNamespaceReconciler{
 		conn: r,
 		log:  r.log.WithName("PulsarNamespace"),

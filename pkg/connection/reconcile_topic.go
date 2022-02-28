@@ -12,9 +12,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
 
 // PulsarTopicReconciler reconciles a PulsarTopic object
@@ -23,7 +23,7 @@ type PulsarTopicReconciler struct {
 	log  logr.Logger
 }
 
-func makeTopicsReconciler(r *PulsarConnectionReconciler) commonsreconciler.Interface {
+func makeTopicsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarTopicReconciler{
 		conn: r,
 		log:  r.log.WithName("PulsarTopic"),

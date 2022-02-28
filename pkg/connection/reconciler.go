@@ -15,9 +15,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
@@ -33,14 +33,14 @@ type PulsarConnectionReconciler struct {
 	hasUnreadyResource bool
 
 	pulsarAdmin admin.PulsarAdmin
-	reconcilers []commonsreconciler.Interface
+	reconcilers []reconciler.Interface
 }
 
-var _ commonsreconciler.Interface = &PulsarConnectionReconciler{}
+var _ reconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
-	connection *resourcev1alpha1.PulsarConnection) commonsreconciler.Interface {
+	connection *resourcev1alpha1.PulsarConnection) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:                log,
 		connection:         connection,
@@ -48,7 +48,7 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		client:             k8sClient,
 		hasUnreadyResource: false,
 	}
-	r.reconcilers = []commonsreconciler.Interface{
+	r.reconcilers = []reconciler.Interface{
 		makeTenantsReconciler(r),
 		makeNamespacesReconciler(r),
 		makeTopicsReconciler(r),

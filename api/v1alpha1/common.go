@@ -8,7 +8,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	commonsreconciler "github.com/streamnative/pulsar-operators/commons/pkg/controller/reconciler"
+	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
 
 // SecretKeyRef indicates a secret name and key
@@ -59,7 +59,7 @@ type PulsarAuthenticationOAuth2 struct {
 // 1. The instance is not deleted
 // 2. Status ObservedGeneration is equal with meta.ObservedGeneration
 // 3. StatusCondition Ready is true
-func IsPulsarResourceReady(instance commonsreconciler.Object) bool {
+func IsPulsarResourceReady(instance reconciler.Object) bool {
 	objVal := reflect.ValueOf(instance).Elem()
 	stVal := objVal.FieldByName("Status")
 
