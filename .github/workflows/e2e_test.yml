@@ -70,6 +70,10 @@ jobs:
           df -h
 
 
+      - uses: actions/checkout@v2
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+
       - name: Setup Operators
         run: |
           make docker-build
