@@ -66,6 +66,7 @@ jobs:
           kubectl create namespace sn-system
           helm install pulsar-operators --namespace sn-system streamnative/pulsar-operator
           helm install cert-manager --namespace sn-system jetstack/cert-manager --set installCRDs=true
+          helm install test streamnative/sn-platform --set initialize=true,auth.authentication.enabled=false,auth.authorization.enabled=false,components.toolset=false,components.vault=false,components.pulsar_detector=false,components.streamnative_console=false,monitoring.prometheus=false,monitoring.grafana=false,monitoring.node_exporter=false,monitoring.alert_manager=false
           df -h
 
 

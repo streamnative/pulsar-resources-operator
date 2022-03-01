@@ -1,6 +1,15 @@
 # tests
 
-tests is an individul module beside resources operator, because it depends on specific version of ginkgo, the version is conflict with the version of ginkgo which controller-runtime used
-
+tests is an individul module beside pulsar resources operator
 
 `go mod tidy` to download modules for tests
+
+
+# Requirements
+- Pulsar Operator installed
+- A pulsar cluster installed without authentication and authorization
+
+
+# Run tests
+
+`ginkgo --trace --progress ./operator`
