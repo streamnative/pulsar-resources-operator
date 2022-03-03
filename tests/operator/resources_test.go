@@ -9,7 +9,6 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/apps/v1"
-	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
 
@@ -33,7 +32,6 @@ var _ = Describe("Resources", func() {
 		ptopic              *v1alphav1.PulsarTopic
 		ptopicName          string = "test-topic"
 		topicName           string = "persistent://cloud/stage/user"
-		nodePort            int32  = 30080
 		ppermission         *v1alphav1.PulsarPermission
 		ppermissionName     string = "test-permission"
 	)
@@ -81,17 +79,6 @@ var _ = Describe("Resources", func() {
 				}, "600s", "100ms").Should(BeTrue())
 			})
 
-			It("should create NodePort service successfully", func() {
-				svc := &corev1.Service{}
-				err := k8sClient.Get(ctx, types.NamespacedName{
-					Name:      fmt.Sprintf("%s-proxy-external", proxyName),
-					Namespace: namespaceName,
-				}, svc)
-
-				Expect(err).Should(Succeed())
-				Expect(svc.Spec.Type == corev1.ServiceTypeNodePort).Should(BeTrue())
-				Expect(svc.Spec.Ports[1].NodePort == nodePort).Should(BeTrue())
-			})
 		})
 
 		Context("PulsarConnection operation", func() {
