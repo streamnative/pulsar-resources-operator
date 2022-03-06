@@ -33,6 +33,7 @@ type NamespaceParams struct {
 	BacklogQuotaLimitTime       *metav1.Duration
 	BacklogQuotaLimitSize       *resource.Quantity
 	BacklogQuotaRetentionPolicy *string
+	BacklogQuotaType            *string
 }
 
 // TopicParams indicates the parameters for creating a topic

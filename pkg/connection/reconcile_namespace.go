@@ -116,6 +116,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaLimitTime:       namespace.Spec.BacklogQuotaLimitTime,
 		BacklogQuotaLimitSize:       namespace.Spec.BacklogQuotaLimitSize,
 		BacklogQuotaRetentionPolicy: namespace.Spec.BacklogQuotaRetentionPolicy,
+		BacklogQuotaType:            namespace.Spec.BacklogQuotaType,
 	}
 
 	if err := pulsarAdmin.ApplyNamespace(namespace.Spec.Name, params); err != nil {

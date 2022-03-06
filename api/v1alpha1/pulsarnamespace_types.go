@@ -61,6 +61,13 @@ type PulsarNamespaceSpec struct {
 
 	// +optional
 	BacklogQuotaRetentionPolicy *string `json:"backlogQuotaRetentionPolicy,omitempty"`
+
+	// BacklogQuotaType controls the backlog by setting the type to destination_storage or message_age
+	// destination_storage limits backlog by size (in bytes). message_age limits backlog by time,
+	// that is, message timestamp (broker or publish timestamp)
+	// +kubebuilder:validation:Enum=destination_storage;message_age
+	// +optional
+	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace
