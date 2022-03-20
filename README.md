@@ -66,10 +66,10 @@ To install the Pulsar Resources Operator, follow these steps.
 
 To upgrade the operator, execute the following command.
 
-    ```shell
-    helm repo update
-    helm -n <k8s-namespace> upgrade <release-name> streamnative/pulsar-resources-operator
-    ```
+```shell
+helm repo update
+helm -n <k8s-namespace> upgrade <release-name> streamnative/pulsar-resources-operator
+```
 
 ## Uninstall Pulsar Resources Operator
 

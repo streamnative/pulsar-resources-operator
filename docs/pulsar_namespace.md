@@ -65,8 +65,10 @@ test-pulsar-namespace   test-tenant/testns              1                       
 
 ## Update PulsarNamespace
 
-You can update the namespace policies by editing the namespace.yaml, then apply if again. Please be noticed:
-The field `name` and `bundles` couldn’t be updated.
+You can update the namespace policies by editing the namespace.yaml, then apply if again. 
+
+Please be noticed:
+1. The field `name` and `bundles` couldn’t be updated.
 
 ## Delete PulsarNamespace
 
