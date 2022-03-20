@@ -44,7 +44,7 @@ kubectl -n test get ptopic/pulsartopic
 
 ```shell
 NAME                 RESOURCE_NAME   GENERATION   OBSERVED_GENERATION   READY
-test-pulsar-tenant      test-tenant                      1                                   1                            True
+test-pulsar-tenant      test-tenant      1                1             True
 ```
 
 

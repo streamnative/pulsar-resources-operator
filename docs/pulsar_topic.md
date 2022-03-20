@@ -61,7 +61,7 @@ kubectl -n test get ptopic/pulsartopic
 
 ```shell
 NAME                   RESOURCE_NAME                              GENERATION   OBSERVED_GENERATION   READY
-test-pulsar-topic123   persistent://test-tenant/testns/topic123      1                         1                     True
+test-pulsar-topic123   persistent://test-tenant/testns/topic123   1            1                     True
 ```
 
 ## Update PulsarTopic

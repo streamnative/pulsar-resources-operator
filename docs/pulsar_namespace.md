@@ -60,7 +60,7 @@ kubectl -n test get pns/pulsarnamespace
 
 ```shell
 NAME                    RESOURCE_NAME        GENERATION   OBSERVED_GENERATION   READY
-test-pulsar-namespace   test-tenant/testns              1                                   1                               True
+test-pulsar-namespace   test-tenant/testns   1            1                     True
 ```
 
 ## Update PulsarNamespace

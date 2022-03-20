@@ -42,7 +42,7 @@ kubectl -n test get pconn/pulsarconnection
 
 ```shell
 NAME                     ADMIN_SERVICE_URL                                        GENERATION   OBSERVED_GENERATION   READY
-test-pulsar-connection   http://ok-sn-platform-broker.test.svc.cluster.local:8080   1            1                     True
+test-pulsar-connection   http://ok-sn-platform-broker.test.svc.cluster.local:8080 1            1                     True
 ```
 
 ## Update PulsarConnection
