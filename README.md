@@ -58,8 +58,8 @@ To install the Pulsar Resources Operator, follow these steps.
     Expected outputs:
 
     ```shell
-    NAME                                              READY   STATUS    RESTARTS   AGE
-    <release-name>-pulsar-resources-operator       1/1        Running            0           2m2s
+    NAME                                          READY       STATUS           RESTARTS      AGE
+    <release-name>-pulsar-resources-operator      1/1         Running          0             2m2s
     ```
 
 ## Upgrade Pulsar Resources Operator
