@@ -102,6 +102,21 @@ var _ = Describe("Resources", func() {
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "240s", "100ms").Should(BeTrue())
 			})
+
+			It("should update the pulsartenant successfully", func() {
+				ptenant.Spec.AdminRoles = append(ptenant.Spec.AdminRoles, "ironman")
+				err := k8sClient.Create(ctx, ptenant)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTenant{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: ptenantName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "240s", "100ms").Should(BeTrue())
+			})
 		})
 
 		Context("PulsarNamespace operation", func() {
