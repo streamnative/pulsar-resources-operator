@@ -19,6 +19,7 @@ import (
 type TenantParams struct {
 	AdminRoles      []string
 	AllowedClusters []string
+	Changed         bool
 }
 
 // NamespaceParams indicates the parameters for creating a namespace
@@ -54,7 +55,7 @@ type TopicParams struct {
 
 // PulsarAdmin is the interface that defines the functions to call pulsar admin
 type PulsarAdmin interface {
-	// ApplyTenant creates a tenant with parameters
+	// ApplyTenant creates or updates a tenant with parameters
 	ApplyTenant(name string, params *TenantParams) error
 
 	// DeleteTenant delete a specific tenant

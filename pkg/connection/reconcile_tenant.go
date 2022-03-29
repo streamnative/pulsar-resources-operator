@@ -108,12 +108,18 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		AdminRoles:      tenant.Spec.AdminRoles,
 		AllowedClusters: tenant.Spec.AllowedClusters,
 	}
+	// If ObeservedGeneration is greater than 1, means the tenant alreday been created
+	// So it will been updated in ApplyTenant
+	if tenant.Status.ObservedGeneration > 1 {
+		tenantParams.Changed = true
+	}
+
 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {
 		meta.SetStatusCondition(&tenant.Status.Conditions, *NewErrorCondition(tenant.Generation, err.Error()))
 		log.Error(err, "Failed to apply tenant")
 		if err := r.conn.client.Status().Update(ctx, tenant); err != nil {
 			log.Error(err, "Failed to update the tenant status")
-			return nil
+			return err
 		}
 		return err
 	}
