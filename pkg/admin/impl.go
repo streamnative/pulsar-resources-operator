@@ -30,7 +30,8 @@ const (
 	TopicDomainNonPersistent = "non-persistent"
 )
 
-// ApplyTenant creates a tenant, if AllowdClusters is not provided, it will list all clusters in pular
+// ApplyTenant creates or updates a tenant, if AllowdClusters is not provided, it will list all clusters in pular
+// When updates a tenant,  If AdminRoles is empty, the current set of roles won't be modified
 func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error {
 	param := pulsarutils.TenantData{
 		Name:       name,
@@ -50,9 +51,16 @@ func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error
 			param.AllowedClusters = clusters
 		}
 	}
-	err := p.adminClient.Tenants().Create(param)
-	if err != nil && !IsAlreadyExist(err) {
-		return err
+	if params.Changed {
+		err := p.adminClient.Tenants().Update(param)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := p.adminClient.Tenants().Create(param)
+		if err != nil && !IsAlreadyExist(err) {
+			return err
+		}
 	}
 	return nil
 }

@@ -47,6 +47,10 @@ NAME                 RESOURCE_NAME   GENERATION   OBSERVED_GENERATION   READY
 test-pulsar-tenant      test-tenant      1                1             True
 ```
 
+## Update PulsarTenant
+
+You can update the tenant by editing the tenant.yaml, then apply if again
+
 
 ## Delete PulsarTenant
 ```shell
