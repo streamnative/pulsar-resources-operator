@@ -8,7 +8,7 @@ on:
       - '*'
     paths:
       - '**.go'
-      - '.github/workflows/**'
+      - '.github/workflows/e2e_test.yml'
 jobs:
   e2e-test:
     name: E2e tests for Operators
