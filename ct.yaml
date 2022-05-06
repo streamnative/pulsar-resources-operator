@@ -1,10 +1,19 @@
 # Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
 
 # See https://github.com/helm/chart-testing#configuration
+
+# common parameters
 debug: true
-chart-dirs:
-  - charts/pulsar-resources-operator
-chart:
-  - charts/pulsar-resources-operator
-helm-extra-args: --timeout 600s
 validate-maintainers: false
+chart-dirs:
+  - charts
+
+# parameters for ct list-changed 
+remote: origin
+target-branch: main
+
+
+# parameters for ct lint
+chart:
+  - pulsar-resources-operator
+helm-extra-args: --timeout 600s
