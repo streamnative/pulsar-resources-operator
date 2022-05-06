@@ -1,0 +1,10 @@
+# Copyright (c) 2022 StreamNative, Inc.. All Rights Reserved.
+
+# See https://github.com/helm/chart-testing#configuration
+debug: true
+chart-dirs:
+  - charts/pulsar-resources-operator
+chart:
+  - charts/pulsar-resources-operator
+helm-extra-args: --timeout 600s
+validate-maintainers: false
