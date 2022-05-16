@@ -16,8 +16,10 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].image
           value: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+      - equal:
           path: spec.template.spec.containers[1].image
           value: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator:v0.0.1
+      - equal:
           path: spec.template.spec.containers[1].imagePullPolicy
           value: IfNotPresent
       - equal:
@@ -25,15 +27,19 @@ tests:
           value: 1
       - equal:
           path: spec.template.spec.containers[0].resources.requests.cpu
-          value: 5m 
+          value: 5m
+      - equal:
           path: spec.template.spec.containers[0].resources.requests.memory
           value: 64Mi
+      - equal:
           path: spec.template.spec.containers[0].resources.limits.cpu
-          value: 500m 
+          value: 500m
+      - equal:
           path: spec.template.spec.containers[0].resources.limits.memory
           value: 128Mi
       - isNull:
           path: spec.template.spec.containers[1].resources.requests
+      - isNull:
           path: spec.template.spec.containers[1].resources.limits
 
   - it: should update the image version successfully
@@ -59,6 +65,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[1].resources.requests.cpu
-          value: 10m 
+          value: 10m
+      - equal:
           path: spec.template.spec.containers[1].resources.requests.memory
           value: 128Mi
