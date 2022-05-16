@@ -10,5 +10,5 @@ roleRef:
   name: '{{ include "pulsar-resources-operator.clusterRoleManagerName" . }}'
 subjects:
 - kind: ServiceAccount
-  name : {{ include "pulsar-resources-operator.serviceAccountName" . }}
+  name: {{ include "pulsar-resources-operator.serviceAccountName" . }}
   namespace: {{ include "pulsar-resources-operator.namespace" .}}
