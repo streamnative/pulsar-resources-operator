@@ -25,10 +25,10 @@ jobs:
     name: check license header
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Setup tmate session
+    - uses: actions/checkout@v2
+    - name: Setup tmate session
       uses: mxschmitt/action-tmate@v3
-      - name: Check License Header
-        uses: apache/skywalking-eyes@main
-        with:
-          mode: check
+    - name: Check License Header
+      uses: apache/skywalking-eyes@main
+      with:
+        mode: check
