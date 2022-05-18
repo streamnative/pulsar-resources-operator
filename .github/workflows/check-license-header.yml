@@ -25,6 +25,10 @@ jobs:
     name: check license header
     runs-on: ubuntu-latest
     steps:
+    - name: list files
+      run: |
+        ls -alh
+
     - name: Check License Header
       uses: apache/skywalking-eyes@main
       with:
