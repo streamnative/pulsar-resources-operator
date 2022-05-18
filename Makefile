@@ -1,3 +1,17 @@
+# Copyright 2022 Stream Native
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # VERSION defines the project version for the bundle.
 # Update this value when you upgrade the version of your project.
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
@@ -227,3 +241,19 @@ husky:
 	npm install husky -D
 	npm run prepare
 
+
+
+LICENSE_EYE = $(shell pwd)/bin/license-eye
+.PHONY: license-eye
+license-eye: ## Download license-eye locally if necessary. https://github.com/apache/skywalking-eyes
+	$(call go-get-tool,$(LICENSE_EYE),github.com/apache/skywalking-eyes/cmd/license-eye@v0.3.0)
+
+## Check if the specified files have the license header in the config file.
+.PHONY: license-check
+license-check: license-eye
+	$(LICENSE_EYE) header check
+
+# Fix the license header if the specified files don't have the license header.
+.PHONY: license-fix
+license-fix: license-eye
+	$(LICENSE_EYE) header fix
