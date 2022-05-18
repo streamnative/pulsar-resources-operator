@@ -31,5 +31,7 @@ header:
     - 'package.json'
     - 'package-lock.json'
     - '.husky/**'
+    - 'hack/**'
+    - 'charts/**'
 
   comment: on-failure
