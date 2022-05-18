@@ -28,6 +28,7 @@ jobs:
     - name: list files
       run: |
         ls -alh
+        pwd
 
     - name: Check License Header
       uses: apache/skywalking-eyes@main
