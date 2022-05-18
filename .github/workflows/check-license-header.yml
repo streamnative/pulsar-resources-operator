@@ -27,5 +27,5 @@ jobs:
     steps:
       - name: Check License Header
         uses: apache/skywalking-eyes@main
-          with:
-            mode: check
+        with:
+          mode: check
