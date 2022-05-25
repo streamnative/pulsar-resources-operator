@@ -1,4 +1,16 @@
-# Copyright (c) 2021 StreamNative, Inc.. All Rights Reserved.
+# Copyright 2022 StreamNative
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 linters:
   disable-all: true
@@ -74,55 +86,6 @@ linters-settings:
       # Controller Runtime
       - pkg: sigs.k8s.io/controller-runtime
         alias: ctrl
-      # CABPK
-      - pkg: sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha3
-        alias: bootstrapv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1alpha4
-        alias: bootstrapv1alpha4
-      - pkg: sigs.k8s.io/cluster-api/bootstrap/kubeadm/api/v1beta1
-        alias: bootstrapv1
-      # KCP
-      - pkg: sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha3
-        alias: controlplanev1alpha3
-      - pkg: sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1alpha4
-        alias: controlplanev1alpha4
-      - pkg: sigs.k8s.io/cluster-api/controlplane/kubeadm/api/v1beta1
-        alias: controlplanev1
-      # CAPI
-      - pkg: sigs.k8s.io/cluster-api/api/v1alpha3
-        alias: clusterv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/api/v1alpha4
-        alias: clusterv1alpha4
-      - pkg: sigs.k8s.io/cluster-api/api/v1beta1
-        alias: clusterv1
-      # CAPI exp
-      - pkg: sigs.k8s.io/cluster-api/exp/api/v1alpha3
-        alias: expv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/exp/api/v1alpha4
-        alias: expv1alpha4
-      - pkg: sigs.k8s.io/cluster-api/exp/api/v1beta1
-        alias: expv1
-      # CAPI exp addons
-      - pkg: sigs.k8s.io/cluster-api/exp/addons/api/v1alpha3
-        alias: addonsv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/exp/addons/api/v1alpha4
-        alias: addonsv1alpha4
-      - pkg: sigs.k8s.io/cluster-api/exp/addons/api/v1beta1
-        alias: addonsv1
-      # CAPD
-      - pkg: sigs.k8s.io/cluster-api/test/infrastructure/docker/api/v1alpha3
-        alias: infrav1alpha3
-      - pkg: sigs.k8s.io/cluster-api/test/infrastructure/docker/api/v1alpha4
-        alias: infrav1alpha4
-      - pkg: sigs.k8s.io/cluster-api/test/infrastructure/docker/api/v1beta1
-        alias: infrav1
-      # CAPD exp
-      - pkg: sigs.k8s.io/cluster-api/test/infrastructure/docker/exp/api/v1alpha3
-        alias: infraexpv1alpha3
-      - pkg: sigs.k8s.io/cluster-api/test/infrastructure/docker/exp/api/v1alpha4
-        alias: infraexpv1alpha4
-      - pkg: sigs.k8s.io/cluster-api/test/infrastructure/docker/exp/api/v1beta1
-        alias: infraexpv1
   nolintlint:
     allow-unused: false
     allow-leading-space: false

@@ -16,7 +16,7 @@
 header:
   license:
     spdx-id: Apache-2.0
-    copyright-owner: Stream Native
+    copyright-owner: StreamNative
 
   paths-ignore:
     - 'dist'
@@ -31,5 +31,7 @@ header:
     - 'package.json'
     - 'package-lock.json'
     - '.husky/**'
+    - 'hack/**'
+    - 'charts/**'
 
   comment: on-failure
