@@ -1,4 +1,4 @@
-# Copyright 2022 Stream Native
+# Copyright 2022 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,26 +13,15 @@
 # limitations under the License.
 #
 
-header:
-  license:
-    spdx-id: Apache-2.0
-    copyright-owner: StreamNative
-
-  paths-ignore:
-    - 'dist'
-    - 'licenses'
-    - '**/*.md'
-    - 'LICENSE'
-    - 'NOTICE'
-    - '.github/CODEOWNERS'
-    - 'PROJECT'
-    - '**/go.mod'
-    - '**/go.sum'
-    - '.husky/**'
-    - 'hack/**'
-    - 'charts/ct/'
-    - '**/README.md.gotmpl'
-    - '**/*.json'
-    - '**/.helmignore'
-
-  comment: on-failure
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: '{{ include "pulsar-resources-operator.fullname" . }}-manager-rolebinding'
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: '{{ include "pulsar-resources-operator.clusterRoleManagerName" . }}'
+subjects:
+- kind: ServiceAccount
+  name: {{ include "pulsar-resources-operator.serviceAccountName" . }}
+  namespace: {{ include "pulsar-resources-operator.namespace" .}}
