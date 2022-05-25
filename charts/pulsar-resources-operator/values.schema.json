@@ -4,7 +4,6 @@
     "type": "object",
     "title": "The root schema",
     "description": "The root schema comprises the entire JSON document.",
-    "default": {},
     "required": [
         "replicaCount",
         "image",
@@ -17,7 +16,6 @@
             "type": "string",
             "title": "The namespace schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": "",
             "examples": [
                 ""
             ]
@@ -27,7 +25,6 @@
             "type": "integer",
             "title": "The replicaCount schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": 0,
             "examples": [
                 1
             ]
@@ -37,7 +34,6 @@
             "type": "object",
             "title": "The image schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {
                     "registry": "docker.cloudsmith.io",
@@ -56,7 +52,6 @@
                     "type": "string",
                     "title": "The registry schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": "",
                     "examples": [
                         "docker.cloudsmith.io"
                     ]
@@ -66,7 +61,6 @@
                     "type": "string",
                     "title": "The repository schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": "",
                     "examples": [
                         "streamnative/operators/pulsar-resources-operator"
                     ]
@@ -76,7 +70,6 @@
                     "type": "string",
                     "title": "The pullPolicy schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": "",
                     "examples": [
                         "IfNotPresent"
                     ]
@@ -86,7 +79,6 @@
                     "type": "string",
                     "title": "The tag schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": "",
                     "examples": [
                         ""
                     ]
@@ -99,7 +91,6 @@
             "type": "array",
             "title": "The imagePullSecrets schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": [],
             "examples": [
                 []
             ],
@@ -112,7 +103,6 @@
                         "type": "object",
                         "title": "The first anyOf schema",
                         "description": "An explanation about the purpose of this instance.",
-                        "default": {},
                         "examples": [
                             {
                                 "name": "test"
@@ -127,7 +117,6 @@
                                 "type": "string",
                                 "title": "The name schema",
                                 "description": "An explanation about the purpose of this instance.",
-                                "default": "",
                                 "examples": [
                                     "test"
                                 ]
@@ -144,7 +133,6 @@
             "type": "string",
             "title": "The nameOverride schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": "",
             "examples": [
                 ""
             ]
@@ -154,7 +142,6 @@
             "type": "string",
             "title": "The fullnameOverride schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": "",
             "examples": [
                 ""
             ]
@@ -164,7 +151,6 @@
             "type": "object",
             "title": "The serviceAccount schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {
                     "create": true,
@@ -183,7 +169,6 @@
                     "type": "boolean",
                     "title": "The create schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": false,
                     "examples": [
                         true
                     ]
@@ -193,7 +178,6 @@
                     "type": "object",
                     "title": "The annotations schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": {},
                     "examples": [
                         {}
                     ],
@@ -205,7 +189,6 @@
                     "type": "string",
                     "title": "The name schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": "",
                     "examples": [
                         ""
                     ]
@@ -218,7 +201,6 @@
             "type": "object",
             "title": "The podAnnotations schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {}
             ],
@@ -230,7 +212,6 @@
             "type": "object",
             "title": "The podSecurityContext schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {}
             ],
@@ -242,7 +223,6 @@
             "type": "object",
             "title": "The securityContext schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {}
             ],
@@ -254,7 +234,6 @@
             "type": "object",
             "title": "The resources schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {}
             ],
@@ -266,7 +245,6 @@
                     "type": "object",
                     "title": "The requests schema",
                     "description": "An explanation about the purpose of this instance.",
-                    "default": {},
                     "examples": [
                         {
                             "cpu": "100m",
@@ -283,7 +261,6 @@
                             "type": "string",
                             "title": "The cpu schema",
                             "description": "An explanation about the purpose of this instance.",
-                            "default": "",
                             "examples": [
                                 "100m"
                             ]
@@ -293,7 +270,6 @@
                             "type": "string",
                             "title": "The memory schema",
                             "description": "An explanation about the purpose of this instance.",
-                            "default": "",
                             "examples": [
                                 "128Mi"
                             ]
@@ -309,7 +285,6 @@
             "type": "object",
             "title": "The nodeSelector schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {}
             ],
@@ -321,7 +296,6 @@
             "type": "array",
             "title": "The tolerations schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": [],
             "examples": [
                 []
             ],
@@ -335,7 +309,6 @@
             "type": "object",
             "title": "The affinity schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": {},
             "examples": [
                 {}
             ],
@@ -347,7 +320,6 @@
             "type": "integer",
             "title": "The terminationGracePeriodSeconds schema",
             "description": "An explanation about the purpose of this instance.",
-            "default": 0,
             "examples": [
                 10
             ]
