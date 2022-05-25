@@ -2,7 +2,7 @@
 . "$(dirname "$0")/_/husky.sh"
 
 echo "Check License"
-go test license_test.go
+make license-check
 echo "Check Lint"
 ./scripts/lint.sh ./...
 echo "Go fmt"

@@ -11,24 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-# permissions for end users to view pulsarnamespaces.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: pulsarnamespace-viewer-role
-rules:
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsarnamespaces
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsarnamespaces/status
-  verbs:
-  - get
+name: Check License Header
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  license-check:
+    name: check license header
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Check License Header
+      uses: apache/skywalking-eyes@main
+      with:
+        mode: check

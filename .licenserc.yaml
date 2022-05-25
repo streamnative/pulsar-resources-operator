@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2022 Stream Native
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,24 +11,27 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+#
 
-# permissions for end users to view pulsarnamespaces.
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRole
-metadata:
-  name: pulsarnamespace-viewer-role
-rules:
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsarnamespaces
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsarnamespaces/status
-  verbs:
-  - get
+header:
+  license:
+    spdx-id: Apache-2.0
+    copyright-owner: StreamNative
+
+  paths-ignore:
+    - 'dist'
+    - 'licenses'
+    - '**/*.md'
+    - 'LICENSE'
+    - 'NOTICE'
+    - '.github/CODEOWNERS'
+    - 'PROJECT'
+    - '**/go.mod'
+    - '**/go.sum'
+    - 'package.json'
+    - 'package-lock.json'
+    - '.husky/**'
+    - 'hack/**'
+    - 'charts/**'
+
+  comment: on-failure
