@@ -28,10 +28,11 @@ header:
     - 'PROJECT'
     - '**/go.mod'
     - '**/go.sum'
-    - 'package.json'
-    - 'package-lock.json'
     - '.husky/**'
     - 'hack/**'
-    - 'charts/**'
+    - 'charts/ct/'
+    - '**/README.md.gotmpl'
+    - '**/*.json'
+    - '**/.helmignore'
 
   comment: on-failure
