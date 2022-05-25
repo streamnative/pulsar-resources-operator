@@ -1,0 +1,6 @@
+owner: streamnative
+git-repo: pulsar-resources-operator
+package-path: .chart-packages
+index-path: .chart-index
+git-base-url: https://api.github.com/
+git-upload-url: https://uploads.github.com/

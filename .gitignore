@@ -44,3 +44,7 @@ build
 
 # husky
 node_modules/
+
+# chart-releaser
+.chart-index/
+.chart-packages/
