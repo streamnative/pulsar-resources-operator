@@ -32,7 +32,7 @@ HELM_VERSION=3.0.1
 KIND_VERSION=0.10.0
 KIND_BIN=$OUTPUT_BIN/kind
 CR_BIN=$OUTPUT_BIN/cr
-CR_VERSION=1.0.0-beta.1
+CR_VERSION=1.4.0
 
 test -d "$OUTPUT_BIN" || mkdir -p "$OUTPUT_BIN"
 
@@ -125,11 +125,9 @@ function hack::ensure_cr() {
         return 0
     fi
     echo "Installing chart-releaser ${CR_VERSION} ..."
-    tmpfile=$(mktemp)
-    trap "test -f $tmpfile && rm $tmpfile" RETURN
-    echo curl --retry 10 -L -o $tmpfile https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_${OS}_${ARCH}.tar.gz
-    curl --retry 10 -L -o $tmpfile https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_${OS}_${ARCH}.tar.gz
-    mv $tmpfile $CR_BIN
+    echo 'curl --retry 10 -Lo cr.tar.gz https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_${OS}_${ARCH}.tar.gz'
+    curl --retry 10 -Lo cr.tar.gz https://github.com/helm/chart-releaser/releases/download/v${CR_VERSION}/chart-releaser_${CR_VERSION}_${OS}_${ARCH}.tar.gz
+    tar -xzf cr.tar.gz -C $OUTPUT_BIN
     chmod +x $CR_BIN
     $CR_BIN version
 }

@@ -12,39 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Binaries for programs and plugins
-*.exe
-*.exe~
-*.dll
-*.so
-*.dylib
-bin
-testbin/*
-
-# Test binary, build with `go test -c`
-*.test
-
-# Output of the go coverage tool, specifically when used with LiteIDE
-*.out
-
-# Kubernetes Generated files - skip generated files, except for vendored files
-
-!vendor/**/zz_generated.*
-
-# editor and IDE paraphernalia
-.idea
-*.swp
-*.swo
-*~
-
-# bundles
-bundle
-bundle.Dockerfile
-build
-
-# husky
-node_modules/
-
-# chart-releaser
-.chart-index/
-.chart-packages/
+owner: streamnative
+git-repo: pulsar-resources-operator
+package-path: .chart-packages
+index-path: .chart-index
+git-base-url: https://api.github.com/
+git-upload-url: https://uploads.github.com/
