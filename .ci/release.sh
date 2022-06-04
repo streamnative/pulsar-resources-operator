@@ -22,8 +22,8 @@ CHARTS_PKGS=${CHARTS_HOME}/.chart-packages
 CHARTS_INDEX=${CHARTS_HOME}/.chart-index
 # Deprecated. you can find these args in cr.yaml
 # CHARTS_REPO=${CHARTS_REPO:-"https://charts.streamnative.io"}
-# OWNER=${OWNER:-streamnative}
-# REPO=${REPO:-charts}
+OWNER=${OWNER:-streamnative}
+REPO=${REPO:-pulsar-resources-operator}
 GITHUB_TOKEN=${GITHUB_TOKEN:-"UNSET"}
 GITUSER=${GITUSER:-"UNSET"}
 GITEMAIL=${GITEMAIL:-"UNSET"}
