@@ -19,7 +19,8 @@ set -e
 BINDIR=`dirname "$0"`
 CHARTS_HOME=`cd ${BINDIR}/..;pwd`
 CHARTS_PKGS=${CHARTS_HOME}/.chart-packages
-CHARTS_INDEX=${CHARTS_HOME}/.chart-index
+CHARTS_REPO_PATH=`cd ${CHARTS_REPO}/../charts;pwd`
+CHARTS_INDEX=${CHARTS_REPO_PATH}/.chart-index
 # Deprecated. you can find these args in cr.yaml
 # CHARTS_REPO=${CHARTS_REPO:-"https://charts.streamnative.io"}
 OWNER=${OWNER:-streamnative}
@@ -56,23 +57,9 @@ function release::upload_packages() {
     ${CR} upload -t ${GITHUB_TOKEN} --commit ${RELEASE_BRANCH}
 }
 
-function release::update_chart_index() {
-    echo "Updating chart index..."
-    ${CR} index -t ${GITHUB_TOKEN}
-}
 
-function release::publish_charts() {
-    git config user.email "${GITEMAIL}"
-    git config user.name "${GITUSER}"
-    git pull
-    git checkout gh-pages
-    cp --force ${CHARTS_INDEX}/index.yaml index.yaml
-    git add index.yaml
-    git commit --message="Publish new charts v${RELEASE_BRANCH:7}" --signoff
-    git remote -v
-    git remote add sn https://${SNBOT_USER}:${GITHUB_TOKEN}@github.com/${OWNER}/${REPO} 
-    git push sn gh-pages 
-}
+
+
 
 # install cr
 hack::ensure_cr
@@ -83,6 +70,3 @@ release::ensure_dir ${CHARTS_INDEX}
 release::package_chart
 
 release::upload_packages
-release::update_chart_index
-
-release::publish_charts
