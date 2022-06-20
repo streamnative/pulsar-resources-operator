@@ -19,7 +19,7 @@ set -e
 BINDIR=`dirname "$0"`
 CHARTS_HOME=`cd ${BINDIR}/..;pwd`
 CHARTS_PKGS=${CHARTS_HOME}/.chart-packages
-CHARTS_REPO_PATH=`cd ${CHARTS_REPO}/../charts;pwd`
+CHARTS_REPO_PATH=`cd ${CHARTS_HOME}/../charts;pwd`
 CHARTS_INDEX=${CHARTS_REPO_PATH}/.chart-index
 # Deprecated. you can find these args in cr.yaml
 # CHARTS_REPO=${CHARTS_REPO:-"https://charts.streamnative.io"}
