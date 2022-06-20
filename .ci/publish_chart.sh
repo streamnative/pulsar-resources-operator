@@ -19,7 +19,7 @@
 #   2. The value of env $CHART_PKG should be the path of `pulsar-resources-operator/.chart-packages`.
 #   3. The directory of env $CHARTS_INDEX should be create first under the root path of repo charts.
 
-set -e
+set -ex
 
 BINDIR=`dirname "$0"`
 # REPO_PATH is the path of pulsar-resources-operator

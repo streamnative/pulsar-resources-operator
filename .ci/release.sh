@@ -14,7 +14,7 @@
 # limitations under the License.
 
 
-set -e
+set -ex
 
 BINDIR=`dirname "$0"`
 CHARTS_HOME=`cd ${BINDIR}/..;pwd`
