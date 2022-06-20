@@ -19,6 +19,8 @@
 #   2. The value of env $CHART_PKG should be the path of `pulsar-resources-operator/.chart-packages`.
 #   3. The directory of env $CHARTS_INDEX should be create first under the root path of repo charts.
 
+set -e
+
 BINDIR=`dirname "$0"`
 # REPO_PATH is the path of pulsar-resources-operator
 REPO_PATH=`cd ${BINDIR}/..;pwd`
@@ -40,7 +42,7 @@ RELEASE_BRANCH="$1"
 
 function update_chart_index() {
     echo "Updating chart index..."
-    ${CR_BIN} index -t ${GITHUB_TOKEN} --owner ${OWNER} --git-repo ${REPO} --package-path ${CHARTS_PKGS} --index-path ${CHARTS_INDEX}
+    ${CR_BIN} index -t ${GITHUB_TOKEN} --owner ${OWNER} --git-repo ${REPO} --package-path ${CHART_PKG} --index-path ${CHARTS_INDEX}
 }
 
 function publish_charts() {
