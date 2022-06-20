@@ -49,11 +49,13 @@ function update_chart_index() {
 function publish_charts() {
     git config user.email "${GITEMAIL}"
     git config user.name "${GITUSER}"
+    # Get gpg key id
+    export KEY_ID=`gpg --list-secret-keys --keyid-format=long | grep sec | awk '{print $2}' | cut -d '/' -f 2`
     git pull
     git checkout gh-pages
     cp --force ${CHARTS_INDEX}/index.yaml index.yaml
     git add index.yaml
-    git commit --message="Publish new charts v${RELEASE_BRANCH:7}" --signoff
+    git commit --message="Publish new charts v${RELEASE_BRANCH:7}" --signoff --gpg-sign=${KEY_ID}
     git remote -v
     git remote add sn https://${SNBOT_USER}:${GITHUB_TOKEN}@github.com/${OWNER}/${CHART_REPO} 
     git push sn gh-pages 
