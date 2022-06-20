@@ -28,6 +28,7 @@ REPO_PATH=`cd ${BINDIR}/..;pwd`
 CHARTS_REPO_PATH=`cd ${REPO_PATH}/../charts;pwd`
 OWNER=${OWNER:-streamnative}
 REPO=${REPO:-pulsar-resources-operator}
+CHART_REPO=${CHART_REPO:-charts}
 GITHUB_TOKEN=${GITHUB_TOKEN:-"UNSET"}
 GITUSER=${GITUSER:-"UNSET"}
 GITEMAIL=${GITEMAIL:-"UNSET"}
@@ -54,7 +55,7 @@ function publish_charts() {
     git add index.yaml
     git commit --message="Publish new charts v${RELEASE_BRANCH:7}" --signoff
     git remote -v
-    git remote add sn https://${SNBOT_USER}:${GITHUB_TOKEN}@github.com/${OWNER}/${REPO} 
+    git remote add sn https://${SNBOT_USER}:${GITHUB_TOKEN}@github.com/${OWNER}/${CHART_REPO} 
     git push sn gh-pages 
 }
 
