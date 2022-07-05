@@ -56,7 +56,7 @@ kubectl apply -f topic.yaml
 3. Check the resource status. When column Ready is true, it indicates the resource is created successfully in the pulsar cluster
 
 ```shell
-kubectl -n test get ptopic/pulsartopic
+kubectl -n test get pulsartopic
 ```
 
 ```shell
@@ -74,7 +74,7 @@ Please be noticed:
 ## Delete PulsarTopic
 
 ```shell
-kubectl -n test delete ptopic test-pulsar-topic
+kubectl -n test delete pulsartopic test-pulsar-topic
 ```
 
 Please be noticed, when you delete the permission, the real permission will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`

@@ -55,7 +55,7 @@ kubectl apply -f namespace.yaml
 3. Check the resource status. When column Ready is true, it indicates the resource is created successfully in the pulsar cluster
 
 ```shell
-kubectl -n test get pns/pulsarnamespace
+kubectl -n test get pulsarnamespace
 ```
 
 ```shell
@@ -73,7 +73,7 @@ Please be noticed:
 ## Delete PulsarNamespace
 
 ```shell
-kubectl -n test delete pns test-pulsar-namespace
+kubectl -n test delete pulsarnamespace test-pulsar-namespace
 ```
 
 Please be noticed, when you delete the namespace, the real namespace will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`

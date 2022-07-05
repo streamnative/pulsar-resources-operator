@@ -37,7 +37,7 @@ kubectl  apply -f connection.yaml
 3. Check the resource status.
 
 ```shell
-kubectl -n test get pconn/pulsarconnection
+kubectl -n test get pulsarconnection
 ```
 
 ```shell
@@ -66,7 +66,7 @@ kubectl apply -f connection.yaml
 ## Delete PulsarConnection
 
 ```shell
-kubectl -n test delete pconn test-pulsar-connection
+kubectl -n test delete pulsarconnection test-pulsar-connection
 ```
 
 Please be noticed, because the Pulsar Resources Operator are using the connection to manage pulsar resources, If you delete the pulsar connection, it will only be deleted after the resources CRs are deleted

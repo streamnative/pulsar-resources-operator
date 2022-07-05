@@ -44,7 +44,7 @@ kubectl apply -f permission.yaml
 3. Check the resource status. When column Ready is true, it indicates the resource is created successfully in the pulsar cluster.
 
 ```shell
-kubectl -n test get ppermission/pulsarpermission
+kubectl -n test get pulsarpermission
 ```
 
 ```shell
@@ -87,7 +87,7 @@ kubectl apply -f permission.yaml
 ## Delete PulsarPermission
 
 ```
-kubectl -n test delete ppermission test-pulsar-permission
+kubectl -n test delete pulsarpermission test-pulsar-permission
 ```
 
 Please be noticed, when you delete the permission, the real permission will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`
