@@ -2,7 +2,7 @@
 
 The Pulsar Resources Operator is a controller that manages the Pulsar resources automatically using the manifest on Kubernetes. Therefore, you can manage the Pulsar resources without the help of `pulsar-admin` or `pulsarctl` CLI tool. It is useful for initializing basic resources when creating a new Pulsar cluster.
 
-Currently, the Pulsar Resources Operator provides a full management life-cycle for the following Pulsar resources, including creation, update, deletion. 
+Currently, the Pulsar Resources Operator provides full lifecycle management for the following Pulsar resources, including creation, update, and deletion. 
 
 - Tenants
 - Namespaces
@@ -12,7 +12,7 @@ Currently, the Pulsar Resources Operator provides a full management life-cycle f
 
 # Installation
 
-The Pulsar Resources Operator is an independent controller, it doesn’t need to be installed with the pulsar operator, you can install it when you need the feature. And it is built with the [Operator SDK](https://github.com/operator-framework/operator-sdk), which is part of the [Operator framework](https://github.com/operator-framework/).
+The Pulsar Resources Operator is an independent controller, it doesn’t need to be installed with the pulsar operator. You can install it when you need the feature. And it is built with the [Operator SDK](https://github.com/operator-framework/operator-sdk), which is part of the [Operator framework](https://github.com/operator-framework/).
 
 
 You can install the Pulsar Resources Operator using the officially supported `pulsar-resources-operator` Helm [chart](https://github.com/streamnative/charts/tree/master/charts/pulsar-resources-operator). It provides Customer Resource Definitions (CRDs) and Controllers to manage the Pulsar resources.
@@ -81,9 +81,9 @@ helm -n <k8s-namespace> uninstall <release-name>
 
 # Tutorial
 
-This tutorial guides you through creating Pulsar resources. By applying resource manifest files  to the Kubernetes, you can create Pulsar resources automatically.
+This tutorial guides you through creating Pulsar resources. You can create Pulsar resources automatically by applying resource manifest files  to the Kubernetes.
 
-Before creating Pulsar resources, you need to create a resource called `PularConnection`. The `PulsarConnection` covers the address of the Pulsar cluster and the authentication information. You can use this information  to access a Pulsar cluster to create other resources.
+Before creating Pulsar resources, you must create a resource called `PularConnection`. The `PulsarConnection` covers the address of the Pulsar cluster and the authentication information. You can use this information to access a Pulsar cluster to create other resources.
 
 In this tutorial, a Kubernetes namespace called `test` is used for examples, which is the namespace that the pulsar cluster installed.
 
