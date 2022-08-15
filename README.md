@@ -15,7 +15,7 @@ Currently, the Pulsar Resources Operator provides full lifecycle management for 
 The Pulsar Resources Operator is an independent controller, it doesn’t need to be installed with the pulsar operator. You can install it when you need the feature. And it is built with the [Operator SDK](https://github.com/operator-framework/operator-sdk), which is part of the [Operator framework](https://github.com/operator-framework/).
 
 
-You can install the Pulsar Resources Operator using the officially supported `pulsar-resources-operator` Helm [chart](https://github.com/streamnative/charts/tree/master/charts/pulsar-resources-operator). It provides Customer Resource Definitions (CRDs) and Controllers to manage the Pulsar resources.
+You can install the Pulsar Resources Operator using the officially supported `pulsar-resources-operator` Helm [chart](https://github.com/streamnative/charts/tree/master/charts/pulsar-resources-operator). It provides Custom Resource Definitions (CRDs) and Controllers to manage the Pulsar resources.
 
 ## Prerequisites
 
