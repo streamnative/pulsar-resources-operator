@@ -5,7 +5,7 @@
 1. Define a connection named `test-pulsar-connection` by using the YAML file and save the YAML file `connection.yaml`. 
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
   name: test-pulsar-connection

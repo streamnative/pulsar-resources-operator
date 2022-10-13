@@ -4,7 +4,7 @@
 
 1. Define a namespace named `test-tenant/testns` by using the YAML file and save the YAML file `namespace.yaml`.
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarNamespace
 metadata:
   name: test-pulsar-namespace
