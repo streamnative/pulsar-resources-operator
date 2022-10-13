@@ -5,7 +5,7 @@
 1. Define a permission by using the YAML file and save the YAML file `permission.yaml`.t
 This example grants the `ironman` with `consume`, `produce`, `functions`, and `sink` permissions on the namespace `test-tenant/testns`.
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarPermission
 metadata:
   name: test-pulsar-namespace-permission

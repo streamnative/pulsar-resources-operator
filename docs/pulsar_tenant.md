@@ -5,7 +5,7 @@
 1. Define a tenant named `test-tenant` by using the YAML file and save the YAML file `tenant.yaml`. 
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarTenant
 metadata:
   name: test-pulsar-tenant
