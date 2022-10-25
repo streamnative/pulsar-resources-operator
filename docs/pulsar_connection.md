@@ -37,7 +37,7 @@ kubectl  apply -f connection.yaml
 3. Check the resource status.
 
 ```shell
-kubectl -n test get pulsarconnection
+kubectl -n test get pulsarconnection.resource.streamnative.io
 ```
 
 ```shell
@@ -50,7 +50,7 @@ test-pulsar-connection   http://ok-sn-platform-broker.test.svc.cluster.local:808
 You can update the connection by editing the connection.yaml, then apply it again. For example, if pulsar cluster doesn’t setup the authentication, then you don’t need the authentication part in the spec
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
   name: test-pulsar-connection
@@ -66,7 +66,7 @@ kubectl apply -f connection.yaml
 ## Delete PulsarConnection
 
 ```shell
-kubectl -n test delete pulsarconnection test-pulsar-connection
+kubectl -n test delete pulsarconnection.resource.streamnative.io test-pulsar-connection
 ```
 
 Please be noticed, because the Pulsar Resources Operator are using the connection to manage pulsar resources, If you delete the pulsar connection, it will only be deleted after the resources CRs are deleted

@@ -39,7 +39,7 @@ kubectl apply -f tenant.yaml
 3. Check the resource status. When column Ready is true, it indicates the resource is created successfully in the pulsar cluster
 
 ```shell
-kubectl -n test get pulsartenant
+kubectl -n test get pulsartenant.resource.streamnative.io
 ```
 
 ```shell
@@ -54,7 +54,7 @@ You can update the tenant by editing the tenant.yaml, then apply if again
 
 ## Delete PulsarTenant
 ```shell
-kubectl -n test delete pulsartenant test-pulsar-tenant
+kubectl -n test delete pulsartenant.resource.streamnative.io test-pulsar-tenant
 ```
 
 Please be noticed, when you delete the tenant, the real tenant will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`
