@@ -44,7 +44,7 @@ kubectl apply -f permission.yaml
 3. Check the resource status. When column Ready is true, it indicates the resource is created successfully in the pulsar cluster.
 
 ```shell
-kubectl -n test get pulsarpermission
+kubectl -n test get pulsarpermission.resource.streamnative.io
 ```
 
 ```shell
@@ -57,7 +57,7 @@ pulsarpermission-sample-topic-error   test-tenant/testn1   namespace       ["iro
 You can update the permission roles or actions by editing the permission.yaml, then apply if again. For example, add action `sources`.
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarPermission
 metadata:
   name: test-pulsar-namespace-permission
@@ -87,7 +87,7 @@ kubectl apply -f permission.yaml
 ## Delete PulsarPermission
 
 ```
-kubectl -n test delete pulsarpermission test-pulsar-permission
+kubectl -n test delete pulsarpermission.resource.streamnative.io test-pulsar-permission
 ```
 
 Please be noticed, when you delete the permission, the real permission will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`
