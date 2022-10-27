@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsarctl/pkg/auth"
 	"github.com/streamnative/pulsarctl/pkg/pulsar"
 	pulsarctlcommon "github.com/streamnative/pulsarctl/pkg/pulsar/common"
@@ -65,6 +66,16 @@ type TopicParams struct {
 	BacklogQuotaRetentionPolicy       *string
 }
 
+// SchemaParams indicates the parameters for uploading a schema
+type SchemaParams struct {
+	// Type determines how to interpret the schema data
+	Type string `json:"type,omitempty"`
+	// Schema is schema data
+	Schema string `json:"schema,omitempty"`
+	// Properties is a user defined properties as a string/string map
+	Properties map[string]string `json:"properties,omitempty"`
+}
+
 // PulsarAdmin is the interface that defines the functions to call pulsar admin
 type PulsarAdmin interface {
 	// ApplyTenant creates or updates a tenant with parameters
@@ -95,6 +106,15 @@ type PulsarAdmin interface {
 
 	// Close releases the connection with pulsar admin
 	Close() error
+
+	// GetSchema retrieves the latest schema of a topic
+	GetSchema(topic string) (*v1alpha1.SchemaInfo, error)
+
+	// UploadSchema creates or updates a schema for a given topic
+	UploadSchema(topic string, params *SchemaParams) error
+
+	// DeleteSchema deletes the schema associated with a given topic
+	DeleteSchema(topic string) error
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

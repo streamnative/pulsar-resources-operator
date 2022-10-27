@@ -83,6 +83,20 @@ type PulsarTopicSpec struct {
 
 	// +optional
 	BacklogQuotaRetentionPolicy *string `json:"backlogQuotaRetentionPolicy,omitempty"`
+
+	// +optional
+	SchemaInfo *SchemaInfo `json:"schemaInfo,omitempty"`
+}
+
+// SchemaInfo defines the Pulsar Schema.
+// It is stored and enforced on a per-topic basis and cannot be stored at the namespace or tenant level.
+type SchemaInfo struct {
+	// Type determines how to interpret the schema data
+	Type string `json:"type,omitempty"`
+	// Schema is schema data
+	Schema string `json:"schema,omitempty"`
+	// Properties is a user defined properties as a string/string map
+	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // PulsarTopicStatus defines the observed state of PulsarTopic

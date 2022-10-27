@@ -131,6 +131,24 @@ spec:
                 description: Retention Should set at least one of them if setting
                   retention
                 type: string
+              schemaInfo:
+                description: SchemaInfo defines the Pulsar Schema. It is stored and
+                  enforced on a per-topic basis and cannot be stored at the namespace
+                  or tenant level.
+                properties:
+                  properties:
+                    additionalProperties:
+                      type: string
+                    description: Properties is a user defined properties as a string/string
+                      map
+                    type: object
+                  schema:
+                    description: Schema is schema data
+                    type: string
+                  type:
+                    description: Type determines how to interpret the schema data
+                    type: string
+                type: object
             required:
             - connectionRef
             - name
