@@ -16,8 +16,11 @@ package operator_test
 
 import (
 	_ "embed"
+	"fmt"
 	"testing"
+	"time"
 
+	"github.com/apache/pulsar-client-go/pulsar"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/sirupsen/logrus"
@@ -26,9 +29,6 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	bkv1alpha1 "github.com/streamnative/pulsar-operators/bookkeeper-operator/api/v1alpha1"
-	pulsarv1alpha1 "github.com/streamnative/pulsar-operators/pulsar-operator/api/v1alpha1"
-	zkv1alpha1 "github.com/streamnative/pulsar-operators/zookeeper-operator/api/v1alpha1"
 	v1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
@@ -36,14 +36,11 @@ import (
 var (
 	namespaceName string = "default"
 	k8sClient     client.Client
-	nodeIP        string
 	k8sConfig     *rest.Config
-	zkClusterName string = "test-sn-platform"
-	zkServer      string = zkClusterName + "-zk:2181"
-	bkClusterName string = "testbk"
 	brokerName    string = "test-sn-platform"
-	brokerAddress string = brokerName + "-broker"
 	proxyName     string = "test-sn-platform"
+	proxyURL      string = fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:6650", brokerName, namespaceName)
+	pulsarClient  pulsar.Client
 )
 
 func TestOperator(t *testing.T) {
@@ -55,16 +52,20 @@ var _ = BeforeSuite(func() {
 	var err error
 	k8sConfig, err = utils.GetKubeConfig("")
 	Expect(err).Should(Succeed())
-	Expect(bkv1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
-	Expect(pulsarv1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
-	Expect(zkv1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
 	Expect(v1alpha1.AddToScheme(scheme.Scheme)).Should(Succeed())
 
 	k8sClient, err = client.New(k8sConfig, client.Options{})
 	Expect(err).Should(Succeed())
 	logrus.Info("Create K8s Client successfully")
+
+	pulsarClient, err = pulsar.NewClient(pulsar.ClientOptions{
+		URL:               proxyURL,
+		OperationTimeout:  30 * time.Second,
+		ConnectionTimeout: 30 * time.Second,
+	})
+	Expect(err).Should(BeNil())
 })
 
 var _ = AfterSuite(func() {
-
+	pulsarClient.Close()
 })
