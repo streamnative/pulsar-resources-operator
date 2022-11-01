@@ -177,7 +177,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 				return err
 			}
 		}
-	} else if schema != nil && topic.Spec.SchemaInfo == nil {
+	} else if schema != nil {
 		// Delete the schema when the schema exists and schema info is empty
 		log.Info("Deleting topic schema", "name", topic.Spec.Name)
 		err := pulsarAdmin.DeleteSchema(topic.Spec.Name)
