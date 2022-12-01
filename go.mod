@@ -6,8 +6,8 @@ require (
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220122031548-edf81af225d1
 	github.com/go-logr/logr v1.2.1
 	github.com/onsi/ginkgo v1.16.5
-	github.com/onsi/gomega v1.17.0
-	github.com/streamnative/pulsarctl v0.4.3-0.20211125034318-d6febda9e96b
+	github.com/onsi/gomega v1.18.0
+	github.com/streamnative/pulsarctl v0.4.3-0.20220914035517-f17661719284
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
@@ -29,7 +29,6 @@ require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
 	github.com/danieljoos/wincred v1.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/dvsekhvalnov/jose2go v0.0.0-20200901110807-248326c1351b // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/form3tech-oss/jwt-go v3.2.3+incompatible // indirect
@@ -65,7 +64,7 @@ require (
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5 // indirect
 	golang.org/x/net v0.0.0-20210825183410-e898025ed96a // indirect
 	golang.org/x/oauth2 v0.0.0-20210819190943-2bc19b11175f // indirect
-	golang.org/x/sys v0.0.0-20211029165221-6e7872819dc8 // indirect
+	golang.org/x/sys v0.0.0-20220422013727-9388b58f7150 // indirect
 	golang.org/x/term v0.0.0-20210615171337-6886f2dfbf5b // indirect
 	golang.org/x/text v0.3.7 // indirect
 	golang.org/x/time v0.0.0-20210723032227-1f47c861a9ac // indirect
