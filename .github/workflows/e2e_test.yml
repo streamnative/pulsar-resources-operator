@@ -99,3 +99,7 @@ jobs:
         run: |
           cd tests
           ~/go/bin/ginkgo --trace --progress ./operator
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()
