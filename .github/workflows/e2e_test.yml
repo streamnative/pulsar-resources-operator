@@ -98,4 +98,9 @@ jobs:
       - name: Run Operator Test
         run: |
           cd tests
+          go mod tidy
           ~/go/bin/ginkgo --trace --progress ./operator
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()

@@ -22,6 +22,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsarctl/pkg/pulsar"
 	"github.com/streamnative/pulsarctl/pkg/pulsar/common"
 	pulsarutils "github.com/streamnative/pulsarctl/pkg/pulsar/utils"
@@ -453,4 +454,37 @@ func (t *TopicPermission) Revoke(client pulsar.Client) error {
 // IsPermissionNotFound returns true if the permission is not set
 func IsPermissionNotFound(err error) bool {
 	return strings.Contains(err.Error(), "Permissions are not set at the topic level")
+}
+
+// GetSchema get schema info for a given topic
+func (p *PulsarAdminClient) GetSchema(topic string) (*v1alpha1.SchemaInfo, error) {
+	info, err := p.adminClient.Schemas().GetSchemaInfo(topic)
+	if err != nil {
+		return nil, err
+	}
+	rsp := &v1alpha1.SchemaInfo{
+		Type:       info.Type,
+		Schema:     string(info.Schema),
+		Properties: info.Properties,
+	}
+	return rsp, nil
+}
+
+// UploadSchema creates or updates a schema for a given topic
+func (p *PulsarAdminClient) UploadSchema(topic string, params *SchemaParams) error {
+	var payload pulsarutils.PostSchemaPayload
+	payload.SchemaType = params.Type
+	payload.Schema = params.Schema
+	payload.Properties = params.Properties
+
+	err := p.adminClient.Schemas().CreateSchemaByPayload(topic, payload)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteSchema deletes the schema associated with a given topic
+func (p *PulsarAdminClient) DeleteSchema(topic string) error {
+	return p.adminClient.Schemas().DeleteSchema(topic)
 }

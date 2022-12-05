@@ -17,6 +17,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -89,6 +90,15 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	if !topic.DeletionTimestamp.IsZero() {
 		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
 		if topic.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+			// Delete the schema of the topic before the deletion
+			if topic.Spec.SchemaInfo != nil {
+				log.Info("Deleting topic schema")
+				err := pulsarAdmin.DeleteSchema(topic.Spec.Name)
+				if err != nil {
+					return err
+				}
+			}
+
 			if err := pulsarAdmin.DeleteTopic(topic.Spec.Name); err != nil && admin.IsNotFound(err) {
 				log.Error(err, "Failed to delete topic")
 				return err
@@ -142,6 +152,38 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			return nil
 		}
 		return err
+	}
+
+	schema, serr := pulsarAdmin.GetSchema(topic.Spec.Name)
+	if serr != nil && !admin.IsNotFound(serr) {
+		return serr
+	}
+	if topic.Spec.SchemaInfo != nil {
+		// Only upload the schema when schema doesn't exist or the schema has been updated
+		if admin.IsNotFound(serr) || !reflect.DeepEqual(topic.Spec.SchemaInfo, schema) {
+			info := topic.Spec.SchemaInfo
+			param := &admin.SchemaParams{
+				Type:       info.Type,
+				Schema:     info.Schema,
+				Properties: info.Properties,
+			}
+			log.Info("Upload schema for the topic", "name", topic.Spec.Name, "type", info.Type, "schema", info.Schema, "properties", info.Properties)
+			if err := pulsarAdmin.UploadSchema(topic.Spec.Name, param); err != nil {
+				log.Error(err, "Failed to upload schema")
+				if err := r.conn.client.Status().Update(ctx, topic); err != nil {
+					log.Error(err, "Failed to upload schema for the topic")
+					return nil
+				}
+				return err
+			}
+		}
+	} else if schema != nil {
+		// Delete the schema when the schema exists and schema info is empty
+		log.Info("Deleting topic schema", "name", topic.Spec.Name)
+		err := pulsarAdmin.DeleteSchema(topic.Spec.Name)
+		if err != nil {
+			return err
+		}
 	}
 
 	topic.Status.ObservedGeneration = topic.Generation

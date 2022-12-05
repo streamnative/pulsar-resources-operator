@@ -14,6 +14,10 @@
 
 package admin
 
+import (
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+)
+
 // NewDummyPulsarAdmin is a dummy initialization function
 func NewDummyPulsarAdmin(config PulsarAdminConfig) (PulsarAdmin, error) {
 	return &DummyPulsarAdmin{}, nil
@@ -67,5 +71,20 @@ func (d *DummyPulsarAdmin) GrantPermissions(p Permissioner) error {
 
 // RevokePermissions is a fake implements of RevokePermissions
 func (d *DummyPulsarAdmin) RevokePermissions(p Permissioner) error {
+	return nil
+}
+
+// GetSchema is a fake implements of GetSchema
+func (d *DummyPulsarAdmin) GetSchema(topic string) (*v1alpha1.SchemaInfo, error) {
+	return nil, nil
+}
+
+// UploadSchema is a fake implements of UploadSchema
+func (d *DummyPulsarAdmin) UploadSchema(topic string, params *SchemaParams) error {
+	return nil
+}
+
+// DeleteSchema is a fake implements of DeleteSchema
+func (d *DummyPulsarAdmin) DeleteSchema(topic string) error {
 	return nil
 }

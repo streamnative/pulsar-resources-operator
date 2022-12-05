@@ -15,10 +15,16 @@
 package utils
 
 import (
+	"bytes"
 	"path/filepath"
+	"strings"
 
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/client-go/util/homedir"
 )
 
@@ -29,4 +35,47 @@ func GetKubeConfig(kubeConfigPath string) (*rest.Config, error) {
 		return clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	}
 	return clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
+}
+
+func ExecInPod(config *rest.Config, namespace, podName, containerName, command string) (string, string, error) {
+	k8sCli, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return "", "", err
+	}
+	cmd := []string{
+		"sh",
+		"-c",
+		command,
+	}
+	const tty = false
+	req := k8sCli.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace(namespace).SubResource("exec").Param("container", containerName)
+	req.VersionedParams(
+		&corev1.PodExecOptions{
+			Command: cmd,
+			Stdin:   false,
+			Stdout:  true,
+			Stderr:  true,
+			TTY:     tty,
+		},
+		scheme.ParameterCodec,
+	)
+
+	var stdout, stderr bytes.Buffer
+	exec, err := remotecommand.NewSPDYExecutor(config, "POST", req.URL())
+	if err != nil {
+		return "", "", err
+	}
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+
+	if err != nil {
+		return "", strings.TrimSpace(stderr.String()), err
+	}
+	return strings.TrimSpace(stdout.String()), strings.TrimSpace(stderr.String()), nil
 }

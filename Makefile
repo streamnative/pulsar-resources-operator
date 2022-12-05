@@ -246,7 +246,7 @@ husky:
 LICENSE_EYE = $(shell pwd)/bin/license-eye
 .PHONY: license-eye
 license-eye: ## Download license-eye locally if necessary. https://github.com/apache/skywalking-eyes
-	$(call go-get-tool,$(LICENSE_EYE),github.com/apache/skywalking-eyes/cmd/license-eye@v0.3.0)
+	$(call go-get-tool,$(LICENSE_EYE),github.com/apache/skywalking-eyes/cmd/license-eye@0.4.0)
 
 ## Check if the specified files have the license header in the config file.
 .PHONY: license-check
