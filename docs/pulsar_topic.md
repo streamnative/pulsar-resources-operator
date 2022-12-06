@@ -46,6 +46,7 @@ This table lists specifications available for the `PulsarTopic` resource.
 | `backlogQuotaLimitSize` | The Backlog quota size limit (such as 10Mi, 10Gi). | Optional |
 | `backlogQuotaRetentionPolicy` | The Retention policy to be enforced when the limit is reached. | Optional |
 | `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `schemaInfo` | The schema of pulsar topic, default is nil. More details you can find in [schemaInfo](#schemainfo) Optional |
 
 2. Apply the YAML file to create the topic.
 
@@ -80,3 +81,42 @@ kubectl -n test delete pulsartopic.resource.streamnative.io test-pulsar-topic
 Please be noticed, when you delete the permission, the real permission will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`
 
 
+
+## SchemaInfo
+
+More details about pulsar schema, you can check the [official document](https://pulsar.apache.org/docs/2.10.x/schema-understand/)
+
+| Option | Description |
+| ---| --- |
+| `type` | Schema type, which determines how to interpret the schema data |
+| `schema` | Schema data, which is a sequence of 8-bit unsigned bytes and schema-type specific |
+| `properties` | It is a user defined properties as a string/string map. Applications can use this bag for carrying any application specific logics. |
+
+### Example
+
+This is a demo that uses the json type schema.
+
+```golang
+type testJSON struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+```
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarTopic
+metadata:
+  name: "test-pulsar-topic123"
+  namespace: test
+spec:
+  name: persistent://test-tenant/testns/topic123
+  connectionRef:
+    name: "test-pulsar-connection"
+  partitions: 1
+  schemaInfo:
+    type: "JSON"
+    schema: "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\",\"fields\":[{\"name\":\"ID\",\"type\":\"int\"},{\"name\":\"Name\",\"type\":\"string\"}]}"
+    properties:
+      "owner": "pulsar"
+```
