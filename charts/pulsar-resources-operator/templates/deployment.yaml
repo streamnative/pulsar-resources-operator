@@ -43,7 +43,7 @@ spec:
         - --upstream=http://127.0.0.1:8080/
         - --logtostderr=true
         - --v=0
-        image: gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+        image: "{{ .Values.image.kube-rbac-proxy.registry }}/{{ .Values.image.kube-rbac-proxy.repository }}:{{ .Values.image.kube-rbac-proxy.tag}}"
         name: kube-rbac-proxy
         ports:
         - containerPort: 8443
@@ -65,7 +65,7 @@ spec:
         name: manager
         securityContext:
           {{- toYaml .Values.securityContext | nindent 10 }}
-        image: "{{ .Values.image.registry }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+        image: "{{ .Values.image.manager.registry }}/{{ .Values.image.manager.repository }}:{{ .Values.image.manager.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         livenessProbe:
           httpGet:
