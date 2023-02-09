@@ -20,9 +20,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
@@ -124,6 +126,20 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	// So it will been updated in ApplyTenant
 	if tenant.Status.ObservedGeneration > 1 {
 		tenantParams.Changed = true
+	}
+
+	if ref := tenant.Spec.GeoReplicationRef; ref != nil {
+		geoReplication := &v1alpha1.PulsarGeoReplication{}
+		namespacedName := types.NamespacedName{
+			Namespace: tenant.Namespace,
+			Name:      ref.Name,
+		}
+		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+			return err
+		}
+		for _, cluster := range geoReplication.Spec.Clusters {
+			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, cluster.Name)
+		}
 	}
 
 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {

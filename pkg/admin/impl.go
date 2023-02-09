@@ -89,7 +89,7 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		},
 		SchemaCompatibilityStrategy: pulsarutils.AlwaysCompatible,
 		SubscriptionAuthMode:        pulsarutils.None,
-		ReplicationClusters:         []string{},
+		ReplicationClusters:         params.ReplicationClusters,
 	})
 	if err != nil && !IsAlreadyExist(err) {
 		return err
@@ -241,6 +241,13 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 			return err
 		}
 	}
+	// TODO set-replication-clusters, pulsarctl need to support this method
+	// if len(params.ReplicationClusters) != 0 {
+	// 	err = p.adminClient.Topics().SetReplicationClusters()
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 
 	return nil
 }
@@ -319,6 +326,13 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 			}
 		}
 		err = p.adminClient.Namespaces().SetBacklogQuota(completeNSName, backlogQuotaPolicy, backlogQuotaType)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(params.ReplicationClusters) != 0 {
+		err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, params.ReplicationClusters)
 		if err != nil {
 			return err
 		}
@@ -487,4 +501,30 @@ func (p *PulsarAdminClient) UploadSchema(topic string, params *SchemaParams) err
 // DeleteSchema deletes the schema associated with a given topic
 func (p *PulsarAdminClient) DeleteSchema(topic string) error {
 	return p.adminClient.Schemas().DeleteSchema(topic)
+}
+
+func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) error {
+
+	clusterData := pulsarutils.ClusterData{
+		Name: name,
+	}
+
+	if param.ServiceSecureURL != "" && param.BrokerServiceSecureURL != "" {
+		clusterData.ServiceURLTls = param.ServiceSecureURL
+		clusterData.BrokerServiceURLTls = param.BrokerServiceSecureURL
+	} else {
+		clusterData.ServiceURL = param.ServiceURL
+		clusterData.BrokerServiceURL = param.BrokerServiceURL
+	}
+
+	// TODO pulsarctl cluster().Create() need to supoort auth parameters
+	err := p.adminClient.Clusters().Create(clusterData)
+	if err != nil && !IsAlreadyExist(err) {
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) DeleteCluster(name string) error {
+	return p.adminClient.Clusters().Delete(name)
 }

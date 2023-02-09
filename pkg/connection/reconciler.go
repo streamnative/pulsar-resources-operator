@@ -42,6 +42,7 @@ type PulsarConnectionReconciler struct {
 	namespaces         []resourcev1alpha1.PulsarNamespace
 	topics             []resourcev1alpha1.PulsarTopic
 	permissions        []resourcev1alpha1.PulsarPermission
+	geoReplications    []resourcev1alpha1.PulsarGeoReplication
 	hasUnreadyResource bool
 
 	pulsarAdmin admin.PulsarAdmin

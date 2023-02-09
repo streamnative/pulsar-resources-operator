@@ -20,9 +20,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
@@ -129,6 +131,20 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaLimitSize:       namespace.Spec.BacklogQuotaLimitSize,
 		BacklogQuotaRetentionPolicy: namespace.Spec.BacklogQuotaRetentionPolicy,
 		BacklogQuotaType:            namespace.Spec.BacklogQuotaType,
+	}
+
+	if ref := namespace.Spec.GeoReplicationRef; ref != nil {
+		geoReplication := &v1alpha1.PulsarGeoReplication{}
+		namespacedName := types.NamespacedName{
+			Namespace: namespace.Namespace,
+			Name:      ref.Name,
+		}
+		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+			return err
+		}
+		for _, cluster := range geoReplication.Spec.Clusters {
+			params.ReplicationClusters = append(params.ReplicationClusters, cluster.Name)
+		}
 	}
 
 	if err := pulsarAdmin.ApplyNamespace(namespace.Spec.Name, params); err != nil {

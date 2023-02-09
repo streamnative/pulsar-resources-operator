@@ -86,6 +86,10 @@ type PulsarTopicSpec struct {
 
 	// +optional
 	SchemaInfo *SchemaInfo `json:"schemaInfo,omitempty"`
+
+	// GeoReplicationRef is the reference to the PulsarConnection resource
+	// +optional
+	GeoReplicationRef *corev1.LocalObjectReference `json:"geoReplicationRef,omitempty"`
 }
 
 // SchemaInfo defines the Pulsar Schema.

@@ -48,6 +48,7 @@ type NamespaceParams struct {
 	BacklogQuotaLimitSize       *resource.Quantity
 	BacklogQuotaRetentionPolicy *string
 	BacklogQuotaType            *string
+	ReplicationClusters         []string
 }
 
 // TopicParams indicates the parameters for creating a topic
@@ -64,6 +65,15 @@ type TopicParams struct {
 	BacklogQuotaLimitTime             *metav1.Duration
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
+}
+
+type ClusterParams struct {
+	ServiceURL             string
+	ServiceSecureURL       string
+	BrokerServiceURL       string
+	BrokerServiceSecureURL string
+	AuthPlugin             string
+	AuthParameters         string
 }
 
 // SchemaParams indicates the parameters for uploading a schema
@@ -115,6 +125,11 @@ type PulsarAdmin interface {
 
 	// DeleteSchema deletes the schema associated with a given topic
 	DeleteSchema(topic string) error
+
+	// CreateCluster creates cluster info
+	CreateCluster(name string, param *ClusterParams) error
+	// DeleteCluster delete cluster info
+	DeleteCluster(name string) error
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

@@ -80,6 +80,10 @@ type PulsarNamespaceSpec struct {
 	// +kubebuilder:validation:Enum=destination_storage;message_age
 	// +optional
 	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
+
+	// GeoReplicationRef is the reference to the PulsarConnection resource
+	// +optional
+	GeoReplicationRef *corev1.LocalObjectReference `json:"geoReplicationRef,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace

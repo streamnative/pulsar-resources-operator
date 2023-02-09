@@ -33,6 +33,21 @@ type PulsarConnectionSpec struct {
 	// Authentication defines authentication configurations
 	// +optional
 	Authentication *PulsarAuthentication `json:"authentication,omitempty"`
+
+	// BrokerServiceURL is the broker service url of the pulsar cluster
+	// +optional
+	// +kubebuilder:validation:Pattern="^pulsar?://.+$"
+	BrokerServiceURL string `json:"brokerServiceURL,omitempty"`
+
+	// BrokerServiceSecureURL is the broker service url for secure connection.
+	// +optional
+	// +kubebuilder:validation:Pattern="^pulsar?://.+$"
+	BrokerServiceSecureURL string `json:"brokerServiceSecureURL,omitempty"`
+
+	// AdminServiceSecureURL is the admin service url for secure connection.
+	// +optional
+	// +kubebuilder:validation:Pattern="^https?://.+$"
+	AdminServiceSecureURL string `json:"adminServiceSecureURL,omitempty"`
 }
 
 // PulsarConnectionStatus defines the observed state of PulsarConnection

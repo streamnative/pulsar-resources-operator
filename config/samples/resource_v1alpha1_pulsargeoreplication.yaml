@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2023 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Append samples you want in your CSV to this file as resources ##
-resources:
-- resource_v1alpha1_pulsarconnection.yaml
-- resource_v1alpha1_pulsarnamespace.yaml
-- resource_v1alpha1_pulsartenant.yaml
-- resource_v1alpha1_pulsartopic.yaml
-- resource_v1alpha1_pulsarpermission.yaml
-- resource_v1alpha1_pulsargeoreplication.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarGeoReplication
+metadata:
+  labels:
+    app.kubernetes.io/name: pulsargeoreplication
+    app.kubernetes.io/instance: pulsargeoreplication-sample
+    app.kubernetes.io/part-of: pulsar-resources-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: pulsar-resources-operator
+  name: pulsargeoreplication-sample
+spec:
+  # TODO(user): Add fields here

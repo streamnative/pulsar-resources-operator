@@ -1,0 +1,98 @@
+# Copyright 2023 StreamNative
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# Copyright 2022 StreamNative
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: pulsar-resources-operator.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions:
+    owned:
+    - description: PulsarConnection is the Schema for the pulsarconnections API
+      displayName: Pulsar Connection
+      kind: PulsarConnection
+      name: pulsarconnections.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarNamespace is the Schema for the pulsarnamespaces API
+      displayName: Pulsar Namespace
+      kind: PulsarNamespace
+      name: pulsarnamespaces.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarPermission is the Schema for the pulsarpermissions API
+      displayName: Pulsar Permission
+      kind: PulsarPermission
+      name: pulsarpermissions.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarTenant is the Schema for the pulsartenants API
+      displayName: Pulsar Tenant
+      kind: PulsarTenant
+      name: pulsartenants.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarTopic is the Schema for the pulsartopics API
+      displayName: Pulsar Topic
+      kind: PulsarTopic
+      name: pulsartopics.resource.streamnative.io
+      version: v1alpha1
+  description: pulsar resources operator
+  displayName: Pulsar Resources Operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - resources
+  - pulsar
+  - streamnative
+  links:
+  - name: Pulsar Resources Operator
+    url: https://pulsar-resources-operator.domain
+  maintainers:
+  - email: fswang@streamnative.io
+    name: fswang
+  maturity: alpha
+  provider:
+    name: StreamNative
+    url: streamnative.io
+  version: 0.0.0

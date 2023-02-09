@@ -88,3 +88,9 @@ func (d *DummyPulsarAdmin) UploadSchema(topic string, params *SchemaParams) erro
 func (d *DummyPulsarAdmin) DeleteSchema(topic string) error {
 	return nil
 }
+
+// CreateCluster is a fake implements of CreateCluster
+func (d *DummyPulsarAdmin) CreateCluster(name string, param *ClusterParams) error
+
+// DeleteCluster is a fake implements of DeleteCluster
+func (d *DummyPulsarAdmin) DeleteCluster(name string) error
