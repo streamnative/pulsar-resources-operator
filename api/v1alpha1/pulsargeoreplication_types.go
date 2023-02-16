@@ -27,9 +27,6 @@ type PulsarGeoReplicationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Name is the get replication name
-	Name string `json:"name"`
-
 	// ConnectionRef is the reference to the PulsarConnection resource
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
 
@@ -39,7 +36,10 @@ type PulsarGeoReplicationSpec struct {
 	// DestinationConnectionRef corev1.LocalObjectReference `json:"destinationConnectionRef"`
 
 	// Clusters is a list of cluster info which will be used to setup the replication.
-	Clusters []ClusterInfo `json:"clusterName,omitempty"`
+	Clusters []ClusterInfo `json:"clusters,omitempty"`
+
+	// LocalClusterName is the default cluster which is created by pulsar
+	LocalClusterName string `json:"localClusterName,omitempty"`
 
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional

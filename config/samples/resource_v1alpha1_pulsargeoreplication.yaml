@@ -23,4 +23,8 @@ metadata:
     app.kubernetes.io/created-by: pulsar-resources-operator
   name: pulsargeoreplication-sample
 spec:
-  # TODO(user): Add fields here
+  connectionRef: test-pulsar-connection
+  clusters:
+  - name: ta-sn-platform
+    destinationConnectionRef:
+      name: pulsar-tt-connection

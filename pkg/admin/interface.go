@@ -65,6 +65,7 @@ type TopicParams struct {
 	BacklogQuotaLimitTime             *metav1.Duration
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
+	ReplicationClusters               []string
 }
 
 type ClusterParams struct {
@@ -100,6 +101,9 @@ type PulsarAdmin interface {
 	// DeleteNamespace delete a specific namespace
 	DeleteNamespace(name string) error
 
+	// ResetNamespaceCluster resets the assigned clusters of the namespace to the local default cluster
+	ResetNamespaceCluster(name string) error
+
 	// ApplyTopic creates a topic with parameters
 	ApplyTopic(name string, params *TopicParams) error
 
@@ -128,8 +132,14 @@ type PulsarAdmin interface {
 
 	// CreateCluster creates cluster info
 	CreateCluster(name string, param *ClusterParams) error
+
+	// UpdateCluster updates cluster info
+	UpdateCluster(name string, param *ClusterParams) error
+
 	// DeleteCluster delete cluster info
 	DeleteCluster(name string) error
+	// CheckClusterExist check wether the cluster is created or not
+	CheckClusterExist(name string) bool
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

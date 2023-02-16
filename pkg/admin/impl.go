@@ -15,6 +15,7 @@
 package admin
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -89,7 +90,7 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		},
 		SchemaCompatibilityStrategy: pulsarutils.AlwaysCompatible,
 		SubscriptionAuthMode:        pulsarutils.None,
-		ReplicationClusters:         params.ReplicationClusters,
+		ReplicationClusters:         []string{},
 	})
 	if err != nil && !IsAlreadyExist(err) {
 		return err
@@ -100,6 +101,19 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		return err
 	}
 
+	return nil
+}
+
+// ResetNamespaceCluster resets the assigned clusters of the namespace to the local default cluster
+func (p *PulsarAdminClient) ResetNamespaceCluster(completeNSName string) error {
+	clusters, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName)
+	if err != nil {
+		return err
+	}
+	err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -241,13 +255,18 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 			return err
 		}
 	}
-	// TODO set-replication-clusters, pulsarctl need to support this method
-	// if len(params.ReplicationClusters) != 0 {
-	// 	err = p.adminClient.Topics().SetReplicationClusters()
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// }
+	if len(params.ReplicationClusters) != 0 {
+		clusters, err := p.adminClient.Topics().GetReplicationClusters(*topicName)
+		if err != nil {
+			return err
+		}
+
+		clusters = append(clusters, params.ReplicationClusters...)
+		err = p.adminClient.Topics().SetReplicationClusters(*topicName, clusters)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -332,7 +351,12 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 	}
 
 	if len(params.ReplicationClusters) != 0 {
-		err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, params.ReplicationClusters)
+		clusters, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName)
+		if err != nil {
+			return err
+		}
+		clusters = append(clusters, params.ReplicationClusters...)
+		err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
 		if err != nil {
 			return err
 		}
@@ -506,15 +530,19 @@ func (p *PulsarAdminClient) DeleteSchema(topic string) error {
 func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) error {
 
 	clusterData := pulsarutils.ClusterData{
-		Name: name,
+		Name:                     name,
+		AuthenticationPlugin:     param.AuthPlugin,
+		AuthenticationParameters: param.AuthParameters,
 	}
 
 	if param.ServiceSecureURL != "" && param.BrokerServiceSecureURL != "" {
 		clusterData.ServiceURLTls = param.ServiceSecureURL
 		clusterData.BrokerServiceURLTls = param.BrokerServiceSecureURL
-	} else {
+	} else if param.ServiceURL != "" && param.BrokerServiceURL != "" {
 		clusterData.ServiceURL = param.ServiceURL
 		clusterData.BrokerServiceURL = param.BrokerServiceURL
+	} else {
+		return errors.New("BrokerServiceURL and ServiceURL shouldn't be empty")
 	}
 
 	// TODO pulsarctl cluster().Create() need to supoort auth parameters
@@ -525,6 +553,40 @@ func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) err
 	return nil
 }
 
+func (p *PulsarAdminClient) UpdateCluster(name string, param *ClusterParams) error {
+	clusterData := pulsarutils.ClusterData{
+		Name:                     name,
+		AuthenticationPlugin:     param.AuthPlugin,
+		AuthenticationParameters: param.AuthParameters,
+	}
+
+	if param.ServiceSecureURL != "" && param.BrokerServiceSecureURL != "" {
+		clusterData.ServiceURLTls = param.ServiceSecureURL
+		clusterData.BrokerServiceURLTls = param.BrokerServiceSecureURL
+	} else if param.ServiceURL != "" && param.BrokerServiceURL != "" {
+		clusterData.ServiceURL = param.ServiceURL
+		clusterData.BrokerServiceURL = param.BrokerServiceURL
+	} else {
+		return errors.New("BrokerServiceURL and ServiceURL shouldn't be empty")
+	}
+
+	err := p.adminClient.Clusters().Update(clusterData)
+	if err != nil && !IsAlreadyExist(err) {
+		return err
+	}
+	return nil
+}
+
 func (p *PulsarAdminClient) DeleteCluster(name string) error {
 	return p.adminClient.Clusters().Delete(name)
+}
+
+func (p *PulsarAdminClient) CheckClusterExist(name string) bool {
+	_, err := p.adminClient.Clusters().Get(name)
+
+	if err != nil && !IsAlreadyExist(err) {
+		return false
+	}
+
+	return true
 }

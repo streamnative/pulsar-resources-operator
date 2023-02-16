@@ -89,12 +89,29 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 
 	if !namespace.DeletionTimestamp.IsZero() {
 		log.Info("Deleting namespace", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
+
+		// TODO when geoReplicationRef is not nil, it should reset the replication clusters to
+		// default local cluster for the namespace. So how to get this default local cluster?
+		// if namespace.Spec.GeoReplicationRef != nil {
+		// 	log.Info("Reset namespace cluster", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
+		// 	if err := pulsarAdmin.ResetNamespaceCluster(namespace.Spec.Name); err != nil {
+		// 		log.Error(err, "Failed to reset the cluster for namespace")
+		// 		return err
+		// 	}
+		// }
+
 		if namespace.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
-			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && admin.IsNotFound(err) {
+			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil {
 				log.Error(err, "Failed to delete namespace")
+				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+				if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+					log.Error(err, "Failed to update the geo replication status")
+					return err
+				}
 				return err
 			}
 		}
+
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(namespace, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, namespace); err != nil {
@@ -145,6 +162,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		for _, cluster := range geoReplication.Spec.Clusters {
 			params.ReplicationClusters = append(params.ReplicationClusters, cluster.Name)
 		}
+		log.Info("create namespace with extra replication clusters", "clusters", params.ReplicationClusters)
 	}
 
 	if err := pulsarAdmin.ApplyNamespace(namespace.Spec.Name, params); err != nil {

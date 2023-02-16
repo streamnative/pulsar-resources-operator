@@ -140,6 +140,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		for _, cluster := range geoReplication.Spec.Clusters {
 			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, cluster.Name)
 		}
+		log.Info("create tenat with allowed clusters", "clusters", tenantParams.AllowedClusters)
 	}
 
 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {

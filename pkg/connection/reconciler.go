@@ -62,6 +62,7 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		hasUnreadyResource: false,
 	}
 	r.reconcilers = []reconciler.Interface{
+		makeGeoReplicationReconciler(r),
 		makeTenantsReconciler(r),
 		makeNamespacesReconciler(r),
 		makeTopicsReconciler(r),

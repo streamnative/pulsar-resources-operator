@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2023 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,38 +19,21 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: pulsartenants.resource.streamnative.io
+  name: pulsargeoreplications.resource.streamnative.io
 spec:
   group: resource.streamnative.io
   names:
-    categories:
-    - pulsar
-    - pulsarres
-    kind: PulsarTenant
-    listKind: PulsarTenantList
-    plural: pulsartenants
-    shortNames:
-    - ptenant
-    singular: pulsartenant
+    kind: PulsarGeoReplication
+    listKind: PulsarGeoReplicationList
+    plural: pulsargeoreplications
+    singular: pulsargeoreplication
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.name
-      name: RESOURCE_NAME
-      type: string
-    - jsonPath: .metadata.generation
-      name: GENERATION
-      type: string
-    - jsonPath: .status.observedGeneration
-      name: OBSERVED_GENERATION
-      type: string
-    - jsonPath: .status.conditions[?(@.type=="Ready")].status
-      name: READY
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarTenant is the Schema for the pulsartenants API
+        description: PulsarGeoReplication is the Schema for the pulsargeoreplications
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -65,27 +48,33 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarTenantSpec defines the desired state of PulsarTenant
+            description: PulsarGeoReplicationSpec defines the desired state of PulsarGeoReplication
             properties:
-              adminRoles:
+              clusters:
+                description: Clusters is a list of cluster info which will be used
+                  to setup the replication.
                 items:
-                  type: string
-                type: array
-              allowedClusters:
-                items:
-                  type: string
+                  description: ClusterInfo indicates the remote cluster info that
+                    will be used in the setup of GEO replication.
+                  properties:
+                    destinationConnectionRef:
+                      description: DestinationConnectionRef is the connection reference
+                        to the remote cluster
+                      properties:
+                        name:
+                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                            TODO: Add other useful fields. apiVersion, kind, uid?'
+                          type: string
+                      type: object
+                    name:
+                      description: Name is the cluster name in remote cluster
+                      type: string
+                  required:
+                  - destinationConnectionRef
+                  type: object
                 type: array
               connectionRef:
                 description: ConnectionRef is the reference to the PulsarConnection
-                  resource
-                properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
-                type: object
-              geoReplicationRef:
-                description: GeoReplicationRef is the reference to the PulsarConnection
                   resource
                 properties:
                   name:
@@ -101,19 +90,16 @@ spec:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
-              name:
-                description: Name is the tenant name
-                type: string
             required:
             - connectionRef
-            - name
             type: object
           status:
-            description: PulsarTenantStatus defines the observed state of PulsarTenant
+            description: PulsarGeoReplicationStatus defines the observed state of
+              PulsarGeoReplication
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: Conditions Represents the observations of a connection's
+                  current state.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct

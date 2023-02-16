@@ -21,10 +21,12 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
+	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
@@ -89,7 +91,11 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 
 	if !topic.DeletionTimestamp.IsZero() {
 		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
+
 		if topic.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+			// TODO when geoReplicationRef is not nil, it should reset the replication clusters to
+			// default local cluster for the topic
+
 			// Delete the schema of the topic before the deletion
 			if topic.Spec.SchemaInfo != nil {
 				log.Info("Deleting topic schema")
@@ -144,6 +150,22 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	}
 
 	r.applyDefault(params)
+
+	if ref := topic.Spec.GeoReplicationRef; ref != nil {
+		geoReplication := &v1alpha1.PulsarGeoReplication{}
+		namespacedName := types.NamespacedName{
+			Namespace: topic.Namespace,
+			Name:      ref.Name,
+		}
+		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+			return err
+		}
+		for _, cluster := range geoReplication.Spec.Clusters {
+			params.ReplicationClusters = append(params.ReplicationClusters, cluster.Name)
+		}
+		log.Info("create topic with replication clusters", "clusters", params.ReplicationClusters)
+	}
+
 	if err := pulsarAdmin.ApplyTopic(topic.Spec.Name, params); err != nil {
 		meta.SetStatusCondition(&topic.Status.Conditions, *NewErrorCondition(topic.Generation, err.Error()))
 		log.Error(err, "Failed to apply topic")

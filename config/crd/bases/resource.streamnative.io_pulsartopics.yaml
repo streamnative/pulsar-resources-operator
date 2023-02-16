@@ -87,6 +87,15 @@ spec:
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
+              geoReplicationRef:
+                description: GeoReplicationRef is the reference to the PulsarConnection
+                  resource
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
               lifecyclePolicy:
                 description: PulsarResourceLifeCyclePolicy indicates whether it will
                   keep or delete the resource in pulsar cluster after resource is

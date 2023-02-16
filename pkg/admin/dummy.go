@@ -49,6 +49,11 @@ func (d *DummyPulsarAdmin) DeleteNamespace(name string) error {
 	return nil
 }
 
+// ResetNamespaceCluster is a fake implements of ResetNamespaceCluster
+func (d *DummyPulsarAdmin) ResetNamespaceCluster(name string) error {
+	return nil
+}
+
 // ApplyTopic is a fake implements of ApplyTopic
 func (d *DummyPulsarAdmin) ApplyTopic(name string, params *TopicParams) error {
 	return nil
@@ -90,7 +95,19 @@ func (d *DummyPulsarAdmin) DeleteSchema(topic string) error {
 }
 
 // CreateCluster is a fake implements of CreateCluster
-func (d *DummyPulsarAdmin) CreateCluster(name string, param *ClusterParams) error
+func (d *DummyPulsarAdmin) CreateCluster(name string, param *ClusterParams) error {
+	return nil
+}
+
+// UpdateCluster is a fake implements of UpdateCluster
+func (d *DummyPulsarAdmin) UpdateCluster(name string, param *ClusterParams) error {
+	return nil
+}
 
 // DeleteCluster is a fake implements of DeleteCluster
-func (d *DummyPulsarAdmin) DeleteCluster(name string) error
+func (d *DummyPulsarAdmin) DeleteCluster(name string) error {
+	return nil
+}
+func (d *DummyPulsarAdmin) CheckClusterExist(name string) bool {
+	return true
+}
