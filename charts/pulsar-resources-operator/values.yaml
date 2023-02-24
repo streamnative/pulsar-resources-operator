@@ -36,7 +36,7 @@ image:
     tag: ""
     
   # kube-rbac-proxy container
-  kube-rbac-proxy:
+  kube_rbac_proxy:
     # -- Specififies the registry of images, especially when user want to use a different image hub
     registry: gcr.io
     # -- The full repo name for image.
