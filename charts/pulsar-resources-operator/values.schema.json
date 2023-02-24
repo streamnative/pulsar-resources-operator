@@ -36,35 +36,10 @@
             "description": "An explanation about the purpose of this instance.",
             "examples": [
                 {
-                    "registry": "docker.cloudsmith.io",
-                    "repository": "streamnative/operators/pulsar-resources-operator",
-                    "pullPolicy": "IfNotPresent",
-                    "tag": ""
+                    "pullPolicy": "IfNotPresent"
                 }
             ],
-            "required": [
-                "registry",
-                "repository"
-            ],
             "properties": {
-                "registry": {
-                    "$id": "#/properties/image/properties/registry",
-                    "type": "string",
-                    "title": "The registry schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        "docker.cloudsmith.io"
-                    ]
-                },
-                "repository": {
-                    "$id": "#/properties/image/properties/repository",
-                    "type": "string",
-                    "title": "The repository schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        "streamnative/operators/pulsar-resources-operator"
-                    ]
-                },
                 "pullPolicy": {
                     "$id": "#/properties/image/properties/pullPolicy",
                     "type": "string",
@@ -74,14 +49,51 @@
                         "IfNotPresent"
                     ]
                 },
-                "tag": {
-                    "$id": "#/properties/image/properties/tag",
-                    "type": "string",
-                    "title": "The tag schema",
+                "manager": {
+                    "$id": "#/properties/image/properties/manager",
+                    "type": "object",
+                    "title": "The operator image schema",
                     "description": "An explanation about the purpose of this instance.",
                     "examples": [
-                        ""
-                    ]
+                        {
+                            "registry": "docker.cloudsmith.io",
+                            "repository": "streamnative/operators/pulsar-resources-operator",
+                            "tag": ""
+                        }
+                    ],
+                    "required": [
+                        "registry",
+                        "repository"
+                    ],
+                    "properties": {
+                        "registry": {
+                            "$id": "#/properties/image/properties/manager/properties/registry",
+                            "type": "string",
+                            "title": "The registry schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "examples": [
+                                "docker.cloudsmith.io"
+                            ]
+                        },
+                        "repository": {
+                            "$id": "#/properties/image/properties/manager/properties/repository",
+                            "type": "string",
+                            "title": "The repository schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "examples": [
+                                "streamnative/operators/pulsar-resources-operator"
+                            ]
+                        },
+                        "tag": {
+                            "$id": "#/properties/image/properties/manager/properties/tag",
+                            "type": "string",
+                            "title": "The tag schema",
+                            "description": "An explanation about the purpose of this instance.",
+                            "examples": [
+                                ""
+                            ]
+                        }
+                    }
                 }
             },
             "additionalProperties": true
