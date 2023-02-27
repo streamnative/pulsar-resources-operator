@@ -94,6 +94,47 @@
                             ]
                         }
                     }
+                },
+                "kubeRbacProxy": {
+                    "type": "object",
+                    "default": {},
+                    "title": "The kubeRbacProxy Schema",
+                    "required": [
+                        "registry",
+                        "repository",
+                        "tag"
+                    ],
+                    "properties": {
+                        "registry": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The registry Schema",
+                            "examples": [
+                                "gcr.io"
+                            ]
+                        },
+                        "repository": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The repository Schema",
+                            "examples": [
+                                "kubebuilder/kube-rbac-proxy"
+                            ]
+                        },
+                        "tag": {
+                            "type": "string",
+                            "default": "",
+                            "title": "The tag Schema",
+                            "examples": [
+                                "v0.8.0"
+                            ]
+                        }
+                    },
+                    "examples": [{
+                        "registry": "gcr.io",
+                        "repository": "kubebuilder/kube-rbac-proxy",
+                        "tag": "v0.8.0"
+                    }]
                 }
             },
             "additionalProperties": true
