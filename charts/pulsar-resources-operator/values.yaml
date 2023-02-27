@@ -34,9 +34,9 @@ image:
     repository: streamnative/operators/pulsar-resources-operator
     # -- Image tag, it can override the image tag whose default is the chart appVersion.
     tag: ""
-    
+
   # kube-rbac-proxy container
-  kube_rbac_proxy:
+  kubeRbacProxy:
     # -- Specififies the registry of images, especially when user want to use a different image hub
     registry: gcr.io
     # -- The full repo name for image.
