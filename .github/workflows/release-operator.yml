@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+name: Release operator
+
 on:
   push:
     tags:
@@ -28,7 +30,7 @@ jobs:
 
     steps:
       - name: Set up Go 1.17
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
         id: go
@@ -38,7 +40,7 @@ jobs:
           git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
 
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Setup operator-sdk
         run: |
@@ -48,7 +50,7 @@ jobs:
           operator-sdk version
 
       - name: Login to CloudSmith
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: docker.cloudsmith.io
           username: ${{ secrets.CLOUDSMITH_USERNAME }}
