@@ -81,3 +81,7 @@ jobs:
 
       - name: Run chart-testing (install)
         run: ct install
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        if: failure()
