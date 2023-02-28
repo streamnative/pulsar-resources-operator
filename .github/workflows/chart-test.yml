@@ -56,8 +56,8 @@ jobs:
       - name: Run chart-testing (list-changed)
         id: list-changed
         run: |
-          changed=$(ct list-changed --config ct.yaml | grep -v '>>>')
-          chart_name=$(ct list-changed --config ct.yaml | grep -v '>>>')
+          changed=$(ct list-changed --config ct.yaml | grep -v '>>>' || echo '')
+          chart_name=$(ct list-changed --config ct.yaml | grep -v '>>>' || echo '')
           if [[ -n "$changed" ]]; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "chart_name=$chart_name" >> $GITHUB_OUTPUT
@@ -81,7 +81,9 @@ jobs:
 
       - name: Run chart-testing (install)
         run: ct install
+        if: steps.list-changed.outputs.changed == 'true'
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10
         if: failure()
