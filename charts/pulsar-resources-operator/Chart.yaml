@@ -40,7 +40,7 @@ appVersion: "v0.2.0"
 
 # This is a semver range of compatible Kubernetes versions. Helm will validate the version
 # constraints when installing the chart and fail if the cluster runs an unsupported Kubernetes version
-kubeVersion: ">= 1.16.0-0 < 1.24.0-0"
+kubeVersion: ">= 1.16.0-0 < 1.26.0-0"
 
 icon: https://pulsar.apache.org/img/pulsar.svg
 sources:
