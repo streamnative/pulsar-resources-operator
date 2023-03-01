@@ -87,9 +87,35 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	log := r.log.WithValues("pulsartenant", tenant.Name, "namespace", tenant.Namespace)
 	log.V(1).Info("Start Reconcile")
 
+	var geoReplication *v1alpha1.PulsarGeoReplication
+	if ref := tenant.Spec.GeoReplicationRef; ref != nil {
+		geoReplication = &v1alpha1.PulsarGeoReplication{}
+		namespacedName := types.NamespacedName{
+			Namespace: tenant.Namespace,
+			Name:      ref.Name,
+		}
+		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+			return err
+		}
+	}
+
 	if !tenant.DeletionTimestamp.IsZero() {
 		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
 		if tenant.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+			// Reset the tenant cluster to local cluster before deletion
+			// if geoReplication != nil {
+			// 	tenantParams := &admin.TenantParams{
+			// 		AdminRoles:      tenant.Spec.AdminRoles,
+			// 		AllowedClusters: tenant.Spec.AllowedClusters,
+			// 	}
+			// 	source := geoReplication.Spec.SourceCluster
+			// 	tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, source.Name)
+			// 	log.Info("Rest tenat with local cluster", "clusters", tenantParams.AllowedClusters)
+			// 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {
+			// 		return err
+			// 	}
+			// }
+
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && admin.IsNotFound(err) {
 				log.Error(err, "Failed to delete tenant")
 				return err
@@ -128,18 +154,11 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		tenantParams.Changed = true
 	}
 
-	if ref := tenant.Spec.GeoReplicationRef; ref != nil {
-		geoReplication := &v1alpha1.PulsarGeoReplication{}
-		namespacedName := types.NamespacedName{
-			Namespace: tenant.Namespace,
-			Name:      ref.Name,
-		}
-		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
-			return err
-		}
-		for _, cluster := range geoReplication.Spec.Clusters {
-			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, cluster.Name)
-		}
+	if geoReplication != nil {
+		dest := geoReplication.Spec.DestinationCluster
+		tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, dest.Name)
+		source := geoReplication.Spec.SourceCluster
+		tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, source.Name)
 		log.Info("create tenat with allowed clusters", "clusters", tenantParams.AllowedClusters)
 	}
 

@@ -101,14 +101,21 @@ type PulsarAdmin interface {
 	// DeleteNamespace delete a specific namespace
 	DeleteNamespace(name string) error
 
-	// ResetNamespaceCluster resets the assigned clusters of the namespace to the local default cluster
-	ResetNamespaceCluster(name string) error
+	// GetNamespaceClusters get the assigned clusters of the namespace to the local default cluster
+	GetNamespaceClusters(completeNSName string) ([]string, error)
+	// SetNamespaceClusters resets the assigned clusters of the namespace to the local default cluster
+	SetNamespaceClusters(name string, clusters []string) error
 
 	// ApplyTopic creates a topic with parameters
 	ApplyTopic(name string, params *TopicParams) error
 
 	// DeleteTopic delete a specific topic
 	DeleteTopic(name string) error
+
+	// GetTopicClusters get the assigned clusters of the topic to the local default cluster
+	GetTopicClusters(name string, persistent *bool) ([]string, error)
+	// SetTopicClusters resets the assigned clusters of the topic to the local default cluster
+	SetTopicClusters(name string, persistent *bool, clusters []string) error
 
 	// GrantPermissions grants permissions to multiple role with multiple actions
 	// on a namespace or topic, each role will be granted the same actions

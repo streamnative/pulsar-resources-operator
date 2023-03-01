@@ -39,7 +39,7 @@ type PulsarGeoReplicationReconciler struct {
 func makeGeoReplicationReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarGeoReplicationReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarTenant"),
+		log:  r.log.WithName("PulsarGeoReplication"),
 	}
 }
 
@@ -73,7 +73,7 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.geoReplications {
 		geoReplication := &r.conn.geoReplications[i]
 		if err := r.ReconcileGeoReplication(ctx, r.conn.pulsarAdmin, geoReplication); err != nil {
-			return fmt.Errorf("reconcile tenant [%w]", err)
+			return fmt.Errorf("reconcile geo replication [%w]", err)
 		}
 	}
 	return nil
@@ -88,14 +88,14 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	if !geoReplication.DeletionTimestamp.IsZero() {
 		log.Info("Deleting GeoReplication", "LifecyclePolicy", geoReplication.Spec.LifecyclePolicy)
 		if geoReplication.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
-			for _, cluster := range geoReplication.Spec.Clusters {
-				if err := pulsarAdmin.DeleteCluster(cluster.Name); err != nil && admin.IsNotFound(err) {
-					log.Error(err, "Failed to delete geo replication")
-					return err
-				}
+			// Delete the cluster that created with destination cluster info.
+			// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
+			clusterName := geoReplication.Spec.DestinationCluster.Name
+			if err := pulsarAdmin.DeleteCluster(clusterName); err != nil && admin.IsNotFound(err) {
+				log.Error(err, "Failed to delete geo replication cluster")
+				return err
 			}
 		}
-
 		controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, geoReplication); err != nil {
 			log.Error(err, "Failed to remove finalizer")
@@ -112,62 +112,61 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		log.V(1).Info("Resource is ready")
 		return nil
 	}
-	for _, cluster := range geoReplication.Spec.Clusters {
 
-		destConnection := &resourcev1alpha1.PulsarConnection{}
-		namespacedName := types.NamespacedName{
-			Name:      cluster.DestinationConnectionRef.Name,
-			Namespace: geoReplication.Namespace,
+	dest := geoReplication.Spec.DestinationCluster
+	destConnection := &resourcev1alpha1.PulsarConnection{}
+	namespacedName := types.NamespacedName{
+		Name:      dest.ConnectionRef.Name,
+		Namespace: geoReplication.Namespace,
+	}
+	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
+		log.Error(err, "Failed to get destination connection for geo replication")
+		if apierrors.IsNotFound(err) {
+			return err
 		}
-		if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
-			log.Error(err, "Failed to get destination connection for geo replication")
-			if apierrors.IsNotFound(err) {
+	}
+
+	clusterParam := &admin.ClusterParams{
+		ServiceURL:             destConnection.Spec.AdminServiceURL,
+		BrokerServiceURL:       destConnection.Spec.BrokerServiceURL,
+		ServiceSecureURL:       destConnection.Spec.AdminServiceSecureURL,
+		BrokerServiceSecureURL: destConnection.Spec.BrokerServiceSecureURL,
+	}
+
+	hasAuth := true
+	if auth := destConnection.Spec.Authentication; auth != nil {
+		if auth.Token != nil {
+			value, err := GetValue(ctx, r.conn.client, destConnection.Namespace, auth.Token)
+			if err != nil {
 				return err
 			}
-		}
-
-		clusterParam := &admin.ClusterParams{
-			ServiceURL:             destConnection.Spec.AdminServiceURL,
-			BrokerServiceURL:       destConnection.Spec.BrokerServiceURL,
-			ServiceSecureURL:       destConnection.Spec.AdminServiceSecureURL,
-			BrokerServiceSecureURL: destConnection.Spec.BrokerServiceSecureURL,
-		}
-
-		hasAuth := true
-		if auth := destConnection.Spec.Authentication; auth != nil {
-			if auth.Token != nil {
-				value, err := GetValue(ctx, r.conn.client, destConnection.Namespace, auth.Token)
-				if err != nil {
-					return err
-				}
-				if value != nil {
-					clusterParam.AuthPlugin = v1alpha1.AuthPluginToken
-					clusterParam.AuthParameters = "token:" + *value
-					hasAuth = true
-				}
+			if value != nil {
+				clusterParam.AuthPlugin = v1alpha1.AuthPluginToken
+				clusterParam.AuthParameters = "token:" + *value
+				hasAuth = true
 			}
-			if auth.OAuth2 != nil && !hasAuth {
-				// TODO
-			}
-
+		}
+		if auth.OAuth2 != nil && !hasAuth {
+			// TODO
 		}
 
-		// If the cluster already exists, skip it
-		if pulsarAdmin.CheckClusterExist(cluster.Name) {
-			if err := pulsarAdmin.UpdateCluster(cluster.Name, clusterParam); err != nil {
-				meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
-				log.Error(err, "Failed to create geo replication cluster")
-				if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
-					log.Error(err, "Failed to update the geo replication status")
-					return err
-				}
+	}
+
+	// If the cluster already exists, only update it
+	if pulsarAdmin.CheckClusterExist(dest.Name) {
+		if err := pulsarAdmin.UpdateCluster(dest.Name, clusterParam); err != nil {
+			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
+			log.Error(err, "Failed to create geo replication cluster")
+			if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
+				log.Error(err, "Failed to update the geo replication status")
 				return err
 			}
-			continue
+			return err
 		}
 
+	} else {
 		// Create Clusters
-		if err := pulsarAdmin.CreateCluster(cluster.Name, clusterParam); err != nil {
+		if err := pulsarAdmin.CreateCluster(dest.Name, clusterParam); err != nil {
 			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
 			log.Error(err, "Failed to create geo replication cluster")
 			if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {

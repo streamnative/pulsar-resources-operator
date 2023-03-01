@@ -50,37 +50,24 @@ spec:
           spec:
             description: PulsarGeoReplicationSpec defines the desired state of PulsarGeoReplication
             properties:
-              clusters:
-                description: Clusters is a list of cluster info which will be used
-                  to setup the replication.
-                items:
-                  description: ClusterInfo indicates the remote cluster info that
-                    will be used in the setup of GEO replication.
-                  properties:
-                    destinationConnectionRef:
-                      description: DestinationConnectionRef is the connection reference
-                        to the remote cluster
-                      properties:
-                        name:
-                          description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                            TODO: Add other useful fields. apiVersion, kind, uid?'
-                          type: string
-                      type: object
-                    name:
-                      description: Name is the cluster name in remote cluster
-                      type: string
-                  required:
-                  - destinationConnectionRef
-                  type: object
-                type: array
-              connectionRef:
-                description: ConnectionRef is the reference to the PulsarConnection
-                  resource
+              destinationCluster:
+                description: DestinationCluster is the destination cluster info which
+                  will be setuped with the source.
                 properties:
+                  connectionRef:
+                    description: ConnectionRef is the connection reference that can
+                      connect to the pulsar cluster
+                    properties:
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                    type: object
                   name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    description: Name is the pulsar cluster name
                     type: string
+                required:
+                - connectionRef
                 type: object
               lifecyclePolicy:
                 description: PulsarResourceLifeCyclePolicy indicates whether it will
@@ -90,8 +77,26 @@ spec:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
-            required:
-            - connectionRef
+              sourceCluster:
+                description: SourceCluster is a source cluster info which will setup
+                  the replication with other cluster. The name in source cluster info
+                  is the local cluster.
+                properties:
+                  connectionRef:
+                    description: ConnectionRef is the connection reference that can
+                      connect to the pulsar cluster
+                    properties:
+                      name:
+                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                          TODO: Add other useful fields. apiVersion, kind, uid?'
+                        type: string
+                    type: object
+                  name:
+                    description: Name is the pulsar cluster name
+                    type: string
+                required:
+                - connectionRef
+                type: object
             type: object
           status:
             description: PulsarGeoReplicationStatus defines the observed state of

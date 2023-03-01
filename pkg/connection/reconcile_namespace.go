@@ -87,18 +87,31 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 	log := r.log.WithValues("pulsarnamespace", namespace.Name, "namespace", namespace.Namespace)
 	log.V(1).Info("Start Reconcile")
 
+	var geoReplication *v1alpha1.PulsarGeoReplication
+	if ref := namespace.Spec.GeoReplicationRef; ref != nil {
+		geoReplication = &v1alpha1.PulsarGeoReplication{}
+		namespacedName := types.NamespacedName{
+			Namespace: namespace.Namespace,
+			Name:      ref.Name,
+		}
+		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+			return err
+		}
+		log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
+	}
+
 	if !namespace.DeletionTimestamp.IsZero() {
 		log.Info("Deleting namespace", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
 
-		// TODO when geoReplicationRef is not nil, it should reset the replication clusters to
-		// default local cluster for the namespace. So how to get this default local cluster?
-		// if namespace.Spec.GeoReplicationRef != nil {
-		// 	log.Info("Reset namespace cluster", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
-		// 	if err := pulsarAdmin.ResetNamespaceCluster(namespace.Spec.Name); err != nil {
-		// 		log.Error(err, "Failed to reset the cluster for namespace")
-		// 		return err
-		// 	}
-		// }
+		// When geoReplicationRef is not nil, it should reset the replication clusters to
+		// default local cluster for the namespace first.
+		if geoReplication != nil {
+			log.Info("Reset namespace cluster", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
+			if err := pulsarAdmin.SetNamespaceClusters(namespace.Spec.Name, []string{geoReplication.Spec.SourceCluster.Name}); err != nil {
+				log.Error(err, "Failed to reset the cluster for namespace")
+				return err
+			}
+		}
 
 		if namespace.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil {
@@ -150,19 +163,16 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaType:            namespace.Spec.BacklogQuotaType,
 	}
 
-	if ref := namespace.Spec.GeoReplicationRef; ref != nil {
-		geoReplication := &v1alpha1.PulsarGeoReplication{}
-		namespacedName := types.NamespacedName{
-			Namespace: namespace.Namespace,
-			Name:      ref.Name,
-		}
-		if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
-			return err
-		}
-		for _, cluster := range geoReplication.Spec.Clusters {
-			params.ReplicationClusters = append(params.ReplicationClusters, cluster.Name)
-		}
+	if geoReplication != nil {
+		dest := geoReplication.Spec.DestinationCluster
+		params.ReplicationClusters = append(params.ReplicationClusters, dest.Name)
 		log.Info("create namespace with extra replication clusters", "clusters", params.ReplicationClusters)
+	} else {
+		// TODO When geoReplication is nil and replicationClusters is more than 1
+		// It should reset the replication clusters to the default local cluster
+		// But there is no where to get the cluster name for now
+		log.V(1).Info("no implementation")
+
 	}
 
 	if err := pulsarAdmin.ApplyNamespace(namespace.Spec.Name, params); err != nil {

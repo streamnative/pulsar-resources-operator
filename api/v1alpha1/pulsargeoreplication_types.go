@@ -27,19 +27,17 @@ type PulsarGeoReplicationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// ConnectionRef is the reference to the PulsarConnection resource
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
-
 	// // ClusterName is the cluster name of the remote cluster
 	// ClusterName string `json:"clusterName,omitempty"`
 	// // DestinationConnectionRef is the connection reference to the remote cluster
 	// DestinationConnectionRef corev1.LocalObjectReference `json:"destinationConnectionRef"`
 
-	// Clusters is a list of cluster info which will be used to setup the replication.
-	Clusters []ClusterInfo `json:"clusters,omitempty"`
+	// SourceCluster is a source cluster info which will setup the replication with other cluster.
+	// The name in source cluster info is the local cluster.
+	SourceCluster ClusterInfo `json:"sourceCluster,omitempty"`
 
-	// LocalClusterName is the default cluster which is created by pulsar
-	LocalClusterName string `json:"localClusterName,omitempty"`
+	// DestinationCluster is the destination cluster info which will be setuped with the source.
+	DestinationCluster ClusterInfo `json:"destinationCluster,omitempty"`
 
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional
@@ -90,10 +88,10 @@ func init() {
 	SchemeBuilder.Register(&PulsarGeoReplication{}, &PulsarGeoReplicationList{})
 }
 
-// ClusterInfo indicates the remote cluster info that will be used in the setup of GEO replication.
+// ClusterInfo indicates the cluster info that will be used in the setup of GEO replication.
 type ClusterInfo struct {
-	// Name is the cluster name in remote cluster
+	// Name is the pulsar cluster name
 	Name string `json:"name,omitempty"`
-	// DestinationConnectionRef is the connection reference to the remote cluster
-	DestinationConnectionRef corev1.LocalObjectReference `json:"destinationConnectionRef"`
+	// ConnectionRef is the connection reference that can connect to the pulsar cluster
+	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
 }

@@ -104,13 +104,18 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 	return nil
 }
 
-// ResetNamespaceCluster resets the assigned clusters of the namespace to the local default cluster
-func (p *PulsarAdminClient) ResetNamespaceCluster(completeNSName string) error {
+// GetNamespaceClusters get the assigned clusters of the namespace to the local default cluster
+func (p *PulsarAdminClient) GetNamespaceClusters(completeNSName string) ([]string, error) {
 	clusters, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
+	return clusters, nil
+}
+
+// SetNamespaceCluster resets the assigned clusters of the namespace to the local default cluster
+func (p *PulsarAdminClient) SetNamespaceClusters(completeNSName string, clusters []string) error {
+	err := p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
 	if err != nil {
 		return err
 	}
@@ -268,6 +273,34 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 		}
 	}
 
+	return nil
+}
+
+// GetTopicClusters get the assigned clusters of the topic to the local default cluster
+func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]string, error) {
+	completeTopicName := makeCompleteTopicName(name, persistent)
+	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	if err != nil {
+		return []string{}, err
+	}
+	clusters, err := p.adminClient.Topics().GetReplicationClusters(*topicName)
+	if err != nil {
+		return []string{}, err
+	}
+	return clusters, nil
+}
+
+// SetTopicClusters resets the assigned clusters of the topic to the local default cluster
+func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clusters []string) error {
+	completeTopicName := makeCompleteTopicName(name, persistent)
+	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	err = p.adminClient.Topics().SetReplicationClusters(*topicName, clusters)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
