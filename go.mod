@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
-	github.com/streamnative/pulsarctl v0.4.3-0.20230206124840-5e3be6401bbb
+	github.com/streamnative/pulsarctl v0.4.3-0.20230302040555-cef63a830b87
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
@@ -83,5 +83,3 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.0 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
-
-replace github.com/streamnative/pulsarctl v0.4.3-0.20230206124840-5e3be6401bbb => ../pulsarctl
