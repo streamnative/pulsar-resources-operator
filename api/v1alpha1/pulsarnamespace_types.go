@@ -81,9 +81,9 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
 
-	// GeoReplicationRef is the reference to the PulsarConnection resource
+	// GeoReplicationRefs is the reference list to the PulsarGeoReplication resource
 	// +optional
-	GeoReplicationRef *corev1.LocalObjectReference `json:"geoReplicationRef,omitempty"`
+	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace

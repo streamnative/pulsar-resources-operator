@@ -45,9 +45,9 @@ type PulsarTenantSpec struct {
 	// +optional
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 
-	// GeoReplicationRef is the reference to the PulsarConnection resource
+	// GeoReplicationRefs is the reference list to the PulsarGeoReplication resource
 	// +optional
-	GeoReplicationRef *corev1.LocalObjectReference `json:"geoReplicationRef,omitempty"`
+	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
 }
 
 // PulsarTenantStatus defines the observed state of PulsarTenant

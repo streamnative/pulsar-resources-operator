@@ -99,15 +99,19 @@ spec:
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
-              geoReplicationRef:
-                description: GeoReplicationRef is the reference to the PulsarConnection
+              geoReplicationRefs:
+                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
                   resource
-                properties:
-                  name:
-                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?'
-                    type: string
-                type: object
+                items:
+                  description: LocalObjectReference contains enough information to
+                    let you locate the referenced object inside the same namespace.
+                  properties:
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      type: string
+                  type: object
+                type: array
               lifecyclePolicy:
                 description: PulsarResourceLifeCyclePolicy indicates whether it will
                   keep or delete the resource in pulsar cluster after resource is
