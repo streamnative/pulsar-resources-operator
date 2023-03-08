@@ -144,6 +144,10 @@ spec:
                   cluster
                 pattern: ^pulsar?://.+$
                 type: string
+              clusterName:
+                description: ClusterName indicates the local cluster name of the pulsar
+                  cluster. It should set when enabling the Geo Replication
+                type: string
             required:
             - adminServiceURL
             type: object

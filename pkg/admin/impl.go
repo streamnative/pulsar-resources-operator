@@ -261,13 +261,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 		}
 	}
 	if len(params.ReplicationClusters) != 0 {
-		clusters, err := p.adminClient.Topics().GetReplicationClusters(*topicName)
-		if err != nil {
-			return err
-		}
-
-		clusters = append(clusters, params.ReplicationClusters...)
-		err = p.adminClient.Topics().SetReplicationClusters(*topicName, clusters)
+		err = p.adminClient.Topics().SetReplicationClusters(*topicName, params.ReplicationClusters)
 		if err != nil {
 			return err
 		}
@@ -384,12 +378,7 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 	}
 
 	if len(params.ReplicationClusters) != 0 {
-		clusters, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName)
-		if err != nil {
-			return err
-		}
-		clusters = append(clusters, params.ReplicationClusters...)
-		err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
+		err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, params.ReplicationClusters)
 		if err != nil {
 			return err
 		}

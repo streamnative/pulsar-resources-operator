@@ -48,6 +48,11 @@ type PulsarConnectionSpec struct {
 	// +optional
 	// +kubebuilder:validation:Pattern="^https?://.+$"
 	AdminServiceSecureURL string `json:"adminServiceSecureURL,omitempty"`
+
+	// ClusterName indicates the local cluster name of the pulsar cluster. It should
+	// set when enabling the Geo Replication
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
 }
 
 // PulsarConnectionStatus defines the observed state of PulsarConnection

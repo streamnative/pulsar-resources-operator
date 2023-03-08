@@ -242,6 +242,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              geoReplicationEnabled:
+                description: GeoReplicationEnabled
+                type: boolean
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
                   for this resource. It corresponds to the metadata generation, which

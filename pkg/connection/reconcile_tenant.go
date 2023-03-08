@@ -87,22 +87,6 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	log := r.log.WithValues("pulsartenant", tenant.Name, "namespace", tenant.Namespace)
 	log.V(1).Info("Start Reconcile")
 
-	var geoReplications []*v1alpha1.PulsarGeoReplication
-	if refs := tenant.Spec.GeoReplicationRefs; len(refs) != 0 {
-		for _, ref := range refs {
-			geo := &v1alpha1.PulsarGeoReplication{}
-			namespacedName := types.NamespacedName{
-				Namespace: tenant.Namespace,
-				Name:      ref.Name,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, geo); err != nil {
-				return err
-			}
-			geoReplications = append(geoReplications, geo)
-			log.V(1).Info("Found geo replication", "GEO Replication", geo.Name)
-		}
-	}
-
 	if !tenant.DeletionTimestamp.IsZero() {
 		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
 		if tenant.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
@@ -144,14 +128,23 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		tenantParams.Changed = true
 	}
 
-	if len(geoReplications) != 0 {
-		for _, geoReplication := range geoReplications {
+	if refs := tenant.Spec.GeoReplicationRefs; len(refs) != 0 {
+		for _, ref := range refs {
+			geoReplication := &v1alpha1.PulsarGeoReplication{}
+			namespacedName := types.NamespacedName{
+				Namespace: tenant.Namespace,
+				Name:      ref.Name,
+			}
+			if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+				return err
+			}
+			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
 			dest := geoReplication.Spec.DestinationCluster
 			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, dest.Name)
 			source := geoReplication.Spec.SourceCluster
 			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, source.Name)
 		}
-		log.Info("create tenat with allowed clusters", "clusters", tenantParams.AllowedClusters)
+		log.Info("Geo Replication is enabled. Apply tenant with allowed clusters", "clusters", tenantParams.AllowedClusters)
 	}
 
 	if err := pulsarAdmin.ApplyTenant(tenant.Spec.Name, tenantParams); err != nil {

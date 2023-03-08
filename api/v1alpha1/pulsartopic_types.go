@@ -120,6 +120,10 @@ type PulsarTopicStatus struct {
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+
+	// GeoReplicationEnabled
+	// +optional
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
 }
 
 //+kubebuilder:object:root=true

@@ -89,32 +89,15 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	log := r.log.WithValues("pulsartopic", topic.Name, "namespace", topic.Namespace)
 	log.V(1).Info("Start Reconcile")
 
-	var geoReplications []*v1alpha1.PulsarGeoReplication
-	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
-		for _, ref := range refs {
-
-			geo := &v1alpha1.PulsarGeoReplication{}
-			namespacedName := types.NamespacedName{
-				Namespace: topic.Namespace,
-				Name:      ref.Name,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, geo); err != nil {
-				return err
-			}
-			log.V(1).Info("Found geo replication", "GEO Replication", geo.Name)
-			geoReplications = append(geoReplications, geo)
-		}
-	}
-
 	if !topic.DeletionTimestamp.IsZero() {
 		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
 
 		if topic.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			// TODO when geoReplicationRef is not nil, it should reset the replication clusters to
 			// default local cluster for the topic
-			if len(geoReplications) != 0 {
-				log.Info("Reset topic cluster", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
-				if err := pulsarAdmin.SetTopicClusters(topic.Spec.Name, topic.Spec.Persistent, []string{geoReplications[0].Spec.SourceCluster.Name}); err != nil {
+			if topic.Status.GeoReplicationEnabled {
+				log.Info("GeoReplication is enabled. Reset topic cluster first", "LifecyclePolicy", topic.Spec.LifecyclePolicy, "ClusterName", r.conn.connection.Spec.ClusterName)
+				if err := pulsarAdmin.SetTopicClusters(topic.Spec.Name, topic.Spec.Persistent, []string{r.conn.connection.Spec.ClusterName}); err != nil {
 					log.Error(err, "Failed to reset the cluster for topic")
 					return err
 				}
@@ -175,14 +158,32 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 
 	r.applyDefault(params)
 
-	if len(geoReplications) != 0 {
-		for _, geoReplication := range geoReplications {
+	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
+		for _, ref := range refs {
+
+			geoReplication := &v1alpha1.PulsarGeoReplication{}
+			namespacedName := types.NamespacedName{
+				Namespace: topic.Namespace,
+				Name:      ref.Name,
+			}
+			if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+				return err
+			}
+			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
+
 			source := geoReplication.Spec.SourceCluster
 			params.ReplicationClusters = append(params.ReplicationClusters, source.Name)
 			dest := geoReplication.Spec.DestinationCluster
 			params.ReplicationClusters = append(params.ReplicationClusters, dest.Name)
 		}
-		log.Info("create topic with replication clusters", "clusters", params.ReplicationClusters)
+
+		log.Info("apply topic with replication clusters", "clusters", params.ReplicationClusters)
+		topic.Status.GeoReplicationEnabled = true
+	} else if topic.Status.GeoReplicationEnabled {
+		// when GeoReplicationRefs is removed, it should reset the topic clusters
+		params.ReplicationClusters = []string{r.conn.connection.Spec.ClusterName}
+		log.Info("Geo Replication disabled. Reset topic with local cluster", "cluster", params.ReplicationClusters)
+		topic.Status.GeoReplicationEnabled = false
 	}
 
 	if err := pulsarAdmin.ApplyTopic(topic.Spec.Name, params); err != nil {

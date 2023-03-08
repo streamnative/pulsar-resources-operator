@@ -87,19 +87,32 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 	if !geoReplication.DeletionTimestamp.IsZero() {
 		log.Info("Deleting GeoReplication", "LifecyclePolicy", geoReplication.Spec.LifecyclePolicy)
-		if geoReplication.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
-			// Delete the cluster that created with destination cluster info.
-			// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
-			clusterName := geoReplication.Spec.DestinationCluster.Name
-			if err := pulsarAdmin.DeleteCluster(clusterName); err != nil && admin.IsNotFound(err) {
-				log.Error(err, "Failed to delete geo replication cluster")
-				return err
+		skip := false
+		for _, i := range r.conn.tenants {
+			if len(i.Spec.GeoReplicationRefs) != 0 {
+				for _, j := range i.Spec.GeoReplicationRefs {
+					if j.Name == geoReplication.Name {
+						skip = true
+						log.Info("There is still a tenant used this geo replication. The GeoReplication couldn't be deleted", "tenant", i.Name)
+					}
+				}
 			}
 		}
-		controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, geoReplication); err != nil {
-			log.Error(err, "Failed to remove finalizer")
-			return err
+		if !skip {
+			if geoReplication.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+				// Delete the cluster that created with destination cluster info.
+				// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
+				clusterName := geoReplication.Spec.DestinationCluster.Name
+				if err := pulsarAdmin.DeleteCluster(clusterName); err != nil && admin.IsNotFound(err) {
+					log.Error(err, "Failed to delete geo replication cluster")
+					return err
+				}
+			}
+			controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
+			if err := r.conn.client.Update(ctx, geoReplication); err != nil {
+				log.Error(err, "Failed to remove finalizer")
+				return err
+			}
 		}
 	}
 	controllerutil.AddFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
