@@ -27,13 +27,9 @@ type PulsarGeoReplicationSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// ClusterName is the cluster name of the local cluster
-	ClusterName string `json:"localClusterName,omitempty"`
 	// ConnectionRef is the reference to the source PulsarConnection
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
 
-	// DestinationClusterName is the cluster name of the remote cluster
-	DestinationClusterName string `json:"destinationClusterName,omitempty"`
 	// DestinationConnectionRef is the connection reference to the remote cluster
 	DestinationConnectionRef corev1.LocalObjectReference `json:"destinationConnectionRef"`
 

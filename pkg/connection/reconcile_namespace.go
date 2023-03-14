@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -161,8 +162,19 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 				return err
 			}
 			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
-			params.ReplicationClusters = append(params.ReplicationClusters, geoReplication.Spec.ClusterName)
-			params.ReplicationClusters = append(params.ReplicationClusters, geoReplication.Spec.DestinationClusterName)
+			destConnection := &resourcev1alpha1.PulsarConnection{}
+			namespacedName = types.NamespacedName{
+				Name:      geoReplication.Spec.DestinationConnectionRef.Name,
+				Namespace: geoReplication.Namespace,
+			}
+			if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
+				log.Error(err, "Failed to get destination connection for geo replication")
+				if apierrors.IsNotFound(err) {
+					return err
+				}
+			}
+			params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
+			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
 		}
 
 		log.Info("apply namespace with extra replication clusters", "clusters", params.ReplicationClusters)

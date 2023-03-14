@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -139,8 +140,20 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 				return err
 			}
 			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
-			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, geoReplication.Spec.DestinationClusterName)
-			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, geoReplication.Spec.ClusterName)
+
+			destConnection := &resourcev1alpha1.PulsarConnection{}
+			namespacedName = types.NamespacedName{
+				Name:      geoReplication.Spec.DestinationConnectionRef.Name,
+				Namespace: geoReplication.Namespace,
+			}
+			if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
+				log.Error(err, "Failed to get destination connection for geo replication")
+				if apierrors.IsNotFound(err) {
+					return err
+				}
+			}
+			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, destConnection.Spec.ClusterName)
+			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, r.conn.connection.Spec.ClusterName)
 		}
 		log.Info("Geo Replication is enabled. Apply tenant with allowed clusters", "clusters", tenantParams.AllowedClusters)
 	}

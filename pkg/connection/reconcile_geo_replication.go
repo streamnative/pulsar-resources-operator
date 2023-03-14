@@ -85,6 +85,22 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	log := r.log.WithValues("pulsargeoreplication", geoReplication.Name, "namespace", geoReplication.Namespace)
 	log.V(1).Info("Start Reconcile")
 
+	destConnection := &resourcev1alpha1.PulsarConnection{}
+	namespacedName := types.NamespacedName{
+		Name:      geoReplication.Spec.DestinationConnectionRef.Name,
+		Namespace: geoReplication.Namespace,
+	}
+	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
+		log.Error(err, "Failed to get destination connection for geo replication")
+		if apierrors.IsNotFound(err) {
+			return err
+		}
+	}
+	destClusterName := destConnection.Spec.ClusterName
+	if len(destClusterName) == 0 {
+		return fmt.Errorf("ClusterName is empty in destination connection")
+	}
+
 	if !geoReplication.DeletionTimestamp.IsZero() {
 		log.Info("Deleting GeoReplication", "LifecyclePolicy", geoReplication.Spec.LifecyclePolicy)
 		skip := false
@@ -102,8 +118,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			if geoReplication.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 				// Delete the cluster that created with destination cluster info.
 				// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
-				clusterName := geoReplication.Spec.DestinationClusterName
-				if err := pulsarAdmin.DeleteCluster(clusterName); err != nil && admin.IsNotFound(err) {
+				if err := pulsarAdmin.DeleteCluster(destClusterName); err != nil && admin.IsNotFound(err) {
 					log.Error(err, "Failed to delete geo replication cluster")
 					return err
 				}
@@ -124,19 +139,6 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	if resourcev1alpha1.IsPulsarResourceReady(geoReplication) {
 		log.V(1).Info("Resource is ready")
 		return nil
-	}
-
-	destClusterName := geoReplication.Spec.DestinationClusterName
-	destConnection := &resourcev1alpha1.PulsarConnection{}
-	namespacedName := types.NamespacedName{
-		Name:      destClusterName,
-		Namespace: geoReplication.Namespace,
-	}
-	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
-		log.Error(err, "Failed to get destination connection for geo replication")
-		if apierrors.IsNotFound(err) {
-			return err
-		}
 	}
 
 	clusterParam := &admin.ClusterParams{
@@ -167,9 +169,10 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 	// If the cluster already exists, only update it
 	if pulsarAdmin.CheckClusterExist(destClusterName) {
+		log.V(1).Info("Update cluster", "ClusterName", destClusterName, "params", clusterParam)
 		if err := pulsarAdmin.UpdateCluster(destClusterName, clusterParam); err != nil {
 			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
-			log.Error(err, "Failed to create geo replication cluster")
+			log.Error(err, "Failed to update existing geo replication cluster")
 			if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
 				log.Error(err, "Failed to update the geo replication status")
 				return err
@@ -179,6 +182,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 	} else {
 		// Create Clusters
+		log.V(1).Info("Create cluster", "ClusterName", destClusterName, "params", clusterParam)
 		if err := pulsarAdmin.CreateCluster(destClusterName, clusterParam); err != nil {
 			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
 			log.Error(err, "Failed to create geo replication cluster")
@@ -193,7 +197,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	geoReplication.Status.ObservedGeneration = geoReplication.Generation
 	meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewReadyCondition(geoReplication.Generation))
 	if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
-		log.Error(err, "Failed to update the topic status")
+		log.Error(err, "Failed to update the geoReplication status")
 		return err
 	}
 

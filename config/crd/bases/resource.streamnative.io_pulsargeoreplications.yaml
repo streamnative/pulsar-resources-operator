@@ -58,10 +58,6 @@ spec:
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
-              destinationClusterName:
-                description: DestinationClusterName is the cluster name of the remote
-                  cluster
-                type: string
               destinationConnectionRef:
                 description: DestinationConnectionRef is the connection reference
                   to the remote cluster
@@ -78,9 +74,6 @@ spec:
                 enum:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
-                type: string
-              localClusterName:
-                description: ClusterName is the cluster name of the local cluster
                 type: string
             required:
             - connectionRef
