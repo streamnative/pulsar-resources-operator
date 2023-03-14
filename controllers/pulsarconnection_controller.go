@@ -138,7 +138,7 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 	if err := mgr.GetCache().IndexField(context.TODO(), &resourcev1alpha1.PulsarGeoReplication{}, ".spec.connectionRef.name",
 		func(object client.Object) []string {
 			return []string{
-				object.(*resourcev1alpha1.PulsarGeoReplication).Spec.SourceCluster.ConnectionRef.Name,
+				object.(*resourcev1alpha1.PulsarGeoReplication).Spec.ConnectionRef.Name,
 			}
 		}); err != nil {
 		return err

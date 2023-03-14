@@ -105,6 +105,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
+		r.log.Info("Doesn't have unReady resource")
 		return nil
 	}
 

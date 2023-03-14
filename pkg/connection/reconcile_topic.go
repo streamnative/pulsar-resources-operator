@@ -171,10 +171,8 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			}
 			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
 
-			source := geoReplication.Spec.SourceCluster
-			params.ReplicationClusters = append(params.ReplicationClusters, source.Name)
-			dest := geoReplication.Spec.DestinationCluster
-			params.ReplicationClusters = append(params.ReplicationClusters, dest.Name)
+			params.ReplicationClusters = append(params.ReplicationClusters, geoReplication.Spec.ClusterName)
+			params.ReplicationClusters = append(params.ReplicationClusters, geoReplication.Spec.DestinationClusterName)
 		}
 
 		log.Info("apply topic with replication clusters", "clusters", params.ReplicationClusters)

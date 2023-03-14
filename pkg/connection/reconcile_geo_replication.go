@@ -102,7 +102,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			if geoReplication.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 				// Delete the cluster that created with destination cluster info.
 				// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
-				clusterName := geoReplication.Spec.DestinationCluster.Name
+				clusterName := geoReplication.Spec.DestinationClusterName
 				if err := pulsarAdmin.DeleteCluster(clusterName); err != nil && admin.IsNotFound(err) {
 					log.Error(err, "Failed to delete geo replication cluster")
 					return err
@@ -126,10 +126,10 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return nil
 	}
 
-	dest := geoReplication.Spec.DestinationCluster
+	destClusterName := geoReplication.Spec.DestinationClusterName
 	destConnection := &resourcev1alpha1.PulsarConnection{}
 	namespacedName := types.NamespacedName{
-		Name:      dest.ConnectionRef.Name,
+		Name:      destClusterName,
 		Namespace: geoReplication.Namespace,
 	}
 	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
@@ -166,8 +166,8 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 
 	// If the cluster already exists, only update it
-	if pulsarAdmin.CheckClusterExist(dest.Name) {
-		if err := pulsarAdmin.UpdateCluster(dest.Name, clusterParam); err != nil {
+	if pulsarAdmin.CheckClusterExist(destClusterName) {
+		if err := pulsarAdmin.UpdateCluster(destClusterName, clusterParam); err != nil {
 			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
 			log.Error(err, "Failed to create geo replication cluster")
 			if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
@@ -179,7 +179,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 	} else {
 		// Create Clusters
-		if err := pulsarAdmin.CreateCluster(dest.Name, clusterParam); err != nil {
+		if err := pulsarAdmin.CreateCluster(destClusterName, clusterParam); err != nil {
 			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
 			log.Error(err, "Failed to create geo replication cluster")
 			if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
@@ -188,6 +188,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			}
 			return err
 		}
+	}
+
+	geoReplication.Status.ObservedGeneration = geoReplication.Generation
+	meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewReadyCondition(geoReplication.Generation))
+	if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
+		log.Error(err, "Failed to update the topic status")
+		return err
 	}
 
 	return nil

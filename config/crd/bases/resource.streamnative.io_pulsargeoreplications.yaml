@@ -50,24 +50,26 @@ spec:
           spec:
             description: PulsarGeoReplicationSpec defines the desired state of PulsarGeoReplication
             properties:
-              destinationCluster:
-                description: DestinationCluster is the destination cluster info which
-                  will be setuped with the source.
+              connectionRef:
+                description: ConnectionRef is the reference to the source PulsarConnection
                 properties:
-                  connectionRef:
-                    description: ConnectionRef is the connection reference that can
-                      connect to the pulsar cluster
-                    properties:
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                          TODO: Add other useful fields. apiVersion, kind, uid?'
-                        type: string
-                    type: object
                   name:
-                    description: Name is the pulsar cluster name
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
-                required:
-                - connectionRef
+                type: object
+              destinationClusterName:
+                description: DestinationClusterName is the cluster name of the remote
+                  cluster
+                type: string
+              destinationConnectionRef:
+                description: DestinationConnectionRef is the connection reference
+                  to the remote cluster
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
                 type: object
               lifecyclePolicy:
                 description: PulsarResourceLifeCyclePolicy indicates whether it will
@@ -77,26 +79,12 @@ spec:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
-              sourceCluster:
-                description: SourceCluster is a source cluster info which will setup
-                  the replication with other cluster. The name in source cluster info
-                  is the local cluster.
-                properties:
-                  connectionRef:
-                    description: ConnectionRef is the connection reference that can
-                      connect to the pulsar cluster
-                    properties:
-                      name:
-                        description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                          TODO: Add other useful fields. apiVersion, kind, uid?'
-                        type: string
-                    type: object
-                  name:
-                    description: Name is the pulsar cluster name
-                    type: string
-                required:
-                - connectionRef
-                type: object
+              localClusterName:
+                description: ClusterName is the cluster name of the local cluster
+                type: string
+            required:
+            - connectionRef
+            - destinationConnectionRef
             type: object
           status:
             description: PulsarGeoReplicationStatus defines the observed state of

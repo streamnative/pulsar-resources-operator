@@ -139,10 +139,8 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 				return err
 			}
 			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
-			dest := geoReplication.Spec.DestinationCluster
-			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, dest.Name)
-			source := geoReplication.Spec.SourceCluster
-			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, source.Name)
+			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, geoReplication.Spec.DestinationClusterName)
+			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, geoReplication.Spec.ClusterName)
 		}
 		log.Info("Geo Replication is enabled. Apply tenant with allowed clusters", "clusters", tenantParams.AllowedClusters)
 	}
