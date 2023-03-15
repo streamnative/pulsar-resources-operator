@@ -23,7 +23,6 @@ import (
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -92,9 +91,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
 		log.Error(err, "Failed to get destination connection for geo replication")
-		if apierrors.IsNotFound(err) {
-			return err
-		}
+		return err
 	}
 	destClusterName := destConnection.Spec.ClusterName
 	if len(destClusterName) == 0 {
@@ -137,6 +134,9 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(geoReplication) {
+		// After the previous reconcile succeed, the cluster will be created successfully,
+		// it will update the condition Ready to true, and update the observedGeneration to metadata.generation
+		// If there is no new changes in the object, there is no need to run the left code again.
 		log.V(1).Info("Resource is ready")
 		return nil
 	}

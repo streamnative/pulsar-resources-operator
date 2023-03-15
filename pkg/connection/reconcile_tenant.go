@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -148,9 +147,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 			}
 			if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
 				log.Error(err, "Failed to get destination connection for geo replication")
-				if apierrors.IsNotFound(err) {
-					return err
-				}
+				return err
 			}
 			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, destConnection.Spec.ClusterName)
 			tenantParams.AllowedClusters = append(tenantParams.AllowedClusters, r.conn.connection.Spec.ClusterName)
