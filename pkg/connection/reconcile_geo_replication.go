@@ -95,7 +95,14 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 	destClusterName := destConnection.Spec.ClusterName
 	if len(destClusterName) == 0 {
-		return fmt.Errorf("ClusterName is empty in destination connection")
+		err := fmt.Errorf("ClusterName is empty in destination connection")
+		meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
+		log.Error(err, "Failed to validate geo replication cluster")
+		if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
+			log.Error(err, "Failed to update the geo replication status")
+			return err
+		}
+		return err
 	}
 
 	if !geoReplication.DeletionTimestamp.IsZero() {
