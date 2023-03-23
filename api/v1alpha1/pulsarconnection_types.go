@@ -41,12 +41,12 @@ type PulsarConnectionSpec struct {
 
 	// BrokerServiceSecureURL is the broker service url for secure connection.
 	// +optional
-	// +kubebuilder:validation:Pattern="^pulsar?://.+$"
+	// +kubebuilder:validation:Pattern="^pulsar\\+ssl://.+$"
 	BrokerServiceSecureURL string `json:"brokerServiceSecureURL,omitempty"`
 
 	// AdminServiceSecureURL is the admin service url for secure connection.
 	// +optional
-	// +kubebuilder:validation:Pattern="^https?://.+$"
+	// +kubebuilder:validation:Pattern="^https://.+$"
 	AdminServiceSecureURL string `json:"adminServiceSecureURL,omitempty"`
 
 	// ClusterName indicates the local cluster name of the pulsar cluster. It should

@@ -70,7 +70,7 @@ spec:
               adminServiceSecureURL:
                 description: AdminServiceSecureURL is the admin service url for secure
                   connection.
-                pattern: ^https?://.+$
+                pattern: ^https://.+$
                 type: string
               adminServiceURL:
                 description: AdminServiceURL is the admin service url of the pulsar
@@ -137,7 +137,7 @@ spec:
               brokerServiceSecureURL:
                 description: BrokerServiceSecureURL is the broker service url for
                   secure connection.
-                pattern: ^pulsar?://.+$
+                pattern: ^pulsar\+ssl://.+$
                 type: string
               brokerServiceURL:
                 description: BrokerServiceURL is the broker service url of the pulsar
