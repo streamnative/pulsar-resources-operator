@@ -93,6 +93,9 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		log.Error(err, "Failed to get destination connection for geo replication")
 		return err
 	}
+	// TODO Currently, if the destination pulsarconnection is updated, the this reconcile won't notice it
+	// Need to fix it in the future work.
+
 	destClusterName := destConnection.Spec.ClusterName
 	if destClusterName == "" {
 		err := fmt.Errorf("ClusterName is empty in destination connection")
