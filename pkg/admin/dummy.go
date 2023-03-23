@@ -123,6 +123,8 @@ func (d *DummyPulsarAdmin) UpdateCluster(name string, param *ClusterParams) erro
 func (d *DummyPulsarAdmin) DeleteCluster(name string) error {
 	return nil
 }
+
+// CheckClusterExist checks whether the cluster exists
 func (d *DummyPulsarAdmin) CheckClusterExist(name string) bool {
 	return true
 }

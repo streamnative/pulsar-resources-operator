@@ -66,7 +66,7 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 	return nil
 }
 
-// Observe checks the updates of object
+// Reconcile reconciles all the geo replication objects
 func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.geoReplications {
 		geoReplication := &r.conn.geoReplications[i]
@@ -77,6 +77,7 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// ReconcileGeoReplication handle the current state of the geo replication to the desired state
 func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	geoReplication *resourcev1alpha1.PulsarGeoReplication) error {
 	log := r.log.WithValues("pulsargeoreplication", geoReplication.Name, "namespace", geoReplication.Namespace)

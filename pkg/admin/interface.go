@@ -68,6 +68,7 @@ type TopicParams struct {
 	ReplicationClusters               []string
 }
 
+// ClusterParams indicate the parameters for creating a cluster
 type ClusterParams struct {
 	ServiceURL             string
 	ServiceSecureURL       string
@@ -145,6 +146,7 @@ type PulsarAdmin interface {
 
 	// DeleteCluster delete cluster info
 	DeleteCluster(name string) error
+
 	// CheckClusterExist check wether the cluster is created or not
 	CheckClusterExist(name string) bool
 }

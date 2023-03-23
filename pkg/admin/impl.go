@@ -113,7 +113,7 @@ func (p *PulsarAdminClient) GetNamespaceClusters(completeNSName string) ([]strin
 	return clusters, nil
 }
 
-// SetNamespaceCluster resets the assigned clusters of the namespace to the local default cluster
+// SetNamespaceClusters resets the assigned clusters of the namespace to the local default cluster
 func (p *PulsarAdminClient) SetNamespaceClusters(completeNSName string, clusters []string) error {
 	err := p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
 	if err != nil {
@@ -549,8 +549,8 @@ func (p *PulsarAdminClient) DeleteSchema(topic string) error {
 	return p.adminClient.Schemas().DeleteSchema(topic)
 }
 
+// CreateCluster creates pulsar cluster
 func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) error {
-
 	clusterData := pulsarutils.ClusterData{
 		Name:                     name,
 		AuthenticationPlugin:     param.AuthPlugin,
@@ -575,6 +575,7 @@ func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) err
 	return nil
 }
 
+// UpdateCluster update pulsar cluster info
 func (p *PulsarAdminClient) UpdateCluster(name string, param *ClusterParams) error {
 	clusterData := pulsarutils.ClusterData{
 		Name:                     name,
@@ -599,10 +600,12 @@ func (p *PulsarAdminClient) UpdateCluster(name string, param *ClusterParams) err
 	return nil
 }
 
+// DeleteCluster deletes a pulsar cluster
 func (p *PulsarAdminClient) DeleteCluster(name string) error {
 	return p.adminClient.Clusters().Delete(name)
 }
 
+// CheckClusterExist checks whether the cluster exists
 func (p *PulsarAdminClient) CheckClusterExist(name string) bool {
 	_, err := p.adminClient.Clusters().Get(name)
 
