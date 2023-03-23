@@ -26,7 +26,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
@@ -160,8 +159,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 
 	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
 		for _, ref := range refs {
-
-			geoReplication := &v1alpha1.PulsarGeoReplication{}
+			geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
 			namespacedName := types.NamespacedName{
 				Namespace: topic.Namespace,
 				Name:      ref.Name,

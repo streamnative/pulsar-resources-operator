@@ -19,7 +19,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
@@ -80,7 +79,6 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 
 func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	geoReplication *resourcev1alpha1.PulsarGeoReplication) error {
-
 	log := r.log.WithValues("pulsargeoreplication", geoReplication.Name, "namespace", geoReplication.Namespace)
 	log.V(1).Info("Start Reconcile")
 
@@ -94,7 +92,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return err
 	}
 	destClusterName := destConnection.Spec.ClusterName
-	if len(destClusterName) == 0 {
+	if destClusterName == "" {
 		err := fmt.Errorf("ClusterName is empty in destination connection")
 		meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))
 		log.Error(err, "Failed to validate geo replication cluster")
@@ -163,15 +161,15 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 				return err
 			}
 			if value != nil {
-				clusterParam.AuthPlugin = v1alpha1.AuthPluginToken
+				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
 				clusterParam.AuthParameters = "token:" + *value
 				hasAuth = true
 			}
 		}
 		if auth.OAuth2 != nil && !hasAuth {
-			// TODO
+			// TODO support oauth2
+			log.Info("Oauth2 will support later")
 		}
-
 	}
 
 	// If the cluster already exists, only update it
@@ -186,7 +184,6 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			}
 			return err
 		}
-
 	} else {
 		// Create Clusters
 		log.V(1).Info("Create cluster", "ClusterName", destClusterName, "params", clusterParam)
