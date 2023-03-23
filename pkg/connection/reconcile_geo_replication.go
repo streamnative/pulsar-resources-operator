@@ -139,7 +139,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 	controllerutil.AddFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
 	if err := r.conn.client.Update(ctx, geoReplication); err != nil {
-		log.Error(err, "Failed to remove finalizer")
+		log.Error(err, "Failed to add finalizer")
 		return err
 	}
 
