@@ -19,13 +19,14 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
-	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
 
 // PulsarGeoReplicationReconciler reconciles a PulsarGeoReplication object
