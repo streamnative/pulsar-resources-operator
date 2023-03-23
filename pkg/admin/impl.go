@@ -594,7 +594,7 @@ func (p *PulsarAdminClient) UpdateCluster(name string, param *ClusterParams) err
 	}
 
 	err := p.adminClient.Clusters().Update(clusterData)
-	if err != nil && !IsAlreadyExist(err) {
+	if err != nil {
 		return err
 	}
 	return nil
@@ -609,7 +609,7 @@ func (p *PulsarAdminClient) DeleteCluster(name string) error {
 func (p *PulsarAdminClient) CheckClusterExist(name string) bool {
 	_, err := p.adminClient.Clusters().Get(name)
 
-	if err != nil && !IsAlreadyExist(err) {
+	if err != nil && IsNotFound(err) {
 		return false
 	}
 
