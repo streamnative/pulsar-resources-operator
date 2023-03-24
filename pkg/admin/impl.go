@@ -606,12 +606,16 @@ func (p *PulsarAdminClient) DeleteCluster(name string) error {
 }
 
 // CheckClusterExist checks whether the cluster exists
-func (p *PulsarAdminClient) CheckClusterExist(name string) bool {
+func (p *PulsarAdminClient) CheckClusterExist(name string) (bool, error) {
 	_, err := p.adminClient.Clusters().Get(name)
 
-	if err != nil && IsNotFound(err) {
-		return false
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		} else {
+			return false, err
+		}
 	}
 
-	return true
+	return true, nil
 }

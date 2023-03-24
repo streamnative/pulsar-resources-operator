@@ -125,6 +125,6 @@ func (d *DummyPulsarAdmin) DeleteCluster(name string) error {
 }
 
 // CheckClusterExist checks whether the cluster exists
-func (d *DummyPulsarAdmin) CheckClusterExist(name string) bool {
-	return true
+func (d *DummyPulsarAdmin) CheckClusterExist(name string) (bool, error) {
+	return true, nil
 }

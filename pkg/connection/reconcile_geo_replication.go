@@ -178,7 +178,11 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 
 	// If the cluster already exists, only update it
-	if pulsarAdmin.CheckClusterExist(destClusterName) {
+	exist, err := pulsarAdmin.CheckClusterExist(destClusterName)
+	if err != nil {
+		return err
+	}
+	if exist {
 		log.V(1).Info("Update cluster", "ClusterName", destClusterName, "params", clusterParam)
 		if err := pulsarAdmin.UpdateCluster(destClusterName, clusterParam); err != nil {
 			meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewErrorCondition(geoReplication.Generation, err.Error()))

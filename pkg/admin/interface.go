@@ -148,7 +148,7 @@ type PulsarAdmin interface {
 	DeleteCluster(name string) error
 
 	// CheckClusterExist check wether the cluster is created or not
-	CheckClusterExist(name string) bool
+	CheckClusterExist(name string) (bool, error)
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config
