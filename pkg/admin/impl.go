@@ -612,9 +612,8 @@ func (p *PulsarAdminClient) CheckClusterExist(name string) (bool, error) {
 	if err != nil {
 		if IsNotFound(err) {
 			return false, nil
-		} else {
-			return false, err
 		}
+		return false, err
 	}
 
 	return true, nil
