@@ -86,6 +86,10 @@ type PulsarTopicSpec struct {
 
 	// +optional
 	SchemaInfo *SchemaInfo `json:"schemaInfo,omitempty"`
+
+	// GeoReplicationRefs is the reference list to the PulsarGeoReplication resource
+	// +optional
+	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
 }
 
 // SchemaInfo defines the Pulsar Schema.
@@ -116,6 +120,10 @@ type PulsarTopicStatus struct {
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+
+	// GeoReplicationEnabled
+	// +optional
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
 }
 
 //+kubebuilder:object:root=true

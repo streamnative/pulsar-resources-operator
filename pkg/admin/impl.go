@@ -15,6 +15,7 @@
 package admin
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -100,6 +101,24 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		return err
 	}
 
+	return nil
+}
+
+// GetNamespaceClusters get the assigned clusters of the namespace to the local default cluster
+func (p *PulsarAdminClient) GetNamespaceClusters(completeNSName string) ([]string, error) {
+	clusters, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName)
+	if err != nil {
+		return []string{}, err
+	}
+	return clusters, nil
+}
+
+// SetNamespaceClusters resets the assigned clusters of the namespace to the local default cluster
+func (p *PulsarAdminClient) SetNamespaceClusters(completeNSName string, clusters []string) error {
+	err := p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, clusters)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -241,7 +260,41 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 			return err
 		}
 	}
+	if len(params.ReplicationClusters) != 0 {
+		err = p.adminClient.Topics().SetReplicationClusters(*topicName, params.ReplicationClusters)
+		if err != nil {
+			return err
+		}
+	}
 
+	return nil
+}
+
+// GetTopicClusters get the assigned clusters of the topic to the local default cluster
+func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]string, error) {
+	completeTopicName := makeCompleteTopicName(name, persistent)
+	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	if err != nil {
+		return []string{}, err
+	}
+	clusters, err := p.adminClient.Topics().GetReplicationClusters(*topicName)
+	if err != nil {
+		return []string{}, err
+	}
+	return clusters, nil
+}
+
+// SetTopicClusters resets the assigned clusters of the topic to the local default cluster
+func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clusters []string) error {
+	completeTopicName := makeCompleteTopicName(name, persistent)
+	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	err = p.adminClient.Topics().SetReplicationClusters(*topicName, clusters)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -319,6 +372,13 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 			}
 		}
 		err = p.adminClient.Namespaces().SetBacklogQuota(completeNSName, backlogQuotaPolicy, backlogQuotaType)
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(params.ReplicationClusters) != 0 {
+		err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, params.ReplicationClusters)
 		if err != nil {
 			return err
 		}
@@ -487,4 +547,74 @@ func (p *PulsarAdminClient) UploadSchema(topic string, params *SchemaParams) err
 // DeleteSchema deletes the schema associated with a given topic
 func (p *PulsarAdminClient) DeleteSchema(topic string) error {
 	return p.adminClient.Schemas().DeleteSchema(topic)
+}
+
+// CreateCluster creates pulsar cluster
+func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) error {
+	clusterData := pulsarutils.ClusterData{
+		Name:                     name,
+		AuthenticationPlugin:     param.AuthPlugin,
+		AuthenticationParameters: param.AuthParameters,
+	}
+
+	if param.ServiceSecureURL != "" && param.BrokerServiceSecureURL != "" {
+		clusterData.ServiceURLTls = param.ServiceSecureURL
+		clusterData.BrokerServiceURLTls = param.BrokerServiceSecureURL
+	} else if param.ServiceURL != "" && param.BrokerServiceURL != "" {
+		clusterData.ServiceURL = param.ServiceURL
+		clusterData.BrokerServiceURL = param.BrokerServiceURL
+	} else {
+		return errors.New("BrokerServiceURL and ServiceURL shouldn't be empty")
+	}
+
+	// TODO pulsarctl cluster().Create() need to supoort auth parameters
+	err := p.adminClient.Clusters().Create(clusterData)
+	if err != nil && !IsAlreadyExist(err) {
+		return err
+	}
+	return nil
+}
+
+// UpdateCluster update pulsar cluster info
+func (p *PulsarAdminClient) UpdateCluster(name string, param *ClusterParams) error {
+	clusterData := pulsarutils.ClusterData{
+		Name:                     name,
+		AuthenticationPlugin:     param.AuthPlugin,
+		AuthenticationParameters: param.AuthParameters,
+	}
+
+	if param.ServiceSecureURL != "" && param.BrokerServiceSecureURL != "" {
+		clusterData.ServiceURLTls = param.ServiceSecureURL
+		clusterData.BrokerServiceURLTls = param.BrokerServiceSecureURL
+	} else if param.ServiceURL != "" && param.BrokerServiceURL != "" {
+		clusterData.ServiceURL = param.ServiceURL
+		clusterData.BrokerServiceURL = param.BrokerServiceURL
+	} else {
+		return errors.New("BrokerServiceURL and ServiceURL shouldn't be empty")
+	}
+
+	err := p.adminClient.Clusters().Update(clusterData)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteCluster deletes a pulsar cluster
+func (p *PulsarAdminClient) DeleteCluster(name string) error {
+	return p.adminClient.Clusters().Delete(name)
+}
+
+// CheckClusterExist checks whether the cluster exists
+func (p *PulsarAdminClient) CheckClusterExist(name string) (bool, error) {
+	_, err := p.adminClient.Clusters().Get(name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }

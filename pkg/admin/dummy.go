@@ -49,6 +49,16 @@ func (d *DummyPulsarAdmin) DeleteNamespace(name string) error {
 	return nil
 }
 
+// GetNamespaceClusters is a fake implements of GetNamespaceClusters
+func (d *DummyPulsarAdmin) GetNamespaceClusters(name string) ([]string, error) {
+	return []string{}, nil
+}
+
+// SetNamespaceClusters is a fake implements of SetNamespaceClusters
+func (d *DummyPulsarAdmin) SetNamespaceClusters(name string, clusters []string) error {
+	return nil
+}
+
 // ApplyTopic is a fake implements of ApplyTopic
 func (d *DummyPulsarAdmin) ApplyTopic(name string, params *TopicParams) error {
 	return nil
@@ -56,6 +66,16 @@ func (d *DummyPulsarAdmin) ApplyTopic(name string, params *TopicParams) error {
 
 // DeleteTopic is a fake implements of DeleteTopic
 func (d *DummyPulsarAdmin) DeleteTopic(name string) error {
+	return nil
+}
+
+// GetTopicClusters is a fake implements of GetTopicClusters
+func (d *DummyPulsarAdmin) GetTopicClusters(name string, persistent *bool) ([]string, error) {
+	return []string{}, nil
+}
+
+// SetTopicClusters is a fake implements of SetTopicClusters
+func (d *DummyPulsarAdmin) SetTopicClusters(name string, persistent *bool, clusters []string) error {
 	return nil
 }
 
@@ -87,4 +107,24 @@ func (d *DummyPulsarAdmin) UploadSchema(topic string, params *SchemaParams) erro
 // DeleteSchema is a fake implements of DeleteSchema
 func (d *DummyPulsarAdmin) DeleteSchema(topic string) error {
 	return nil
+}
+
+// CreateCluster is a fake implements of CreateCluster
+func (d *DummyPulsarAdmin) CreateCluster(name string, param *ClusterParams) error {
+	return nil
+}
+
+// UpdateCluster is a fake implements of UpdateCluster
+func (d *DummyPulsarAdmin) UpdateCluster(name string, param *ClusterParams) error {
+	return nil
+}
+
+// DeleteCluster is a fake implements of DeleteCluster
+func (d *DummyPulsarAdmin) DeleteCluster(name string) error {
+	return nil
+}
+
+// CheckClusterExist checks whether the cluster exists
+func (d *DummyPulsarAdmin) CheckClusterExist(name string) (bool, error) {
+	return true, nil
 }

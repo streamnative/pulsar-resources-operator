@@ -19,4 +19,9 @@ const (
 	ConditionReady string = "Ready"
 	// FinalizerName is the finalizer string that add to object
 	FinalizerName string = "cloud.streamnative.io/finalizer"
+
+	// AuthPluginToken indicates the authentication pulgin type token
+	AuthPluginToken string = "org.apache.pulsar.client.impl.auth.AuthenticationToken" // #nosec G101
+	// AuthPluginOAuth2 indicates the authentication pulgin type oauth2
+	AuthPluginOAuth2 string = "org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2"
 )

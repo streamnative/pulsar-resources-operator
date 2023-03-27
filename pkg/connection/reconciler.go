@@ -42,6 +42,7 @@ type PulsarConnectionReconciler struct {
 	namespaces         []resourcev1alpha1.PulsarNamespace
 	topics             []resourcev1alpha1.PulsarTopic
 	permissions        []resourcev1alpha1.PulsarPermission
+	geoReplications    []resourcev1alpha1.PulsarGeoReplication
 	hasUnreadyResource bool
 
 	pulsarAdmin admin.PulsarAdmin
@@ -61,6 +62,7 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		hasUnreadyResource: false,
 	}
 	r.reconcilers = []reconciler.Interface{
+		makeGeoReplicationReconciler(r),
 		makeTenantsReconciler(r),
 		makeNamespacesReconciler(r),
 		makeTopicsReconciler(r),
@@ -103,6 +105,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
+		r.log.Info("Doesn't have unReady resource")
 		return nil
 	}
 

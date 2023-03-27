@@ -33,6 +33,26 @@ type PulsarConnectionSpec struct {
 	// Authentication defines authentication configurations
 	// +optional
 	Authentication *PulsarAuthentication `json:"authentication,omitempty"`
+
+	// BrokerServiceURL is the broker service url of the pulsar cluster
+	// +optional
+	// +kubebuilder:validation:Pattern="^pulsar?://.+$"
+	BrokerServiceURL string `json:"brokerServiceURL,omitempty"`
+
+	// BrokerServiceSecureURL is the broker service url for secure connection.
+	// +optional
+	// +kubebuilder:validation:Pattern="^pulsar\\+ssl://.+$"
+	BrokerServiceSecureURL string `json:"brokerServiceSecureURL,omitempty"`
+
+	// AdminServiceSecureURL is the admin service url for secure connection.
+	// +optional
+	// +kubebuilder:validation:Pattern="^https://.+$"
+	AdminServiceSecureURL string `json:"adminServiceSecureURL,omitempty"`
+
+	// ClusterName indicates the local cluster name of the pulsar cluster. It should
+	// set when enabling the Geo Replication
+	// +optional
+	ClusterName string `json:"clusterName,omitempty"`
 }
 
 // PulsarConnectionStatus defines the observed state of PulsarConnection

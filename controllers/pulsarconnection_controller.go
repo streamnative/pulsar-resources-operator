@@ -62,6 +62,9 @@ type PulsarConnectionReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarpermissions,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarpermissions/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarpermissions/finalizers,verbs=update
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsargeoreplications,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsargeoreplications/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsargeoreplications/finalizers,verbs=update
 //+kubebuilder:rbac:groups=core,resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -134,6 +137,16 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		}); err != nil {
 		return err
 	}
+
+	if err := mgr.GetCache().IndexField(context.TODO(), &resourcev1alpha1.PulsarGeoReplication{}, ".spec.connectionRef.name",
+		func(object client.Object) []string {
+			return []string{
+				object.(*resourcev1alpha1.PulsarGeoReplication).Spec.ConnectionRef.Name,
+			}
+		}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.PulsarConnection{}).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarTenant{}},
@@ -146,6 +159,9 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarPermission{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarGeoReplication{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		WithOptions(options).

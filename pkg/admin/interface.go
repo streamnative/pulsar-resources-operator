@@ -48,6 +48,7 @@ type NamespaceParams struct {
 	BacklogQuotaLimitSize       *resource.Quantity
 	BacklogQuotaRetentionPolicy *string
 	BacklogQuotaType            *string
+	ReplicationClusters         []string
 }
 
 // TopicParams indicates the parameters for creating a topic
@@ -64,6 +65,17 @@ type TopicParams struct {
 	BacklogQuotaLimitTime             *metav1.Duration
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
+	ReplicationClusters               []string
+}
+
+// ClusterParams indicate the parameters for creating a cluster
+type ClusterParams struct {
+	ServiceURL             string
+	ServiceSecureURL       string
+	BrokerServiceURL       string
+	BrokerServiceSecureURL string
+	AuthPlugin             string
+	AuthParameters         string
 }
 
 // SchemaParams indicates the parameters for uploading a schema
@@ -90,11 +102,21 @@ type PulsarAdmin interface {
 	// DeleteNamespace delete a specific namespace
 	DeleteNamespace(name string) error
 
+	// GetNamespaceClusters get the assigned clusters of the namespace to the local default cluster
+	GetNamespaceClusters(completeNSName string) ([]string, error)
+	// SetNamespaceClusters resets the assigned clusters of the namespace to the local default cluster
+	SetNamespaceClusters(name string, clusters []string) error
+
 	// ApplyTopic creates a topic with parameters
 	ApplyTopic(name string, params *TopicParams) error
 
 	// DeleteTopic delete a specific topic
 	DeleteTopic(name string) error
+
+	// GetTopicClusters get the assigned clusters of the topic to the local default cluster
+	GetTopicClusters(name string, persistent *bool) ([]string, error)
+	// SetTopicClusters resets the assigned clusters of the topic to the local default cluster
+	SetTopicClusters(name string, persistent *bool, clusters []string) error
 
 	// GrantPermissions grants permissions to multiple role with multiple actions
 	// on a namespace or topic, each role will be granted the same actions
@@ -115,6 +137,18 @@ type PulsarAdmin interface {
 
 	// DeleteSchema deletes the schema associated with a given topic
 	DeleteSchema(topic string) error
+
+	// CreateCluster creates cluster info
+	CreateCluster(name string, param *ClusterParams) error
+
+	// UpdateCluster updates cluster info
+	UpdateCluster(name string, param *ClusterParams) error
+
+	// DeleteCluster delete cluster info
+	DeleteCluster(name string) error
+
+	// CheckClusterExist check wether the cluster is created or not
+	CheckClusterExist(name string) (bool, error)
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

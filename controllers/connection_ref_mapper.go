@@ -71,6 +71,8 @@ func getConnectionRef(object client.Object) *corev1.LocalObjectReference {
 		return &v.Spec.ConnectionRef
 	case *pulsarv1alpha1.PulsarPermission:
 		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarGeoReplication:
+		return &v.Spec.ConnectionRef
 	default:
 		return nil
 	}

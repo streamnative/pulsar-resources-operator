@@ -48,4 +48,12 @@ resources:
   kind: PulsarPermission
   path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: streamnative.io
+  group: resource
+  kind: PulsarGeoReplication
+  path: github.com/streamnative/pulsar-resources-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"

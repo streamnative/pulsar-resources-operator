@@ -80,6 +80,10 @@ type PulsarNamespaceSpec struct {
 	// +kubebuilder:validation:Enum=destination_storage;message_age
 	// +optional
 	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
+
+	// GeoReplicationRefs is the reference list to the PulsarGeoReplication resource
+	// +optional
+	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace
@@ -99,6 +103,10 @@ type PulsarNamespaceStatus struct {
 	// +listMapKey=type
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
+
+	// GeoReplicationEnabled
+	// +optional
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
 }
 
 //+kubebuilder:object:root=true
