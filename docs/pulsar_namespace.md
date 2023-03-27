@@ -44,6 +44,7 @@ This table lists specifications available for the `PulsarNamespace` resource.
 | `retentionTime` | The retention time (in minutes, hours, days, or weeks). | Optional |
 | `retentionSize` | The retention size limit(such as 800Mi, 10Gi). | Optional |
 | `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable the geo replication at namespace level. It will assign the namespace to the clusters. | No |
 
 
 2. Apply the YAML file to create the namespace.

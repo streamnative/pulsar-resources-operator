@@ -24,8 +24,10 @@ This table lists specifications available for the `PulsarConnection` resource.
 
 | Option | Description | Required or not |
 | ---| --- |--- |
-| `adminServiceURL` | The admin service URL of the Pulsar cluster, eg broker svc name. | Yes |
+| `adminServiceURL` | The admin service URL of the Pulsar cluster, eg: `cluster-broker.test.svc.cluster.local:8080`. | Yes |
 | `authentication` | A secret that stores authentication configurations.This option is required when you enable authentication for your Pulsar cluster. | No |
+| `brokerServiceURL` | The broker service URL of the Pulsar cluster, eg: `cluster-broker.test.svc.cluster.local:8080`. This option is required when you want to setup geo replication| No |
+| `clusterName` | The name of the local pulsar cluster, you can use `pulsar-admin clusters list` to get it. This option is required when you want to setup geo replication| No |
    
 
 2. Apply the YAML file to create the Pulsar Connection. 
