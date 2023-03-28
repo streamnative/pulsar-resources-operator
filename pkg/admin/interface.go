@@ -22,10 +22,10 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/streamnative/pulsar-admin-go/pkg/admin"
+	"github.com/streamnative/pulsar-admin-go/pkg/admin/auth"
+	"github.com/streamnative/pulsar-admin-go/pkg/admin/config"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	"github.com/streamnative/pulsarctl/pkg/auth"
-	"github.com/streamnative/pulsarctl/pkg/pulsar"
-	pulsarctlcommon "github.com/streamnative/pulsarctl/pkg/pulsar/common"
 )
 
 // TenantParams indicates the parameters for creating a tenant
@@ -183,13 +183,13 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	var keyFile *os.File
 	var keyFilePath string
 	var err error
-	var adminClient pulsar.Client
+	var adminClient admin.Client
 
-	config := &pulsarctlcommon.Config{
+	config := &config.Config{
 		WebServiceURL:              conf.WebServiceURL,
 		TLSAllowInsecureConnection: true,
 		// V2 admin endpoint contains operations for tenant, namespace and topic.
-		PulsarAPIVersion: pulsarctlcommon.V2,
+		PulsarAPIVersion: config.V2,
 	}
 
 	if conf.Key != "" {
@@ -216,11 +216,11 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		if err != nil {
 			return nil, err
 		}
-		adminClient = pulsar.NewWithAuthProvider(config, oauthProvider)
+		adminClient = admin.NewWithAuthProvider(config, oauthProvider)
 	} else {
 		config.Token = conf.Token
 
-		adminClient, err = pulsar.New(config)
+		adminClient, err = admin.New(config)
 		if err != nil {
 			return nil, err
 		}
@@ -249,7 +249,7 @@ type TopicPermission struct {
 // Permissioner implements the functions to grant and revoke permission for namespace and topic
 type Permissioner interface {
 	// Grant grants permission to role on a resource
-	Grant(client pulsar.Client) error
+	Grant(client admin.Client) error
 	// Revoke revokes permission from role on a resource
-	Revoke(client pulsar.Client) error
+	Revoke(client admin.Client) error
 }

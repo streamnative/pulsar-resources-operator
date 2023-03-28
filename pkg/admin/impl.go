@@ -23,15 +23,14 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 
+	"github.com/streamnative/pulsar-admin-go/pkg/admin"
+	"github.com/streamnative/pulsar-admin-go/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	"github.com/streamnative/pulsarctl/pkg/pulsar"
-	"github.com/streamnative/pulsarctl/pkg/pulsar/common"
-	pulsarutils "github.com/streamnative/pulsarctl/pkg/pulsar/utils"
 )
 
 // PulsarAdminClient define the client to call pulsar
 type PulsarAdminClient struct {
-	adminClient pulsar.Client
+	adminClient admin.Client
 	keyFile     *os.File
 }
 
@@ -47,7 +46,7 @@ const (
 // ApplyTenant creates or updates a tenant, if AllowdClusters is not provided, it will list all clusters in pular
 // When updates a tenant,  If AdminRoles is empty, the current set of roles won't be modified
 func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error {
-	param := pulsarutils.TenantData{
+	param := utils.TenantData{
 		Name:       name,
 		AdminRoles: []string{},
 	}
@@ -84,12 +83,12 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 	if params.Bundles == nil {
 		params.Bundles = pointer.Int32Ptr(4)
 	}
-	err := p.adminClient.Namespaces().CreateNsWithPolices(name, pulsarutils.Policies{
-		Bundles: &pulsarutils.BundlesData{
+	err := p.adminClient.Namespaces().CreateNsWithPolices(name, utils.Policies{
+		Bundles: &utils.BundlesData{
 			NumBundles: int(*params.Bundles),
 		},
-		SchemaCompatibilityStrategy: pulsarutils.AlwaysCompatible,
-		SubscriptionAuthMode:        pulsarutils.None,
+		SchemaCompatibilityStrategy: utils.AlwaysCompatible,
+		SubscriptionAuthMode:        utils.None,
 		ReplicationClusters:         []string{},
 	})
 	if err != nil && !IsAlreadyExist(err) {
@@ -125,7 +124,7 @@ func (p *PulsarAdminClient) SetNamespaceClusters(completeNSName string, clusters
 // ApplyTopic creates a topic with policies
 func (p *PulsarAdminClient) ApplyTopic(name string, params *TopicParams) error {
 	completeTopicName := makeCompleteTopicName(name, params.Persistent)
-	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	topicName, err := utils.GetTopicName(completeTopicName)
 	if err != nil {
 		return err
 	}
@@ -160,7 +159,7 @@ func (p *PulsarAdminClient) DeleteNamespace(name string) error {
 
 // DeleteTopic deletes a specific topic
 func (p *PulsarAdminClient) DeleteTopic(name string) error {
-	topic, err := pulsarutils.GetTopicName(name)
+	topic, err := utils.GetTopicName(name)
 	if err != nil {
 		return err
 	}
@@ -183,7 +182,7 @@ func (p *PulsarAdminClient) Close() error {
 	return nil
 }
 
-func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName, params *TopicParams) error {
+func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, params *TopicParams) error {
 	var err error
 	if params.MessageTTL != nil {
 		err = p.adminClient.Topics().SetMessageTTL(*topicName, int(params.MessageTTL.Seconds()))
@@ -230,7 +229,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 		if params.RetentionSize != nil {
 			retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
 		}
-		retentionPolicy := pulsarutils.NewRetentionPolicies(retentionTime, retentionSize)
+		retentionPolicy := utils.NewRetentionPolicies(retentionTime, retentionSize)
 		err = p.adminClient.Topics().SetRetention(*topicName, retentionPolicy)
 		if err != nil {
 			return err
@@ -241,19 +240,19 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 		params.BacklogQuotaRetentionPolicy != nil {
 		backlogTime := int64(-1)
 		backlogSize := int64(-1)
-		var backlogQuotaType pulsarutils.BacklogQuotaType
+		var backlogQuotaType utils.BacklogQuotaType
 		if params.BacklogQuotaLimitTime != nil {
 			backlogTime = int64(params.BacklogQuotaLimitTime.Seconds())
-			backlogQuotaType = pulsarutils.MessageAge
+			backlogQuotaType = utils.MessageAge
 		}
 		if params.BacklogQuotaLimitSize != nil {
 			backlogSize = params.BacklogQuotaLimitSize.Value()
-			backlogQuotaType = pulsarutils.DestinationStorage
+			backlogQuotaType = utils.DestinationStorage
 		}
-		backlogQuotaPolicy := pulsarutils.BacklogQuota{
+		backlogQuotaPolicy := utils.BacklogQuota{
 			LimitTime: backlogTime,
 			LimitSize: backlogSize,
-			Policy:    pulsarutils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
+			Policy:    utils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
 		}
 		err = p.adminClient.Topics().SetBacklogQuota(*topicName, backlogQuotaPolicy, backlogQuotaType)
 		if err != nil {
@@ -273,7 +272,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *pulsarutils.TopicName,
 // GetTopicClusters get the assigned clusters of the topic to the local default cluster
 func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]string, error) {
 	completeTopicName := makeCompleteTopicName(name, persistent)
-	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	topicName, err := utils.GetTopicName(completeTopicName)
 	if err != nil {
 		return []string{}, err
 	}
@@ -287,7 +286,7 @@ func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]s
 // SetTopicClusters resets the assigned clusters of the topic to the local default cluster
 func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clusters []string) error {
 	completeTopicName := makeCompleteTopicName(name, persistent)
-	topicName, err := pulsarutils.GetTopicName(completeTopicName)
+	topicName, err := utils.GetTopicName(completeTopicName)
 	if err != nil {
 		return err
 	}
@@ -299,7 +298,7 @@ func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clus
 }
 
 func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *NamespaceParams) error {
-	naName, err := pulsarutils.GetNamespaceName(completeNSName)
+	naName, err := utils.GetNamespaceName(completeNSName)
 	if err != nil {
 		return err
 	}
@@ -341,7 +340,7 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 		if params.RetentionSize != nil {
 			retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
 		}
-		retentionPolicy := pulsarutils.NewRetentionPolicies(retentionTime, retentionSize)
+		retentionPolicy := utils.NewRetentionPolicies(retentionTime, retentionSize)
 		err = p.adminClient.Namespaces().SetRetention(completeNSName, retentionPolicy)
 		if err != nil {
 			return err
@@ -358,15 +357,15 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 		if params.BacklogQuotaLimitSize != nil {
 			backlogSize = params.BacklogQuotaLimitSize.Value()
 		}
-		backlogQuotaPolicy := pulsarutils.BacklogQuota{
+		backlogQuotaPolicy := utils.BacklogQuota{
 			LimitTime: backlogTime,
 			LimitSize: backlogSize,
-			Policy:    pulsarutils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
+			Policy:    utils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
 		}
 
-		var backlogQuotaType pulsarutils.BacklogQuotaType
+		var backlogQuotaType utils.BacklogQuotaType
 		if params.BacklogQuotaType != nil {
-			backlogQuotaType, err = pulsarutils.ParseBacklogQuotaType(*params.BacklogQuotaType)
+			backlogQuotaType, err = utils.ParseBacklogQuotaType(*params.BacklogQuotaType)
 			if err != nil {
 				return err
 			}
@@ -418,10 +417,10 @@ func (p *PulsarAdminClient) RevokePermissions(permission Permissioner) error {
 }
 
 // convertActions converts actions type from string to common.AuthAction
-func convertActions(actions []string) ([]common.AuthAction, error) {
-	r := make([]common.AuthAction, 0)
+func convertActions(actions []string) ([]utils.AuthAction, error) {
+	r := make([]utils.AuthAction, 0)
 	for _, v := range actions {
-		a, err := common.ParseAuthAction(v)
+		a, err := utils.ParseAuthAction(v)
 		if err != nil {
 			return nil, err
 		}
@@ -432,13 +431,13 @@ func convertActions(actions []string) ([]common.AuthAction, error) {
 }
 
 // Grant implements the grant method for namespace permission
-func (n *NamespacePermission) Grant(client pulsar.Client) error {
+func (n *NamespacePermission) Grant(client admin.Client) error {
 	actions, err := convertActions(n.Actions)
 	if err != nil {
 		return err
 	}
 
-	nsName, err := pulsarutils.GetNamespaceName(n.ResourceName)
+	nsName, err := utils.GetNamespaceName(n.ResourceName)
 	if err != nil {
 		return err
 	}
@@ -455,8 +454,8 @@ func (n *NamespacePermission) Grant(client pulsar.Client) error {
 }
 
 // Revoke implements the revoke method for namespace permission
-func (n *NamespacePermission) Revoke(client pulsar.Client) error {
-	nsName, err := pulsarutils.GetNamespaceName(n.ResourceName)
+func (n *NamespacePermission) Revoke(client admin.Client) error {
+	nsName, err := utils.GetNamespaceName(n.ResourceName)
 	if err != nil {
 		return err
 	}
@@ -473,13 +472,13 @@ func (n *NamespacePermission) Revoke(client pulsar.Client) error {
 }
 
 // Grant implements the grant method for topic permission
-func (t *TopicPermission) Grant(client pulsar.Client) error {
+func (t *TopicPermission) Grant(client admin.Client) error {
 	actions, err := convertActions(t.Actions)
 	if err != nil {
 		return err
 	}
 
-	topicName, err := pulsarutils.GetTopicName(t.ResourceName)
+	topicName, err := utils.GetTopicName(t.ResourceName)
 	if err != nil {
 		return err
 	}
@@ -495,8 +494,8 @@ func (t *TopicPermission) Grant(client pulsar.Client) error {
 }
 
 // Revoke implements the revoke method for topic permission
-func (t *TopicPermission) Revoke(client pulsar.Client) error {
-	topicName, err := pulsarutils.GetTopicName(t.ResourceName)
+func (t *TopicPermission) Revoke(client admin.Client) error {
+	topicName, err := utils.GetTopicName(t.ResourceName)
 	if err != nil {
 		return err
 	}
@@ -532,7 +531,7 @@ func (p *PulsarAdminClient) GetSchema(topic string) (*v1alpha1.SchemaInfo, error
 
 // UploadSchema creates or updates a schema for a given topic
 func (p *PulsarAdminClient) UploadSchema(topic string, params *SchemaParams) error {
-	var payload pulsarutils.PostSchemaPayload
+	var payload utils.PostSchemaPayload
 	payload.SchemaType = params.Type
 	payload.Schema = params.Schema
 	payload.Properties = params.Properties
@@ -551,7 +550,7 @@ func (p *PulsarAdminClient) DeleteSchema(topic string) error {
 
 // CreateCluster creates pulsar cluster
 func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) error {
-	clusterData := pulsarutils.ClusterData{
+	clusterData := utils.ClusterData{
 		Name:                     name,
 		AuthenticationPlugin:     param.AuthPlugin,
 		AuthenticationParameters: param.AuthParameters,
@@ -567,7 +566,6 @@ func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) err
 		return errors.New("BrokerServiceURL and ServiceURL shouldn't be empty")
 	}
 
-	// TODO pulsarctl cluster().Create() need to supoort auth parameters
 	err := p.adminClient.Clusters().Create(clusterData)
 	if err != nil && !IsAlreadyExist(err) {
 		return err
@@ -577,7 +575,7 @@ func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) err
 
 // UpdateCluster update pulsar cluster info
 func (p *PulsarAdminClient) UpdateCluster(name string, param *ClusterParams) error {
-	clusterData := pulsarutils.ClusterData{
+	clusterData := utils.ClusterData{
 		Name:                     name,
 		AuthenticationPlugin:     param.AuthPlugin,
 		AuthenticationParameters: param.AuthParameters,
