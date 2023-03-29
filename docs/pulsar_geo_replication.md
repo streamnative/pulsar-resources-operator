@@ -44,13 +44,9 @@ graph TD;
    cluster2-->cluster1;
 ```
 
-The demo will use two pulsar clusters in the different namespaces in the same k8s cluster.
-The cluster names are `cluster1-sn-platform` and `cluster2-sn-platform`.
-
-
 ### Prerequisites
-1. You have two pulsar clusters at least.
-2. Make sure both clusters can access each other.
+1. Deploy two pulsar clusters.
+2. Ensure that both clusters can access each other.
 
 ### Update the existing PulsarConnection
 Add the Pulsar cluster `cluster1-sn-platform` information through the `clusterName` and `brokerServiceURL` fields to the existing PulsarConnection.
