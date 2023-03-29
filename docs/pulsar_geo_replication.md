@@ -2,13 +2,13 @@
 
 ## Create PulsarGeoReplication
 
-The PulsarGeoReplication is a one-way setup, you create a PulsarGeoReplication for `cluster1`, it will only setup for `cluster1->cluster2`. if you want to replicate data among `cluster1` and `cluster2`, you need to create another PulsarGeoReplication for `cluster2->cluster1`
+The PulsarGeoReplication is a unidirectional setup. When you create a PulsarGeoReplication for `cluster1` only, data will be replicated from `cluster1` to `cluster2`. If you need to replicate data between clusters `cluster1` and `cluster2`, you need to create PulsarGeoReplication for both `cluster1` and `cluster2`.
 
 
-The operator will create a new `cluster` named with the `clusterName` in the destination connection for each PulsarGeoReplication.
+The Pulsar Resource Operator will create a new cluster named `clusterName` in the destination connection for each PulsarGeoReplication.
 
 
-1. Define a geo replication named `cluster1-geo` by using the YAML file and save the YAML file `cluster1-geo.yaml`. 
+1. Define a Geo-replication named `cluster1-geo` and save the YAML file as `cluster1-geo.yaml`. 
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -24,20 +24,20 @@ spec:
   lifecyclePolicy: CleanUpAfterDeletion
 ```
 
-This table lists specifications available for the `PulsarTopic` resource.
+This table lists specifications available for the `PulsarGeoReplication ` resource.
 
 | Option | Description | Required or not |
 | ---| --- |--- |
 | `connectionRef` | The reference to a PulsarConnection. | Yes |
 | `destinationConnectionRef` | The reference to a destination PulsarConnection. | Yes |
-| `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `KeepAfterDeletion`. | Optional |
 
 
-## How to setup a Geo Replication
+## How to configure Geo-replication
 
-This is a demo shows how to setup a geo replication.
+This section describes how to configure Geo-replication between clusters `cluster1-sn-platform` and `cluster2-sn-platform` in different namespaces of the same Kubernetes cluster.
 
-The demo will set up geo-replication between cluster1, and cluster2, the relations are shown in the diagram.
+The relation is shown below.
 ```mermaid
 graph TD;
    cluster1-->cluster2;
@@ -53,7 +53,7 @@ The cluster names are `cluster1-sn-platform` and `cluster2-sn-platform`.
 2. Make sure both clusters can access each other.
 
 ### Update the existing PulsarConnection
-You need to add the extra fields `clusterName` and `brokerServiceURL` for the existing PulsarConnection.
+Add the Pulsar cluster `cluster1-sn-platform` information through the `clusterName` and `brokerServiceURL` fields to the existing PulsarConnection.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -72,11 +72,13 @@ spec:
         key: brokerClientAuthenticationParameters
 ```
 
-### Create a Destination PulsarConnection
-First, you need to create a destination PulsarConnection, this connection indicates the info of the remote pulsar cluster.
-You need to add two extra fields `clusterName` and `brokerServiceURL` for this PulsarConnection.
+### Create a destination PulsarConnection
+The destination PulsarConnection has the information of the Pulsar cluster`cluster2-sn-platform`.
+Add the Pulsar cluster `cluster2-sn-platform` information through the `clusterName` and `brokerServiceURL` fields to the destination PulsarConnection.
 
-Notice, the token of the authentication only support using `value` now.
+> **Note**
+>
+> The token only supports the `value` format.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -96,7 +98,7 @@ spec:
 
 
 ### Create a PulsarGeoReplication
-It means setup the geo replication from the `cluster1` to `cluster2`. The operator will create a new cluster called `cluster2-sn-platform`.
+This section enabled Geo-replication on `cluster1`, which replicates data from `cluster1` to `cluster2`. The operator will create a new cluster called `cluster2-sn-platform`.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -114,7 +116,7 @@ spec:
 
 ### Grant the permission for the tenant
 
-You can create a new tenant or update the existing the tenant with the field `geoReplicationRefs`. It will assign the `cluster2-sn-platform` to the tenant.
+You can create a new tenant or update an existing tenant by adding the field `geoReplicationRefs`. It will add the cluster `cluster2-sn-platform` to the tenant.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -131,11 +133,13 @@ spec:
   lifecyclePolicy: CleanUpAfterDeletion
 ```
 
-### Enable the geo replication at namespace level
+### Enable Geo-replication at the namespace level
 
-You can create a new namespace or update the existing the namespace with the field `geoReplicationRefs`. It will assign the namespace to `cluster2-sn-platform`.
+You can create a new namespace or update an existing namespace by adding the field `geoReplicationRefs`. It will add the namespace to `cluster2-sn-platform`.
 
-Notice, once you create a geo-replication namespace, any topics that producers or consumers create within that namespace are replicated across clusters
+> **Note**
+>
+> Once you enable Geo-replication at the namespace level, messages to all topics within that namespace are replicated across clusters.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -158,9 +162,9 @@ spec:
 ```
 
 
-### Enable the geo replication at topic level
+### Enable Geo-replication at the topic level
 
-You can create a new topic or update the existing the topic with the field `geoReplicationRefs`. It will assign the topic to `cluster2-sn-platform`.
+You can create a new topic or update an existing topic by adding the field `geoReplicationRefs`. It will add the topic to `cluster2-sn-platform`.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -180,6 +184,6 @@ spec:
 
 #### Test
 
-After the resources are ready, you can test the geo-replication by producing and consuming messages.
-- Run the command `./bin/pulsar-client produce geo-test/testn1/topic1 -m "hello" -n 10` in the cluster1.
-- Run the command `./bin/pulsar-client consume geo-test/testn1/topic1 -s sub -n 0` in the cluster2.
+After the resources are ready, you can test Geo-replication by producing and consuming messages.
+- Open a terminal and run the command `./bin/pulsar-client produce geo-test/testn1/topic1 -m "hello" -n 10` to produce messages to `cluster1`.
+- Open another terminal and run the command `./bin/pulsar-client consume geo-test/testn1/topic1 -s sub -n 0` to consume messages from `cluster2`.

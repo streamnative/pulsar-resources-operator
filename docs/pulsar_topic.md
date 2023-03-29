@@ -47,7 +47,7 @@ This table lists specifications available for the `PulsarTopic` resource.
 | `backlogQuotaRetentionPolicy` | The Retention policy to be enforced when the limit is reached. | Optional |
 | `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
 | `schemaInfo` | The schema of pulsar topic, default is nil. More details you can find in [schemaInfo](#schemainfo) Optional |
-| `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable the geo replication at topic level. It will assign the topic to the clusters. | No |
+| `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable Geo-replication at the topic level. It will add the topic to the clusters. | No |
 
 2. Apply the YAML file to create the topic.
 
