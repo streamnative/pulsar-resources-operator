@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2023 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,38 +19,21 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.8.0
   creationTimestamp: null
-  name: pulsarnamespaces.resource.streamnative.io
+  name: pulsargeoreplications.resource.streamnative.io
 spec:
   group: resource.streamnative.io
   names:
-    categories:
-    - pulsar
-    - pulsarres
-    kind: PulsarNamespace
-    listKind: PulsarNamespaceList
-    plural: pulsarnamespaces
-    shortNames:
-    - pns
-    singular: pulsarnamespace
+    kind: PulsarGeoReplication
+    listKind: PulsarGeoReplicationList
+    plural: pulsargeoreplications
+    singular: pulsargeoreplication
   scope: Namespaced
   versions:
-  - additionalPrinterColumns:
-    - jsonPath: .spec.name
-      name: RESOURCE_NAME
-      type: string
-    - jsonPath: .metadata.generation
-      name: GENERATION
-      type: string
-    - jsonPath: .status.observedGeneration
-      name: OBSERVED_GENERATION
-      type: string
-    - jsonPath: .status.conditions[?(@.type=="Ready")].status
-      name: READY
-      type: string
-    name: v1alpha1
+  - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarNamespace is the Schema for the pulsarnamespaces API
+        description: PulsarGeoReplication is the Schema for the pulsargeoreplications
+          API
         properties:
           apiVersion:
             description: 'APIVersion defines the versioned schema of this representation
@@ -65,53 +48,25 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarNamespaceSpec defines the desired state of PulsarNamespace
+            description: PulsarGeoReplicationSpec defines the desired state of PulsarGeoReplication
             properties:
-              backlogQuotaLimitSize:
-                anyOf:
-                - type: integer
-                - type: string
-                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                x-kubernetes-int-or-string: true
-              backlogQuotaLimitTime:
-                description: Backlog Should set at least one of them if setting backlog
-                type: string
-              backlogQuotaRetentionPolicy:
-                type: string
-              backlogQuotaType:
-                description: BacklogQuotaType controls the backlog by setting the
-                  type to destination_storage or message_age destination_storage limits
-                  backlog by size (in bytes). message_age limits backlog by time,
-                  that is, message timestamp (broker or publish timestamp)
-                enum:
-                - destination_storage
-                - message_age
-                type: string
-              bundles:
-                format: int32
-                type: integer
               connectionRef:
-                description: ConnectionRef is the reference to the PulsarConnection
-                  resource
+                description: ConnectionRef is the reference to the source PulsarConnection
                 properties:
                   name:
                     description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
-              geoReplicationRefs:
-                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
-                  resource
-                items:
-                  description: LocalObjectReference contains enough information to
-                    let you locate the referenced object inside the same namespace.
-                  properties:
-                    name:
-                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Add other useful fields. apiVersion, kind, uid?'
-                      type: string
-                  type: object
-                type: array
+              destinationConnectionRef:
+                description: DestinationConnectionRef is the connection reference
+                  to the remote cluster
+                properties:
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      TODO: Add other useful fields. apiVersion, kind, uid?'
+                    type: string
+                type: object
               lifecyclePolicy:
                 description: PulsarResourceLifeCyclePolicy indicates whether it will
                   keep or delete the resource in pulsar cluster after resource is
@@ -120,41 +75,17 @@ spec:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
-              maxConsumersPerSubscription:
-                format: int32
-                type: integer
-              maxConsumersPerTopic:
-                format: int32
-                type: integer
-              maxProducersPerTopic:
-                description: Tenant Policy Setting
-                format: int32
-                type: integer
-              messageTTL:
-                type: string
-              name:
-                description: Name is the namespace name
-                type: string
-              retentionSize:
-                anyOf:
-                - type: integer
-                - type: string
-                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                x-kubernetes-int-or-string: true
-              retentionTime:
-                description: Retention Should set at least one of them if setting
-                  retention
-                type: string
             required:
             - connectionRef
-            - name
+            - destinationConnectionRef
             type: object
           status:
-            description: PulsarNamespaceStatus defines the observed state of PulsarNamespace
+            description: PulsarGeoReplicationStatus defines the observed state of
+              PulsarGeoReplication
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: Conditions Represents the observations of a connection's
+                  current state.
                 items:
                   description: "Condition contains details for one aspect of the current
                     state of this API Resource. --- This struct is intended for direct
@@ -225,9 +156,6 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
-              geoReplicationEnabled:
-                description: GeoReplicationEnabled
-                type: boolean
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
                   for this resource. It corresponds to the metadata generation, which

@@ -4,7 +4,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+# http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -87,6 +87,19 @@ spec:
                       TODO: Add other useful fields. apiVersion, kind, uid?'
                     type: string
                 type: object
+              geoReplicationRefs:
+                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
+                  resource
+                items:
+                  description: LocalObjectReference contains enough information to
+                    let you locate the referenced object inside the same namespace.
+                  properties:
+                    name:
+                      description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                        TODO: Add other useful fields. apiVersion, kind, uid?'
+                      type: string
+                  type: object
+                type: array
               lifecyclePolicy:
                 description: PulsarResourceLifeCyclePolicy indicates whether it will
                   keep or delete the resource in pulsar cluster after resource is
@@ -131,6 +144,24 @@ spec:
                 description: Retention Should set at least one of them if setting
                   retention
                 type: string
+              schemaInfo:
+                description: SchemaInfo defines the Pulsar Schema. It is stored and
+                  enforced on a per-topic basis and cannot be stored at the namespace
+                  or tenant level.
+                properties:
+                  properties:
+                    additionalProperties:
+                      type: string
+                    description: Properties is a user defined properties as a string/string
+                      map
+                    type: object
+                  schema:
+                    description: Schema is schema data
+                    type: string
+                  type:
+                    description: Type determines how to interpret the schema data
+                    type: string
+                type: object
             required:
             - connectionRef
             - name
@@ -211,6 +242,9 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              geoReplicationEnabled:
+                description: GeoReplicationEnabled
+                type: boolean
               observedGeneration:
                 description: ObservedGeneration is the most recent generation observed
                   for this resource. It corresponds to the metadata generation, which
