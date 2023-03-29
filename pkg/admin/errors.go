@@ -15,7 +15,7 @@
 package admin
 
 import (
-	pulsarcli "github.com/streamnative/pulsarctl/pkg/cli"
+	"github.com/streamnative/pulsar-admin-go/pkg/rest"
 )
 
 // Reason indicates the status code
@@ -48,7 +48,7 @@ const (
 
 // ErrorReason returns the HTTP status code for the error
 func ErrorReason(err error) Reason {
-	cliError, ok := err.(pulsarcli.Error)
+	cliError, ok := err.(rest.Error)
 	if !ok {
 		// can't determine error reason as can't convert to a cli error
 		return ReasonUnknown
