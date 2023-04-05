@@ -60,7 +60,7 @@ metadata:
 spec:
   clusterName: cluster1-sn-platform # the local cluster name
   adminServiceURL: http://cluster1-sn-platform-broker.cluster1.svc.cluster.local:8080
-  brokerServiceURL: http://cluster1-sn-platform-broker.cluster1.svc.cluster.local:6650
+  brokerServiceURL: pulsar://cluster1-sn-platform-broker.cluster1.svc.cluster.local:6650
   authentication:
     token:
       secretRef:

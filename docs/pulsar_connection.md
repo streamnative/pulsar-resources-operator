@@ -12,6 +12,8 @@ metadata:
   namespace: test
 spec:
   adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
   # optional
   authentication:
     token:
