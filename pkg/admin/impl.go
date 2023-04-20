@@ -556,9 +556,12 @@ func (p *PulsarAdminClient) CreateCluster(name string, param *ClusterParams) err
 		AuthenticationParameters: param.AuthParameters,
 	}
 
+	// Enable tls
 	if param.ServiceSecureURL != "" && param.BrokerServiceSecureURL != "" {
 		clusterData.ServiceURLTls = param.ServiceSecureURL
 		clusterData.BrokerServiceURLTls = param.BrokerServiceSecureURL
+		clusterData.BrokerClientTrustCertsFilePath = param.BrokerClientTrustCertsFilePath
+		clusterData.BrokerClientTLSEnabled = true
 	} else if param.ServiceURL != "" && param.BrokerServiceURL != "" {
 		clusterData.ServiceURL = param.ServiceURL
 		clusterData.BrokerServiceURL = param.BrokerServiceURL

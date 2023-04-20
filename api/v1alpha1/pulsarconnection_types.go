@@ -49,6 +49,10 @@ type PulsarConnectionSpec struct {
 	// +kubebuilder:validation:Pattern="^https://.+$"
 	AdminServiceSecureURL string `json:"adminServiceSecureURL,omitempty"`
 
+	// BrokerClientTrustCertsFilePath Path for the trusted TLS certificate file for outgoing connection to a server (broker)
+	// +optional
+	BrokerClientTrustCertsFilePath string `json:"brokerClientTrustCertsFilePath,omitempty"`
+
 	// ClusterName indicates the local cluster name of the pulsar cluster. It should
 	// set when enabling the Geo Replication
 	// +optional

@@ -65,6 +65,9 @@ spec:
   brokerServiceURL: pulsar://us-east-sn-platform-broker.us-east.svc.cluster.local:6650
 ```
 
+
+
+
 ### Create a destination PulsarConnection
 The destination PulsarConnection has the information of the Pulsar cluster`us-west-sn-platform`.
 Add the Pulsar cluster `us-west-sn-platform` information through the `clusterName` and `brokerServiceURL` fields to the destination PulsarConnection.
@@ -82,6 +85,50 @@ spec:
   adminServiceURL: http://<us-west-public-address>:8080
   brokerServiceURL: pulsar://<us-west-public-address>:6650
 ```
+
+#### Use tls connection
+When you want to use tls to connect remote cluster, you need to do some extra steps.
+
+1. For a selfsigning cert, you need to create a secret to store the cert file of connecting the remote broker.
+```yaml
+apiVersion: v1
+data:
+  ca.crt: xxxxx
+kind: Secret
+metadata:
+  name: us-west-tls-broker
+  namespace: us-esat
+type: Opaque
+```
+2. Mount the secret to pulsarbroker by adding these line to the `pulsarbroker.spec.pod.secretRefs`. The mount path will be used in pulsar connection.
+```yaml
+spec:
+  pod:
+    secretRefs:
+    - mountPath: /etc/tls/us-west
+      secretName: us-west-tls-broker
+```
+3. Add `adminServiceSecureURL` and `brokerServiceSecureURL`  to the destination connection
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarConnection
+metadata:
+  name: us-east-dest-connection
+  namespace: us-east
+spec:
+  # The destination us-west cluster name
+  clusterName: us-west-sn-platform
+  # The destination us-west cluster connection URL, you should use Kubernetes external LB address.
+  adminServiceURL: http://<us-west-public-address>:8080
+  brokerServiceURL: pulsar://<us-west-public-address>:6650
+  authentication:
+    token:
+      value: xxxx
+  adminServiceSecureURL: https://<us-west-public-address:8443 # the remote pulsar admin secure service
+  brokerServiceSecureURL: pulsar+ssl://<us-west-public-address:6651 # the remote pulsar broker secure service
+  brokerClientTrustCertsFilePath: /etc/tls/us-west/ca.crt # Optional. The cert path is the mountPath in the above step if you are using selfsigning cert. 
+```
+
 
 ### Create a PulsarGeoReplication
 This section enabled Geo-replication on `us-east`, which replicates data from `us-east` to `us-west`. The operator will create a new cluster called `us-west-sn-platform`.
