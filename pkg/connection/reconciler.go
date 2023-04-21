@@ -212,6 +212,10 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 				cfg.Key = *value
 			}
 		}
+		if tls := authn.TLS; tls != nil {
+			cfg.ClientCertificatePath = tls.ClientCertificatePath
+			cfg.ClientCertificateKeyPath = tls.ClientCertificateKeyPath
+		}
 	}
 	return &cfg, nil
 }

@@ -45,6 +45,9 @@ type PulsarAuthentication struct {
 
 	// +optional
 	OAuth2 *PulsarAuthenticationOAuth2 `json:"oauth2,omitempty"`
+
+	// +optional
+	TLS *PulsarAuthenticationTLS `json:"tls,omitempty"`
 }
 
 // PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
@@ -65,6 +68,12 @@ type PulsarAuthenticationOAuth2 struct {
 	ClientID       string           `json:"clientID"`
 	Audience       string           `json:"audience"`
 	Key            ValueOrSecretRef `json:"key"`
+}
+
+// PulsarAuthenticationTLS indicates the parameters which are need by pulsar TLS Authentication
+type PulsarAuthenticationTLS struct {
+	ClientCertificatePath    string `json:"clientCertificatePath"`
+	ClientCertificateKeyPath string `json:"clientCertificateKeyPath"`
 }
 
 // IsPulsarResourceReady returns true if resource satisfies with these condition
