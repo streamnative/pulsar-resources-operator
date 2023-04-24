@@ -7,7 +7,7 @@ require (
 	github.com/go-logr/logr v1.2.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
-	github.com/streamnative/pulsar-admin-go v0.1.0
+	github.com/streamnative/pulsar-admin-go v0.1.1-0.20230423025125-b31ddd22d16b
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
