@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2023 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,6 +28,12 @@ spec:
       displayName: Pulsar Connection
       kind: PulsarConnection
       name: pulsarconnections.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarGeoReplication is the Schema for the pulsargeoreplications
+        API
+      displayName: Pulsar Geo Replication
+      kind: PulsarGeoReplication
+      name: pulsargeoreplications.resource.streamnative.io
       version: v1alpha1
     - description: PulsarNamespace is the Schema for the pulsarnamespaces API
       displayName: Pulsar Namespace
