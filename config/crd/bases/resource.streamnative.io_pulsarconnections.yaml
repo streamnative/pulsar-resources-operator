@@ -146,6 +146,10 @@ spec:
                         type: string
                     type: object
                 type: object
+              brokerClientTrustCertsFilePath:
+                description: BrokerClientTrustCertsFilePath Path for the trusted TLS
+                  certificate file for outgoing connection to a server (broker)
+                type: string
               brokerServiceSecureURL:
                 description: BrokerServiceSecureURL is the broker service url for
                   secure connection.
@@ -160,8 +164,6 @@ spec:
                 description: ClusterName indicates the local cluster name of the pulsar
                   cluster. It should set when enabling the Geo Replication
                 type: string
-            required:
-            - adminServiceURL
             type: object
           status:
             description: PulsarConnectionStatus defines the observed state of PulsarConnection

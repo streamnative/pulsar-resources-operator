@@ -27,6 +27,7 @@ type PulsarConnectionSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// AdminServiceURL is the admin service url of the pulsar cluster
+	// +optional
 	// +kubebuilder:validation:Pattern="^https?://.+$"
 	AdminServiceURL string `json:"adminServiceURL"`
 
@@ -48,6 +49,10 @@ type PulsarConnectionSpec struct {
 	// +optional
 	// +kubebuilder:validation:Pattern="^https://.+$"
 	AdminServiceSecureURL string `json:"adminServiceSecureURL,omitempty"`
+
+	// BrokerClientTrustCertsFilePath Path for the trusted TLS certificate file for outgoing connection to a server (broker)
+	// +optional
+	BrokerClientTrustCertsFilePath string `json:"brokerClientTrustCertsFilePath,omitempty"`
 
 	// ClusterName indicates the local cluster name of the pulsar cluster. It should
 	// set when enabling the Geo Replication

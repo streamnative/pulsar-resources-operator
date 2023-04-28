@@ -71,12 +71,13 @@ type TopicParams struct {
 
 // ClusterParams indicate the parameters for creating a cluster
 type ClusterParams struct {
-	ServiceURL             string
-	ServiceSecureURL       string
-	BrokerServiceURL       string
-	BrokerServiceSecureURL string
-	AuthPlugin             string
-	AuthParameters         string
+	ServiceURL                     string
+	ServiceSecureURL               string
+	BrokerServiceURL               string
+	BrokerServiceSecureURL         string
+	AuthPlugin                     string
+	AuthParameters                 string
+	BrokerClientTrustCertsFilePath string
 }
 
 // SchemaParams indicates the parameters for uploading a schema

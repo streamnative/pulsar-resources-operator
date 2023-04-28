@@ -152,10 +152,11 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 
 	clusterParam := &admin.ClusterParams{
-		ServiceURL:             destConnection.Spec.AdminServiceURL,
-		BrokerServiceURL:       destConnection.Spec.BrokerServiceURL,
-		ServiceSecureURL:       destConnection.Spec.AdminServiceSecureURL,
-		BrokerServiceSecureURL: destConnection.Spec.BrokerServiceSecureURL,
+		ServiceURL:                     destConnection.Spec.AdminServiceURL,
+		BrokerServiceURL:               destConnection.Spec.BrokerServiceURL,
+		ServiceSecureURL:               destConnection.Spec.AdminServiceSecureURL,
+		BrokerServiceSecureURL:         destConnection.Spec.BrokerServiceSecureURL,
+		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
 	}
 
 	hasAuth := true

@@ -185,6 +185,9 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 
 // MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
+	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL == "" {
+		return nil, fmt.Errorf("adminServiceURL or adminServiceSecureURL must not be empty")
+	}
 	cfg := admin.PulsarAdminConfig{
 		WebServiceURL: r.connection.Spec.AdminServiceURL,
 	}
