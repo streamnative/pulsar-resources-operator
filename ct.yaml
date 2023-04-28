@@ -36,4 +36,4 @@ helm-extra-args: --timeout 600s
 # be rendered with go template before being executed.
 additional-commands:
   # tigger `helm unittest` after the lint check
-  - helm unittest -3 charts/pulsar-resources-operator
+  - helm unittest charts/pulsar-resources-operator
