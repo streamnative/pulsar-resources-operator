@@ -32,7 +32,7 @@ Other `PulsarConnection` configuration examples:
     clusterName: pulsar-cluster
   ```
 
-* JWT Token Auth with Secret
+* JWT Token authentication with Secret
   
   ```yaml
   apiVersion: resource.streamnative.io/v1alpha1
