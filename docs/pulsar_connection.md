@@ -69,7 +69,7 @@ Other `PulsarConnection` configuration examples:
       value: ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKemRXSWlPaUowWlhOMExYVnpaWElpZlEuOU9IZ0U5WlVEZUJUWnM3blNNRUZJdUdORVgxOEZMUjNxdnk4bXF4U3hYdw==
   ```
 
-* OAuth2 authentication
+* OAuth2 authentication with Secret
 
   ```yaml
   apiVersion: resource.streamnative.io/v1alpha1
@@ -87,11 +87,32 @@ Other `PulsarConnection` configuration examples:
       clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
       audience: urn:sn:pulsar:sndev:us-west
       key: 
-        # Encode the OAuth2 keyFile with base64 and create a secret to use
+        # Store the keyFile contents into a Secret
         secretRef:
           name: key-file-secret
           key: key-file
   ```
+
+* OAuth2 authentication with value
+
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+    authentication:
+    oauth2:
+      issuerEndpoint: https://auth.streamnative.cloud
+      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
+      audience: urn:sn:pulsar:sndev:us-west
+      key: 
+        # Encode the keyFile contents with base64 to use
+        value: eyJ0eXBlIjoic25fc2VydmljZV9hY2NvdW50IiwiY2xpZW50X2lkIjoicHZmeDc2b0d2V1FNSUdHUDJvek1mT3VzMnM0dERUQUoiLCJjbGllbnRfc2VjcmV0IjoiNzFKNmZvODFqLWg2OV92VnZZdnFDT0hlMk5mT3l5NmFxR3F3SWh0Z254cE04TzhVSDhQZENiVnRkbV9TSmpJZiIsImNsaWVudF9lbWFpbCI6ImNvbnRvc29Ac25kZXYuYXV0aC5zdHJlYW1uYXRpdmUuY2xvdWQiLCJpc3N1ZXJfdXJsIjoiaHR0cHM6Ly9hdXRoLnN0cmVhbW5hdGl2ZS5jbG91ZCJ9
 
 This table lists specifications available for the `PulsarConnection` resource.
 
