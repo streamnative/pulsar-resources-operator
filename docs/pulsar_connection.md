@@ -51,7 +51,7 @@ Other `PulsarConnection` configuration examples:
         key: brokerClientAuthenticationParameters
   ```
 
-* JWT Token Auth with value
+* JWT Token authentication with value
 
   ```yaml
   apiVersion: resource.streamnative.io/v1alpha1
