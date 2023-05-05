@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2023 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,11 +38,24 @@ spec:
     - jsonPath: .spec.adminServiceURL
       name: ADMIN_SERVICE_URL
       type: string
+    - jsonPath: .spec.adminServiceSecureURL
+      name: ADMIN_SERVICE_SECURE_URL
+      priority: 1
+      type: string
+    - jsonPath: .spec.brokerServiceURL
+      name: BROKER_SERVICE_URL
+      type: string
+    - jsonPath: .spec.brokerServiceSecureURL
+      name: BROKER_SERVICE_SECURE_URL
+      priority: 1
+      type: string
     - jsonPath: .metadata.generation
       name: GENERATION
+      priority: 1
       type: string
     - jsonPath: .status.observedGeneration
       name: OBSERVED_GENERATION
+      priority: 1
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: READY
