@@ -69,7 +69,7 @@ Other `PulsarConnection` configuration examples:
       value: ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKemRXSWlPaUowWlhOMExYVnpaWElpZlEuOU9IZ0U5WlVEZUJUWnM3blNNRUZJdUdORVgxOEZMUjNxdnk4bXF4U3hYdw==
   ```
 
-* OAuth2 Auth
+* OAuth2 authentication
 
   ```yaml
   apiVersion: resource.streamnative.io/v1alpha1
