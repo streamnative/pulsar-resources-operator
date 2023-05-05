@@ -99,7 +99,7 @@ This table lists specifications available for the `PulsarConnection` resource.
 | ---| --- |--- |
 | `adminServiceURL` | The admin service URL of the Pulsar cluster, such as `http://cluster-broker.test.svc.cluster.local:8080`. | No |
 | `authentication` | A secret that stores authentication configurations. This option is required when you enable authentication for your Pulsar cluster. Supported authentication with JWT Token and OAuth2 | No |
-| `brokerServiceURL` | The broker service URL of the Pulsar cluster, eg: `pulsar://cluster-broker.test.svc.cluster.local:6650`. This option is required for configuring Geo-replication. Provided from `0.3.0` | No |
+| `brokerServiceURL` | The broker service URL of the Pulsar cluster, such as `pulsar://cluster-broker.test.svc.cluster.local:6650`. This option is required for configuring Geo-replication. This option is available for version `0.3.0` or above. | No |
 | `brokerServiceSecureURL` | The broker service URL for secure connection of the Pulsar cluster, eg: `pulsar+ssl://cluster-broker.test.svc.cluster.local:6651`. This option is required for configuring Geo-replication with TLS enabled. Provided from `0.3.1` | No |
 | `adminServiceSecureURL` | The admin service URL for secure connection of the Pulsar cluster, eg: `https://cluster-broker.test.svc.cluster.local:443`. Provided from `0.3.1` | No |
 | `clusterName` | The Pulsar cluster name. You can use the `pulsar-admin clusters list` command to get the Pulsar cluster name. This option is required for configuring Geo-replication. Provided from `0.3.0` | No |
