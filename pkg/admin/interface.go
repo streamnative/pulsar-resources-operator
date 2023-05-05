@@ -15,8 +15,8 @@
 package admin
 
 import (
+	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 
 	"github.com/apache/pulsar-client-go/oauth2"
@@ -230,13 +230,8 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 			return nil, err
 		}
 	} else if conf.ClientCertificatePath != "" {
-		transport := http.DefaultTransport
-		tlsAuthProvider, err := auth.NewAuthenticationTLS(conf.ClientCertificatePath, conf.ClientCertificateKeyPath, transport)
-		if err != nil {
-			return nil, err
-		}
-		adminClient, err = admin.NewPulsarClientWithAuthProvider(config, tlsAuthProvider)
-
+		config.AuthParams = fmt.Sprintf("{\"tlsCertFile\": \"%s\", \"tlsKeyFile\": \"%s\"}", conf.ClientCertificatePath, conf.ClientCertificateKeyPath)
+		adminClient, err = admin.New(config)
 		if err != nil {
 			return nil, err
 		}
