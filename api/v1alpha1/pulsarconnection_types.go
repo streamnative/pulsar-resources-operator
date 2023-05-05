@@ -83,8 +83,11 @@ type PulsarConnectionStatus struct {
 //+kubebuilder:subresource:status
 //+kubebuilder:resource:categories=pulsar;pulsarres,shortName=pconn
 //+kubebuilder:printcolumn:name="ADMIN_SERVICE_URL",type=string,JSONPath=`.spec.adminServiceURL`
-//+kubebuilder:printcolumn:name="GENERATION",type=string,JSONPath=`.metadata.generation`
-//+kubebuilder:printcolumn:name="OBSERVED_GENERATION",type=string,JSONPath=`.status.observedGeneration`
+//+kubebuilder:printcolumn:name="ADMIN_SERVICE_SECURE_URL",type=string,JSONPath=`.spec.adminServiceSecureURL`,priority=1
+//+kubebuilder:printcolumn:name="BROKER_SERVICE_URL",type=string,JSONPath=`.spec.brokerServiceURL`
+//+kubebuilder:printcolumn:name="BROKER_SERVICE_SECURE_URL",type=string,JSONPath=`.spec.brokerServiceSecureURL`,priority=1
+//+kubebuilder:printcolumn:name="GENERATION",type=string,JSONPath=`.metadata.generation`,priority=1
+//+kubebuilder:printcolumn:name="OBSERVED_GENERATION",type=string,JSONPath=`.status.observedGeneration`,priority=1
 //+kubebuilder:printcolumn:name="READY",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 
 // PulsarConnection is the Schema for the pulsarconnections API
