@@ -46,6 +46,8 @@ Other `PulsarConnection` configuration examples:
   clusterName: pulsar-cluster
     authentication:
     token:
+      # Use a Kubernetes Secret to store the JWT Token. https://kubernetes.io/docs/concepts/configuration/secret/
+      # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
       secretRef:
         name: test-pulsar-sn-platform-vault-secret-env-injection
         key: brokerClientAuthenticationParameters
@@ -65,8 +67,8 @@ Other `PulsarConnection` configuration examples:
   clusterName: pulsar-cluster
     authentication:
     token:
-      # JWT Token value should be base64 encoded to use
-      value: ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKemRXSWlPaUowWlhOMExYVnpaWElpZlEuOU9IZ0U5WlVEZUJUWnM3blNNRUZJdUdORVgxOEZMUjNxdnk4bXF4U3hYdw==
+      # Use the JWT Token raw data as the token value
+      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY
   ```
 
 * OAuth2 authentication with Secret
@@ -87,7 +89,8 @@ Other `PulsarConnection` configuration examples:
       clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
       audience: urn:sn:pulsar:sndev:us-west
       key: 
-        # Store the keyFile contents into a Secret
+        # Use a Kubernetes Secret to store the OAuth2 keyFile contents. https://kubernetes.io/docs/concepts/configuration/secret/
+        # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
         secretRef:
           name: key-file-secret
           key: key-file
@@ -111,8 +114,8 @@ Other `PulsarConnection` configuration examples:
       clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
       audience: urn:sn:pulsar:sndev:us-west
       key: 
-        # Encode the keyFile contents with base64 to use
-        value: eyJ0eXBlIjoic25fc2VydmljZV9hY2NvdW50IiwiY2xpZW50X2lkIjoicHZmeDc2b0d2V1FNSUdHUDJvek1mT3VzMnM0dERUQUoiLCJjbGllbnRfc2VjcmV0IjoiNzFKNmZvODFqLWg2OV92VnZZdnFDT0hlMk5mT3l5NmFxR3F3SWh0Z254cE04TzhVSDhQZENiVnRkbV9TSmpJZiIsImNsaWVudF9lbWFpbCI6ImNvbnRvc29Ac25kZXYuYXV0aC5zdHJlYW1uYXRpdmUuY2xvdWQiLCJpc3N1ZXJfdXJsIjoiaHR0cHM6Ly9hdXRoLnN0cmVhbW5hdGl2ZS5jbG91ZCJ9
+        # Use the keyFile contents as the oauth2 key value
+        value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
 
 This table lists specifications available for the `PulsarConnection` resource.
 
