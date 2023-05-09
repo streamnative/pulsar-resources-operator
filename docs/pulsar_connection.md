@@ -14,25 +14,122 @@ spec:
   adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
   brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
   clusterName: pulsar-cluster
-  # optional
-  authentication:
+```
+
+Other `PulsarConnection` configuration examples:
+
+* TLS connection
+  
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceSecureURL: https://test-pulsar-sn-platform-broker.test.svc.cluster.local:443
+    brokerServiceSecureURL: pulsar+ssl//test-pulsar-sn-platform-broker.test.svc.cluster.local:6651
+    clusterName: pulsar-cluster
+  ```
+
+* JWT Token authentication with Secret
+  
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+    authentication:
     token:
+      # Use a Kubernetes Secret to store the JWT Token. https://kubernetes.io/docs/concepts/configuration/secret/
+      # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
       secretRef:
         name: test-pulsar-sn-platform-vault-secret-env-injection
         key: brokerClientAuthenticationParameters
-```
+  ```
+
+* JWT Token authentication with value
+
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+    authentication:
+    token:
+      # Use the JWT Token raw data as the token value
+      value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY
+  ```
+
+* OAuth2 authentication with Secret
+
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+    authentication:
+    oauth2:
+      issuerEndpoint: https://auth.streamnative.cloud
+      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
+      audience: urn:sn:pulsar:sndev:us-west
+      key: 
+        # Use a Kubernetes Secret to store the OAuth2 keyFile contents. https://kubernetes.io/docs/concepts/configuration/secret/
+        # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
+        secretRef:
+          name: key-file-secret
+          key: key-file
+  ```
+
+* OAuth2 authentication with value
+
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+    authentication:
+    oauth2:
+      issuerEndpoint: https://auth.streamnative.cloud
+      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
+      audience: urn:sn:pulsar:sndev:us-west
+      key: 
+        # Use the keyFile contents as the oauth2 key value
+        value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
 
 This table lists specifications available for the `PulsarConnection` resource.
 
 | Option | Description | Required or not |
 | ---| --- |--- |
-| `adminServiceURL` | The admin service URL of the Pulsar cluster, eg: `cluster-broker.test.svc.cluster.local:8080`. | Yes |
-| `authentication` | A secret that stores authentication configurations.This option is required when you enable authentication for your Pulsar cluster. | No |
-| `brokerServiceURL` | The broker service URL of the Pulsar cluster, eg: `cluster-broker.test.svc.cluster.local:8080`. This option is required for configuring Geo-replication. Provided from `0.3.0` | No |
+| `adminServiceURL` | The admin service URL of the Pulsar cluster, such as `http://cluster-broker.test.svc.cluster.local:8080`. | No |
+| `authentication` | A secret that stores authentication configurations. This option is required when you enable authentication for your Pulsar cluster. Support JWT Token and OAuth2 authentication methods. | No |
+| `brokerServiceURL` | The broker service URL of the Pulsar cluster, such as `pulsar://cluster-broker.test.svc.cluster.local:6650`. This option is required for configuring Geo-replication. This option is available for version `0.3.0` or above. | No |
+| `brokerServiceSecureURL` | The broker service URL for secure connection to the Pulsar cluster, such as `pulsar+ssl://cluster-broker.test.svc.cluster.local:6651`. This option is required for configuring Geo-replication when TLS is enabled. This option is available for version `0.3.0` or above. | No |
+| `adminServiceSecureURL` | The admin service URL for secure connection to the Pulsar cluster, such as `https://cluster-broker.test.svc.cluster.local:443`. This option is available for version `0.3.0` or above. | No |
 | `clusterName` | The Pulsar cluster name. You can use the `pulsar-admin clusters list` command to get the Pulsar cluster name. This option is required for configuring Geo-replication. Provided from `0.3.0` | No |
    
 
-2. Apply the YAML file to create the Pulsar Connection. 
+1. Apply the YAML file to create the Pulsar Connection. 
 
 ```shell
 kubectl  apply -f connection.yaml

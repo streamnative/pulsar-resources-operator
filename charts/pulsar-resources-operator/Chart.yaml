@@ -41,7 +41,6 @@ appVersion: "v0.3.1"
 # This is a semver range of compatible Kubernetes versions. Helm will validate the version
 # constraints when installing the chart and fail if the cluster runs an unsupported Kubernetes version
 kubeVersion: ">= 1.16.0-0 < 1.26.0-0"
-
-icon: https://pulsar.apache.org/img/pulsar.svg
+icon: https://raw.githubusercontent.com/streamnative/charts/master/static/logo.svg
 sources:
 - https://github.com/streamnative/pulsar-resources-operator
