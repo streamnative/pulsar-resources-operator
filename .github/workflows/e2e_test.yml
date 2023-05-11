@@ -70,8 +70,8 @@ jobs:
         run: |
           docker pull "$IMAGE"
           kind load docker-image --name pulsar-dev --nodes pulsar-dev-worker "$IMAGE"
-          docker pull docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.14.1
-          kind load docker-image --name pulsar-dev docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.14.1
+          docker pull docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.8.0
+          kind load docker-image --name pulsar-dev docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.8.0
           df -h
 
 
