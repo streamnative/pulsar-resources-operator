@@ -98,3 +98,13 @@ In this tutorial, a Kubernetes namespace called `test` is used for examples, whi
 - [PulsarNamespace](docs/pulsar_namespace.md)
 - [PulsarTopic](docs/pulsar_topic.md)
 - [PulsarPermission](docs/pulsar_permission.md)
+
+## Contributing
+
+Contributions are warmly welcomed and greatly appreciated!
+The project follows the typical GitHub pull request model. See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
+Before starting any work, please either comment on an existing issue, or file a new one.
+
+## License
+
+Licensed under the [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0). See [LICENSE](LICENSE)
