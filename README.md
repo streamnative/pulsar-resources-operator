@@ -71,6 +71,12 @@ helm repo update
 helm -n <k8s-namespace> upgrade <release-name> streamnative/pulsar-resources-operator
 ```
 
+>**Note**
+>
+> Don not forget to apply the latest crd files. Because there is no support for upgrading or deleting CRDs using Helm
+> https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations
+> You can use `helm pull streamnative/pulsar-resources-operator` to download the chart and unpack it, then apply the crds
+
 ## Uninstall Pulsar Resources Operator
 
 To uninstall the operator, execute the following command.
