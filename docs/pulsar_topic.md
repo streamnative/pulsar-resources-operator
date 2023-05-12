@@ -37,12 +37,12 @@ This table lists specifications available for the `PulsarTopic` resource.
 | `persistent` | Set whether it is a persistent or non-persistent topic, you also can set it by topic name prefix with persistent or non-persistent. default is false| Optional |
 | `partitions` | The number of partitions for the topic. default is 0 | Optional |
 | `maxProducers` | The maximum number of  producers for a topic. | Optional |
-| `messageTTL` | The TTL time duration of messages, eg 10m, 1h.| Optional |
+| `messageTTL` | The TTL time duration of messages (valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h").| Optional |
 | `maxUnAckedMessagesPerConsumer` | The maximum number of unacked messages per consumer. | Optional |
 | `maxUnAckedMessagesPerSubscription` | The maximum number of unacked messages per subscription. | Optional |
-| `retentionTime` | The retention time (in minutes, hours, days, or weeks). | Optional |
+| `retentionTime` | The retention time (valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h"). | Optional |
 | `retentionSize` | The retention size limit. | Optional |
-|  `backlogQuotaLimitTime` | The Backlog quota time limit (in seconds). | Optional |
+| `backlogQuotaLimitTime` | The Backlog quota time limit (valid time units are "ns", "us" (or "µs"), "ms", "s", "m", "h"). | Optional |
 | `backlogQuotaLimitSize` | The Backlog quota size limit (such as 10Mi, 10Gi). | Optional |
 | `backlogQuotaRetentionPolicy` | The Retention policy to be enforced when the limit is reached. | Optional |
 | `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
