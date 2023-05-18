@@ -33,21 +33,21 @@ This table lists specifications available for the `PulsarNamespace` resource.
 | ---| --- |--- |
 | `name` | The namespace name. | Yes |
 | `connectionRef` | The reference to a PulsarConnection. | Yes |
-|  `backlogQuotaLimitTime` | The Backlog quota time limit (in seconds). | Optional |
+| `backlogQuotaLimitTime` | The Backlog quota time limit (valid time units are "m", "h"). | Optional |
 | `backlogQuotaLimitSize` | The Backlog quota size limit (such as 10Mi, 10Gi). | Optional |
 | `backlogQuotaRetentionPolicy` | The Retention policy to be enforced when the limit is reached. options: producer_exception,producer_request_hold,consumer_backlog_eviction | Optional |
-| `messageTTL` | The TTL time duration of messages. | Optional |
+| `messageTTL` | The TTL time duration of messages(valid time units are "m", "h"). | Optional |
 | `bundles` | The number of activated bundles. By default, it is set to 4. It couldn’t be updated after namespace is created | Optional |
 | `maxProducersPerTopic` | The maximum number of producers per topic for a namespace.| Optional |
 | `maxConsumersPerTopic` | The maximum number of consumers per topic for a namespace. | Optional |
 | `maxConsumersPerSubscription` | The maximum number of consumers per subscription for a namespace. | Optional |
-| `retentionTime` | The retention time (in minutes, hours, days, or weeks). | Optional |
+| `retentionTime` | The retention time (valid time units are "m", "h"). | Optional |
 | `retentionSize` | The retention size limit(such as 800Mi, 10Gi). | Optional |
 | `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
 | `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable Geo-replication at the namespace level. It will add the namespace to the clusters. | No |
 
 
-2. Apply the YAML file to create the namespace.
+1. Apply the YAML file to create the namespace.
 
 ```shell
 kubectl apply -f namespace.yaml

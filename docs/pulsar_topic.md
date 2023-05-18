@@ -37,19 +37,19 @@ This table lists specifications available for the `PulsarTopic` resource.
 | `persistent` | Set whether it is a persistent or non-persistent topic, you also can set it by topic name prefix with persistent or non-persistent. default is false| Optional |
 | `partitions` | The number of partitions for the topic. default is 0 | Optional |
 | `maxProducers` | The maximum number of  producers for a topic. | Optional |
-| `messageTTL` | The TTL time duration of messages, eg 10m, 1h.| Optional |
+| `messageTTL` | The TTL time duration of messages (valid time units are "m", "h").| Optional |
 | `maxUnAckedMessagesPerConsumer` | The maximum number of unacked messages per consumer. | Optional |
 | `maxUnAckedMessagesPerSubscription` | The maximum number of unacked messages per subscription. | Optional |
-| `retentionTime` | The retention time (in minutes, hours, days, or weeks). | Optional |
+| `retentionTime` | The retention time (valid time units are "m", "h"). | Optional |
 | `retentionSize` | The retention size limit. | Optional |
-|  `backlogQuotaLimitTime` | The Backlog quota time limit (in seconds). | Optional |
+| `backlogQuotaLimitTime` | The Backlog quota time limit (valid time units are "m", "h"). | Optional |
 | `backlogQuotaLimitSize` | The Backlog quota size limit (such as 10Mi, 10Gi). | Optional |
 | `backlogQuotaRetentionPolicy` | The Retention policy to be enforced when the limit is reached. | Optional |
 | `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
 | `schemaInfo` | The schema of pulsar topic, default is nil. More details you can find in [schemaInfo](#schemainfo) Optional |
 | `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable Geo-replication at the topic level. It will add the topic to the clusters. | No |
 
-2. Apply the YAML file to create the topic.
+1. Apply the YAML file to create the topic.
 
 ```shell
 kubectl apply -f topic.yaml
