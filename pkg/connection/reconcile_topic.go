@@ -111,7 +111,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 				}
 			}
 
-			if err := pulsarAdmin.DeleteTopic(topic.Spec.Name); err != nil && admin.IsNotFound(err) {
+			if err := pulsarAdmin.DeleteTopic(topic.Spec.Name); err != nil && !admin.IsNotFound(err) {
 				log.Error(err, "Failed to delete topic")
 				return err
 			}

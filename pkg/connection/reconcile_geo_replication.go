@@ -125,7 +125,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			if geoReplication.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 				// Delete the cluster that created with destination cluster info.
 				// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
-				if err := pulsarAdmin.DeleteCluster(destClusterName); err != nil && admin.IsNotFound(err) {
+				if err := pulsarAdmin.DeleteCluster(destClusterName); err != nil && !admin.IsNotFound(err) {
 					log.Error(err, "Failed to delete geo replication cluster")
 					return err
 				}
