@@ -1,6 +1,6 @@
 module github.com/streamnative/pulsar-resources-operator
 
-go 1.18
+go 1.19
 
 require (
 	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220122031548-edf81af225d1
