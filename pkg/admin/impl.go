@@ -185,7 +185,11 @@ func (p *PulsarAdminClient) Close() error {
 func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, params *TopicParams) error {
 	var err error
 	if params.MessageTTL != nil {
-		err = p.adminClient.Topics().SetMessageTTL(*topicName, int(params.MessageTTL.Seconds()))
+		ttl, err := params.MessageTTL.Parse()
+		if err != nil {
+			return err
+		}
+		err = p.adminClient.Topics().SetMessageTTL(*topicName, int(ttl.Seconds()))
 		if err != nil {
 			return err
 		}
@@ -224,7 +228,11 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		retentionTime := -1
 		retentionSize := -1
 		if params.RetentionTime != nil {
-			retentionTime = int(params.RetentionTime.Minutes())
+			t, err := params.RetentionTime.Parse()
+			if err != nil {
+				return err
+			}
+			retentionTime = int(t.Minutes())
 		}
 		if params.RetentionSize != nil {
 			retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
@@ -242,7 +250,11 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		backlogSize := int64(-1)
 		var backlogQuotaType utils.BacklogQuotaType
 		if params.BacklogQuotaLimitTime != nil {
-			backlogTime = int64(params.BacklogQuotaLimitTime.Seconds())
+			t, err := params.BacklogQuotaLimitTime.Parse()
+			if err != nil {
+				return err
+			}
+			backlogTime = int64(t.Seconds())
 			backlogQuotaType = utils.MessageAge
 		}
 		if params.BacklogQuotaLimitSize != nil {
@@ -304,7 +316,11 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 	}
 
 	if params.MessageTTL != nil {
-		err = p.adminClient.Namespaces().SetNamespaceMessageTTL(completeNSName, int(params.MessageTTL.Seconds()))
+		ttl, err := params.MessageTTL.Parse()
+		if err != nil {
+			return err
+		}
+		err = p.adminClient.Namespaces().SetNamespaceMessageTTL(completeNSName, int(ttl.Seconds()))
 		if err != nil {
 			return err
 		}
@@ -335,7 +351,11 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 		retentionTime := -1
 		retentionSize := -1
 		if params.RetentionTime != nil {
-			retentionTime = int(params.RetentionTime.Minutes())
+			t, err := params.RetentionTime.Parse()
+			if err != nil {
+				return err
+			}
+			retentionTime = int(t.Minutes())
 		}
 		if params.RetentionSize != nil {
 			retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
@@ -352,7 +372,11 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 		backlogTime := int64(-1)
 		backlogSize := int64(-1)
 		if params.BacklogQuotaLimitTime != nil {
-			backlogTime = int64(params.BacklogQuotaLimitTime.Seconds())
+			t, err := params.BacklogQuotaLimitTime.Parse()
+			if err != nil {
+				return err
+			}
+			backlogTime = int64(t.Seconds())
 		}
 		if params.BacklogQuotaLimitSize != nil {
 			backlogSize = params.BacklogQuotaLimitSize.Value()
