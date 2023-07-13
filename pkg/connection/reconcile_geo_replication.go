@@ -208,6 +208,12 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		}
 	}
 
+	destConnection.Status.ObservedGeneration = destConnection.Generation
+	meta.SetStatusCondition(&destConnection.Status.Conditions, *NewReadyCondition(destConnection.Generation))
+	if err := r.conn.client.Status().Update(ctx, destConnection); err != nil {
+		return err
+	}
+
 	geoReplication.Status.ObservedGeneration = geoReplication.Generation
 	meta.SetStatusCondition(&geoReplication.Status.Conditions, *NewReadyCondition(geoReplication.Generation))
 	if err := r.conn.client.Status().Update(ctx, geoReplication); err != nil {
