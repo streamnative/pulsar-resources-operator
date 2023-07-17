@@ -15,8 +15,6 @@
 package utils
 
 import (
-	"time"
-
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -61,8 +59,9 @@ func MakePulsarTenant(namespace, name, tenantName, connectionName string, adminR
 func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
 	backlogSize := resource.MustParse("1Gi")
 	bundle := int32(16)
-	limitTime := rsutils.Duration(time.Hour * 24)
-	ttl := rsutils.Duration(time.Hour * 1)
+	var du rsutils.Duration = "1d"
+	limitTime := &du
+	ttl := &du
 	return &v1alpha1.PulsarNamespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -73,10 +72,10 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
-			BacklogQuotaLimitTime: &limitTime,
+			BacklogQuotaLimitTime: limitTime,
 			BacklogQuotaLimitSize: &backlogSize,
 			Bundles:               &bundle,
-			MessageTTL:            &ttl,
+			MessageTTL:            ttl,
 		},
 	}
 }
