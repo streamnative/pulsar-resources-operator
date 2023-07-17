@@ -22,6 +22,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	rsutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // MakePulsarConnection will generate a object of PulsarConnection, without authentication
@@ -60,6 +61,8 @@ func MakePulsarTenant(namespace, name, tenantName, connectionName string, adminR
 func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
 	backlogSize := resource.MustParse("1Gi")
 	bundle := int32(16)
+	limitTime := rsutils.Duration(time.Hour * 24)
+	ttl := rsutils.Duration(time.Hour * 1)
 	return &v1alpha1.PulsarNamespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -70,14 +73,10 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
-			BacklogQuotaLimitTime: &metav1.Duration{
-				Duration: time.Hour * 24,
-			},
+			BacklogQuotaLimitTime: &limitTime,
 			BacklogQuotaLimitSize: &backlogSize,
 			Bundles:               &bundle,
-			MessageTTL: &metav1.Duration{
-				Duration: time.Hour * 1,
-			},
+			MessageTTL:            &ttl,
 		},
 	}
 }
