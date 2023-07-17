@@ -68,4 +68,6 @@ jobs:
           # skip-build-cache: true
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 15
         if: failure()
+        # You can use golangci-lint run --fix to see how to fix the error

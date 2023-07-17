@@ -15,10 +15,11 @@
 package v1alpha1
 
 import (
-	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
