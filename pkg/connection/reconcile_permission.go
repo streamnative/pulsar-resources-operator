@@ -92,7 +92,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		if permission.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
 			log.Info("Revoking permission", "LifecyclePolicy", permission.Spec.LifecyclePolicy)
 
-			if err := pulsarAdmin.RevokePermissions(per); err != nil && admin.IsNotFound(err) {
+			if err := pulsarAdmin.RevokePermissions(per); err != nil && !admin.IsNotFound(err) {
 				log.Error(err, "Failed to revoke permission")
 				return err
 			}
