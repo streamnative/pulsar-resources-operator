@@ -257,3 +257,8 @@ license-check: license-eye
 .PHONY: license-fix
 license-fix: license-eye
 	$(LICENSE_EYE) header fix
+
+# Copy the crd files to charts
+.PHONY: copy-crds
+copy-crds: 
+	cp -r config/crd/bases/* charts/pulsar-resources-operator/crds
