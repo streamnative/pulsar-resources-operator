@@ -20,12 +20,12 @@ import (
 
 	"github.com/apache/pulsar-client-go/oauth2"
 	"k8s.io/apimachinery/pkg/api/resource"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/streamnative/pulsar-admin-go/pkg/admin"
 	"github.com/streamnative/pulsar-admin-go/pkg/admin/auth"
 	"github.com/streamnative/pulsar-admin-go/pkg/admin/config"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // TenantParams indicates the parameters for creating a tenant
@@ -41,10 +41,10 @@ type NamespaceParams struct {
 	MaxProducersPerTopic        *int32
 	MaxConsumersPerTopic        *int32
 	MaxConsumersPerSubscription *int32
-	MessageTTL                  *metav1.Duration
-	RetentionTime               *metav1.Duration
+	MessageTTL                  *utils.Duration
+	RetentionTime               *utils.Duration
 	RetentionSize               *resource.Quantity
-	BacklogQuotaLimitTime       *metav1.Duration
+	BacklogQuotaLimitTime       *utils.Duration
 	BacklogQuotaLimitSize       *resource.Quantity
 	BacklogQuotaRetentionPolicy *string
 	BacklogQuotaType            *string
@@ -57,12 +57,12 @@ type TopicParams struct {
 	Partitions                        *int32
 	MaxProducers                      *int32
 	MaxConsumers                      *int32
-	MessageTTL                        *metav1.Duration
+	MessageTTL                        *utils.Duration
 	MaxUnAckedMessagesPerConsumer     *int32
 	MaxUnAckedMessagesPerSubscription *int32
-	RetentionTime                     *metav1.Duration
+	RetentionTime                     *utils.Duration
 	RetentionSize                     *resource.Quantity
-	BacklogQuotaLimitTime             *metav1.Duration
+	BacklogQuotaLimitTime             *utils.Duration
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
 	ReplicationClusters               []string

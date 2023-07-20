@@ -18,6 +18,8 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -52,13 +54,15 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	MaxConsumersPerSubscription *int32 `json:"maxConsumersPerSubscription,omitempty"`
 
+	// MessageTTL indicates the message ttl for the namespace
 	// +optional
-	MessageTTL *metav1.Duration `json:"messageTTL,omitempty"`
+	MessageTTL *utils.Duration `json:"messageTTL,omitempty"`
 
 	// Retention
 	// Should set at least one of them if setting retention
+	// Retention Quota must exceed configured backlog quota for namespace
 	// +optional
-	RetentionTime *metav1.Duration `json:"retentionTime,omitempty"`
+	RetentionTime *utils.Duration `json:"retentionTime,omitempty"`
 
 	// +optional
 	RetentionSize *resource.Quantity `json:"retentionSize,omitempty"`
@@ -66,7 +70,7 @@ type PulsarNamespaceSpec struct {
 	// Backlog
 	// Should set at least one of them if setting backlog
 	// +optional
-	BacklogQuotaLimitTime *metav1.Duration `json:"backlogQuotaLimitTime,omitempty"`
+	BacklogQuotaLimitTime *utils.Duration `json:"backlogQuotaLimitTime,omitempty"`
 
 	// +optional
 	BacklogQuotaLimitSize *resource.Quantity `json:"backlogQuotaLimitSize,omitempty"`
