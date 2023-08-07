@@ -135,6 +135,7 @@ jobs:
 
       - name: Run chart-testing (install)
         run: ct install --debug --config ct.yaml --print-config
+        if: ${{ needs.lint-test.outputs.changed }} == 'true'
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
