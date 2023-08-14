@@ -31,7 +31,13 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: '[]'
-    capabilities: Basic Install
+    capabilities: Full Lifecycle
+    categories: Streaming & Messaging
+    containerImage: ""
+    createdAt: "2022-02-07T18:21:00Z"
+    description: Authored by StreamNative, this Pulsar Resources Operator manages the Pulsar resources automatically 
+     using the manifest on Kubernetes.
+    support: StreamNative
   name: pulsar-resources-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -63,19 +69,21 @@ spec:
       kind: PulsarTopic
       name: pulsartopics.resource.streamnative.io
       version: v1alpha1
-  description: pulsar resources operator
+  description: |
+    Authored by [StreamNative](https://streamnative.io), this Pulsar Resources Operator is a controller that manages the Pulsar resources automatically using the manifest on Kubernetes. Therefore, you can manage the Pulsar resources without the help of `pulsar-admin` or `pulsarctl` CLI tool. It is useful for initializing basic resources when creating a new Pulsar cluster.
+
   displayName: Pulsar Resources Operator
   icon:
-  - base64data: ""
-    mediatype: ""
+  - base64data: iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABaFBMVEUAAAAAkf8AACsAkf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8Akf8AACsAACsAACsAkf8AACsAACsAACsAACsAkf8Akf8AACsAkf8Akf8Akf8Akf8AACv////kwuOUAAAAdXRSTlMAAAAHJ1B1j5yfoEgcZrTl+20ScNT+/Vc6vfIBXOTZGmfxpgPw/F0z39IZDLJzX/rFFhHE7EZP+PNommICFfSuODTv59PH5vfozJNECVLbUSgUDSZCPCnheiC2MZ5hEEfKHk4LwKt/CDNX6zCr7v0EodR5gB08MC/9AAAAAWJLR0R3RmT51wAAAAlwSFlzAAArDwAAKw8BZQl82QAAAAd0SU1FB+YJBQsHNrqpLMMAAAKxSURBVFjDtZdnW+pAEIUzgOViQUEkGiuKGhURRAELYkPFir0XLIAU6/r7b2IIPbub+DhfyXueCdkzc5Zh/rKgev0KphUQn9Mbamrr6v+VlbGBQkDEG5uaTS2oSrWSBQTcbGmzoqrVbiMKCDzboYAj1MmSBAC4rm6kWD29QOT7+pV5ZB8AAg+2QQzvGAKSwPAIhkf8KF4AYGwcxyMnsYEJF46fdJMa8EzheO80sYEZH4b3B0hOAG4Ww5vm5klOggVeEQ8uhshOhKXlYsa1srq2thr2rwc3NiNb2xROhh1HAd+N7O1HDw6ih+zR8YmHbhJAII+fnp1rGCTglPmLSxXTq0jAIuHWq6gGWhS4zlnuRhvPwO3PObq718gzYAiLXzymlWfg4VEQeNJLvC5f9ALwjJAvlufjiWQyEVehIIyTF8RLlhWwVDqTzWbSKTUKr2/IyOUaSL1//9R7Sk0LIe9H7g3i6e9cpeMqBOAzNzZ1iYwskEno5F8ptor5S3pIl8zKAtlkQYC8VuRnqgl8mWlakAUqXgFg6FPFEav8EwE+vCEVAhWfETgjentVIVB2kADcPHoZVtNC6VEGiAlefVbhs1IzCZnnSXDa44NWowoNBAWBsEHjpAC4vxOHje9W26gCuLFL4+5a06wEiF5ZJQGL+lEt1uVFISHQMkV1fnaa3zgBqpwoBIWT4yP2UFxt+3uR3cLCc+zQ2Gl7K7K5EVz3h8XlulKSWZaXKAwdWgwqbnl+gZgT5+dMmJQxyxFzYsCP4X0zxJQ07cXwaMpDimnuSRzvmiA24MTxaHyM1MAoj+NHSONEGJsODD9oI+bEATuG7+/jiDmxt0eZ7+4i8gywnUq4tYOlWWy2dgW8zWKmyomt1egWU3NTI13ogwZj+UWzvq62xqBXc2H9iwszHayx/gN+0eRQa7eHywAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyMi0wOS0wNVQxMTowNzo0NyswMDowMGV+/EcAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjItMDktMDVUMTE6MDc6NDcrMDA6MDAUI0T7AAAAAElFTkSuQmCC
+    mediatype: image/svg+xml
   install:
     spec:
       deployments: null
     strategy: ""
   installModes:
-  - supported: false
+  - supported: true
     type: OwnNamespace
-  - supported: false
+  - supported: true
     type: SingleNamespace
   - supported: false
     type: MultiNamespace
@@ -83,16 +91,17 @@ spec:
     type: AllNamespaces
   keywords:
   - resources
+  - pulsar resources
   - pulsar
   - streamnative
   links:
   - name: Pulsar Resources Operator
-    url: https://pulsar-resources-operator.domain
+    url: https://github.com/streamnative/pulsar-resources-operator
   maintainers:
-  - email: fswang@streamnative.io
-    name: fswang
+  - email: cloud@streamnative.io
+    name: StreamNative Cloud
   maturity: alpha
   provider:
     name: StreamNative
-    url: streamnative.io
+    url: https://streamnative.io
   version: 0.0.0

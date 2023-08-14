@@ -54,6 +54,11 @@ IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
+KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.8.0
+
+REDHAT_SCAN_REGITRY ?= "quay.io"
+PROJECT_ID_PULSAR_RESOURCES_OPERATOR ?= "62f2585dfcd25442e1f1ee46"
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -123,9 +128,32 @@ run: manifests generate fmt vet ## Run a controller from your host.
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${IMG} . --build-arg ACCESS_TOKEN=${ACCESS_TOKEN}
 
+# Build image for redhat certification
+.PHONY: docker-build-redhat
+docker-build-redhat:
+	docker build -f redhat.Dockerfile . -t ${IMG} --build-arg ACCESS_TOKEN=${ACCESS_TOKEN} --build-arg VERSION=${VERSION} --no-cache
+
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${IMG}
+
+.PHONY: docker-push-redhat
+docker-push-redhat: ## Push docker image with the manager.
+	docker push ${IMG}
+	docker tag ${IMG} ${IMG_LATEST}
+	docker push ${IMG_LATEST}
+
+# Do the preflight check for the redhat container image
+.PHONY: redhat-preflight-check-image
+redhat-preflight-check-image:
+	preflight check container ${IMG}
+	preflight check container ${IMG_LATEST}
+
+
+.PHONY: report-preflight-check-result
+report-preflight-check-result:
+	preflight check container ${IMG} --submit --docker-config=${HOME}/.docker/config.json --certification-project-id=${PROJECT_ID_PULSAR_RESOURCES_OPERATOR} --pyxis-api-token=${REDHAT_API_KEY}
+	preflight check container ${IMG_LATEST} --submit --docker-config=${HOME}/.docker/config.json --certification-project-id=${PROJECT_ID_PULSAR_RESOURCES_OPERATOR} --pyxis-api-token=${REDHAT_API_KEY}
 
 ##@ Deployment
 
@@ -185,6 +213,21 @@ bundle: manifests kustomize ## Generate bundle manifests and metadata, then vali
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
+
+.PHONY: bundle-redhat
+bundle-redhat: manifests kustomize
+	operator-sdk generate kustomize manifests -q
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	cd config/manager && $(KUSTOMIZE) edit add patch --group apps --version v1 --kind Deployment --name controller-manager \
+			--patch '[{"op": "add", "path": "/spec/template/metadata/labels/service.istio.io~1canonical-revision", "value": "$(VERSION)"}]'
+	cd config/default && $(KUSTOMIZE) edit set image gcr.io/kubebuilder/kube-rbac-proxy=$(KUBE_RBAC_PROXY_IMG)
+	$(KUSTOMIZE) build config/manifests-redhat | operator-sdk generate bundle --kustomize-dir config/manifests-redhat -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+	operator-sdk bundle validate ./bundle
+	sed -i  "s|containerImage: .*|containerImage: $(IMG)|g" bundle/manifests/pulsar-resources-operator.clusterserviceversion.yaml
+	sed -i  "s|image: docker.cloudsmith.io/.*|image: $(KUBE_RBAC_PROXY_IMG)|g" bundle/manifests/pulsar-resources-operator.clusterserviceversion.yaml
+
+	echo "  # OpenShift annotations." >> bundle/metadata/annotations.yaml
+	echo "  com.redhat.openshift.versions: v4.6-v4.12" >> bundle/metadata/annotations.yaml
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
@@ -262,3 +305,4 @@ license-fix: license-eye
 .PHONY: copy-crds
 copy-crds: 
 	cp -r config/crd/bases/* charts/pulsar-resources-operator/crds
+
