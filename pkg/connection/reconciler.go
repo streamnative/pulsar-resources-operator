@@ -86,7 +86,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
 	if !r.hasUnreadyResource {
 		if !r.connection.DeletionTimestamp.IsZero() {
-			if len(r.tenants) == 0 && len(r.namespaces) == 0 && len(r.topics) == 0 {
+			if len(r.tenants) == 0 && len(r.namespaces) == 0 && len(r.topics) == 0 && len(r.geoReplications) == 0 {
 				// keep the connection until all resources has been removed
 
 				// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
@@ -95,8 +95,10 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 					return err
 				}
 			} else {
-				msg := fmt.Sprintf("remaining resources: tenants [%d], namespaces [%d], topics [%d]",
-					len(r.tenants), len(r.namespaces), len(r.topics))
+				r.log.Info("There are still remaining resources before deleting the connection", "tenants", len(r.tenants), "namespaces",
+					len(r.namespaces), "topics", len(r.topics), "geo", len(r.geoReplications))
+				msg := fmt.Sprintf("remaining resources: tenants [%d], namespaces [%d], topics [%d], geoReplications [%d]",
+					len(r.tenants), len(r.namespaces), len(r.topics), len(r.geoReplications))
 				meta.SetStatusCondition(&r.connection.Status.Conditions, *NewErrorCondition(r.connection.Generation, msg))
 				if err := r.client.Status().Update(ctx, r.connection); err != nil {
 					return err
@@ -188,6 +190,7 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL == "" {
 		return nil, fmt.Errorf("adminServiceURL or adminServiceSecureURL must not be empty")
 	}
+
 	cfg := admin.PulsarAdminConfig{
 		WebServiceURL: r.connection.Spec.AdminServiceURL,
 	}
