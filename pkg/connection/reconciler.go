@@ -109,6 +109,10 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		return nil
 	}
 
+	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
+		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
+	}
+
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 	controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName)
 	if err := r.client.Update(ctx, r.connection); err != nil {
