@@ -18,8 +18,7 @@ FROM golang:1.19-alpine as builder
 ARG ACCESS_TOKEN="none"
 
 RUN go env -w GOPRIVATE=github.com/streamnative \
-    && apk add --no-cache ca-certificates git \
-    && git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
+    && apk add --no-cache ca-certificates git
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
