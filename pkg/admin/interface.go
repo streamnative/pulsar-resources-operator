@@ -19,11 +19,11 @@ import (
 	"os"
 
 	"github.com/apache/pulsar-client-go/oauth2"
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/auth"
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
 	"k8s.io/apimachinery/pkg/api/resource"
 
-	"github.com/streamnative/pulsar-admin-go/pkg/admin"
-	"github.com/streamnative/pulsar-admin-go/pkg/admin/auth"
-	"github.com/streamnative/pulsar-admin-go/pkg/admin/config"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
