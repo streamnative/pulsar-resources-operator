@@ -45,12 +45,12 @@ Other `PulsarConnection` configuration examples:
   brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
   clusterName: pulsar-cluster
     authentication:
-    token:
-      # Use a Kubernetes Secret to store the JWT Token. https://kubernetes.io/docs/concepts/configuration/secret/
-      # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
-      secretRef:
-        name: test-pulsar-sn-platform-vault-secret-env-injection
-        key: brokerClientAuthenticationParameters
+      token:
+        # Use a Kubernetes Secret to store the JWT Token. https://kubernetes.io/docs/concepts/configuration/secret/
+        # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
+        secretRef:
+          name: test-pulsar-sn-platform-vault-secret-env-injection
+          key: brokerClientAuthenticationParameters
   ```
 
 * JWT Token authentication with value
@@ -66,8 +66,8 @@ Other `PulsarConnection` configuration examples:
   brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
   clusterName: pulsar-cluster
     authentication:
-    token:
-      # Use the JWT Token raw data as the token value
+      token:
+        # Use the JWT Token raw data as the token value
       value: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY
   ```
 
@@ -84,16 +84,16 @@ Other `PulsarConnection` configuration examples:
   brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
   clusterName: pulsar-cluster
     authentication:
-    oauth2:
-      issuerEndpoint: https://auth.streamnative.cloud
-      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
-      audience: urn:sn:pulsar:sndev:us-west
-      key: 
-        # Use a Kubernetes Secret to store the OAuth2 keyFile contents. https://kubernetes.io/docs/concepts/configuration/secret/
-        # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
-        secretRef:
-          name: key-file-secret
-          key: key-file
+      oauth2:
+        issuerEndpoint: https://auth.streamnative.cloud
+        clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
+        audience: urn:sn:pulsar:sndev:us-west
+        key: 
+          # Use a Kubernetes Secret to store the OAuth2 keyFile contents. https://kubernetes.io/docs/concepts/configuration/secret/
+          # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
+          secretRef:
+            name: key-file-secret
+            key: key-file
   ```
 
 * OAuth2 authentication with value
@@ -109,13 +109,13 @@ Other `PulsarConnection` configuration examples:
   brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
   clusterName: pulsar-cluster
     authentication:
-    oauth2:
-      issuerEndpoint: https://auth.streamnative.cloud
-      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
-      audience: urn:sn:pulsar:sndev:us-west
-      key: 
-        # Use the keyFile contents as the oauth2 key value
-        value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
+      oauth2:
+        issuerEndpoint: https://auth.streamnative.cloud
+        clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
+        audience: urn:sn:pulsar:sndev:us-west
+        key: 
+          # Use the keyFile contents as the oauth2 key value
+          value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
 
 This table lists specifications available for the `PulsarConnection` resource.
 
