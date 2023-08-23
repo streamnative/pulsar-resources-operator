@@ -15,7 +15,7 @@
 package admin
 
 import (
-	"github.com/streamnative/pulsar-admin-go/pkg/rest"
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/rest"
 )
 
 // Reason indicates the status code

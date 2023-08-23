@@ -3,11 +3,11 @@ module github.com/streamnative/pulsar-resources-operator
 go 1.19
 
 require (
-	github.com/apache/pulsar-client-go/oauth2 v0.0.0-20220122031548-edf81af225d1
+	github.com/apache/pulsar-client-go v0.9.1-0.20230816081803-fbee610ddcbf
 	github.com/go-logr/logr v1.2.1
 	github.com/onsi/ginkgo v1.16.5
 	github.com/onsi/gomega v1.19.0
-	github.com/streamnative/pulsar-admin-go v0.1.1-0.20230423025125-b31ddd22d16b
+	github.com/xhit/go-str2duration/v2 v2.1.0
 	go.uber.org/zap v1.19.1
 	k8s.io/api v0.23.0
 	k8s.io/apimachinery v0.23.0
@@ -59,7 +59,6 @@ require (
 	github.com/prometheus/procfs v0.9.0 // indirect
 	github.com/rogpeppe/go-internal v1.10.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/xhit/go-str2duration/v2 v2.1.0 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.6.0 // indirect
 	golang.org/x/crypto v0.1.0 // indirect

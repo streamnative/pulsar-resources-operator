@@ -20,11 +20,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/pointer"
 
-	"github.com/streamnative/pulsar-admin-go/pkg/admin"
-	"github.com/streamnative/pulsar-admin-go/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 )
 
