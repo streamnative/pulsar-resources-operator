@@ -166,6 +166,16 @@ spec:
                 description: ClusterName indicates the local cluster name of the pulsar
                   cluster. It should set when enabling the Geo Replication
                 type: string
+              tlsEnableHostnameVerification:
+                description: TLSEnableHostnameVerification indicates whether to verify the hostname of the broker.
+                  Only used when using secure urls.
+                type: boolean
+              tlsAllowInsecureConnection:
+                description: TLSAllowInsecureConnection indicates whether to allow insecure connection to the broker.
+                type: boolean
+              tlsTrustCertsFilePath:
+                description: TLSTrustCertsFilePath Path for the TLS certificate used to validate the broker endpoint when using TLS.
+                type: string
             type: object
           status:
             description: PulsarConnectionStatus defines the observed state of PulsarConnection

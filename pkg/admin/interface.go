@@ -189,8 +189,10 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	var adminClient admin.Client
 
 	config := &config.Config{
-		WebServiceURL:              conf.WebServiceURL,
-		TLSAllowInsecureConnection: true,
+		WebServiceURL:                 conf.WebServiceURL,
+		TLSAllowInsecureConnection:    conf.TLSAllowInsecureConnection,
+		TLSEnableHostnameVerification: conf.TLSEnableHostnameVerification,
+		TLSTrustCertsFilePath:         conf.TLSTrustCertsFilePath,
 		// V2 admin endpoint contains operations for tenant, namespace and topic.
 		PulsarAPIVersion: config.V2,
 	}
