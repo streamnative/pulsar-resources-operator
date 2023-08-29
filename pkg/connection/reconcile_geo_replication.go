@@ -54,13 +54,9 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed geo replication items", "Count", len(geoList.Items))
 
 	r.conn.geoReplications = geoList.Items
-	if !r.conn.hasUnreadyResource {
-		for i := range r.conn.geoReplications {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.geoReplications[i]) {
-				r.conn.hasUnreadyResource = true
-				break
-			}
-		}
+	// Force the `hasUnreadyResource` to be `true`` to trigger the PulsarConnection reload the auth config
+	if len(geoList.Items) != 0 {
+		r.conn.hasUnreadyResource = true
 	}
 
 	r.log.V(1).Info("Observe Done")
@@ -70,6 +66,7 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all the geo replication objects
 func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.geoReplications {
+		r.log.V(1).Info("Reconcile Geo")
 		geoReplication := &r.conn.geoReplications[i]
 		if err := r.ReconcileGeoReplication(ctx, r.conn.pulsarAdmin, geoReplication); err != nil {
 			return fmt.Errorf("reconcile geo replication [%w]", err)
