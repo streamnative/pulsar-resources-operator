@@ -51,6 +51,15 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 		})); err != nil {
 		return fmt.Errorf("list GeoReplication [%w]", err)
 	}
+
+	if len(geoList.Items) == 0 {
+		if err := r.conn.client.List(ctx, geoList, client.InNamespace(r.conn.connection.Namespace),
+			client.MatchingFields(map[string]string{
+				".spec.destinationConnectionRef.name": r.conn.connection.Name,
+			})); err != nil {
+			return fmt.Errorf("list GeoReplication [%w]", err)
+		}
+	}
 	r.log.V(1).Info("Observed geo replication items", "Count", len(geoList.Items))
 
 	r.conn.geoReplications = geoList.Items

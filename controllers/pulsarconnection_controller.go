@@ -151,6 +151,15 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		return err
 	}
 
+	if err := mgr.GetCache().IndexField(context.TODO(), &resourcev1alpha1.PulsarGeoReplication{}, ".spec.destinationConnectionRef.name",
+		func(object client.Object) []string {
+			return []string{
+				object.(*resourcev1alpha1.PulsarGeoReplication).Spec.DestinationConnectionRef.Name,
+			}
+		}); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.PulsarConnection{}).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarTenant{}},
