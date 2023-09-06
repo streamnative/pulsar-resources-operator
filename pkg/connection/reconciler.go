@@ -84,6 +84,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
+
 	if !r.hasUnreadyResource {
 		if !r.connection.DeletionTimestamp.IsZero() {
 			if len(r.tenants) == 0 && len(r.namespaces) == 0 && len(r.topics) == 0 {
@@ -108,6 +109,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		r.log.Info("Doesn't have unReady resource")
 		return nil
 	}
+	r.log.Info("have unReady resource")
 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL

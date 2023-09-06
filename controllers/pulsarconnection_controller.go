@@ -17,15 +17,19 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"reflect"
 
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
+	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -164,6 +168,45 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarGeoReplication{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &corev1.Secret{}},
+			handler.EnqueueRequestsFromMapFunc(r.findSecretsForConnection),
+			builder.WithPredicates(secretPredicate())).
 		WithOptions(options).
 		Complete(r)
+}
+
+func (r *PulsarConnectionReconciler) findSecretsForConnection(secret client.Object) []reconcile.Request {
+	ctx := context.Background()
+	conns := &resourcev1alpha1.PulsarConnectionList{}
+	err := r.List(ctx, conns, client.InNamespace(secret.GetNamespace()))
+	if err != nil {
+		r.Log.Error(err, "List secrets to match connection failed")
+	}
+	var requests []reconcile.Request
+	for _, i := range conns.Items {
+		auth := i.Spec.Authentication
+		if auth != nil && auth.Token != nil && auth.Token.SecretRef != nil {
+			if auth.Token.SecretRef.Name == secret.GetName() {
+				requests = append(requests, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      i.GetName(),
+						Namespace: i.GetNamespace(),
+					},
+				})
+			}
+		}
+	}
+
+	return requests
+}
+
+func secretPredicate() predicate.Predicate {
+	return predicate.Funcs{
+		UpdateFunc: func(e event.UpdateEvent) bool {
+			if e.ObjectOld == nil || e.ObjectNew == nil {
+				return false
+			}
+			return !reflect.DeepEqual(e.ObjectOld.GetResourceVersion(), e.ObjectNew.GetResourceVersion())
+		},
+	}
 }
