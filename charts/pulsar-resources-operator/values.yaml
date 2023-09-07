@@ -42,7 +42,7 @@ image:
     # -- The full repo name for image.
     repository: kubebuilder/kube-rbac-proxy
     # -- Image tag, it can override the image tag whose default is the chart appVersion.
-    tag: "v0.14.1"
+    tag: "v0.14.2"
 
 # -- Specifies image pull secrets for private registry, the format is `- name: gcr`
 imagePullSecrets: []
