@@ -65,6 +65,7 @@ type PulsarAuthenticationOAuth2 struct {
 	ClientID       string           `json:"clientID"`
 	Audience       string           `json:"audience"`
 	Key            ValueOrSecretRef `json:"key"`
+	Scope          string           `json:"scope"`
 }
 
 // IsPulsarResourceReady returns true if resource satisfies with these condition
