@@ -25,6 +25,7 @@ header:
     - 'LICENSE'
     - 'NOTICE'
     - '.github/CODEOWNERS'
+    - '.github/operatorhub/'
     - 'PROJECT'
     - '**/go.mod'
     - '**/go.sum'
