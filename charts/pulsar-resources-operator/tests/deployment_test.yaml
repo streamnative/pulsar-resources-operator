@@ -31,7 +31,7 @@ tests:
           value: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
       - equal:
           path: spec.template.spec.containers[1].image
-          value: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator:v0.4.1
+          value: docker.streamnative.io/streamnative/operators/pulsar-resources-operator:v0.4.2
       - equal:
           path: spec.template.spec.containers[1].imagePullPolicy
           value: IfNotPresent
@@ -61,7 +61,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[1].image
-          value: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator:v0.0.1
+          value: docker.streamnative.io/streamnative/operators/pulsar-resources-operator:v0.0.1
 
   - it: should update the replicas successfully
     set:
