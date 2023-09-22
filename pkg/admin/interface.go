@@ -15,11 +15,11 @@
 package admin
 
 import (
-	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"os"
+	"strings"
 
+	"github.com/apache/pulsar-client-go/oauth2"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/auth"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
@@ -212,19 +212,22 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		config.KeyFile = keyFilePath
 		config.Scope = conf.Scope
 
-		authParam, err := json.Marshal(&config)
+		oauthProvider, err := auth.NewAuthenticationOAuth2WithFlow(oauth2.Issuer{
+			IssuerEndpoint: conf.IssuerEndpoint,
+			ClientID:       conf.ClientID,
+			Audience:       conf.Audience,
+		}, oauth2.ClientCredentialsFlowOptions{
+			KeyFile:          keyFilePath,
+			AdditionalScopes: strings.Split(conf.Scope, " "),
+		})
+
 		if err != nil {
 			return nil, err
 		}
-
-		transport := http.DefaultTransport.(*http.Transport)
-
-		oauthProvider, err := auth.NewAuthenticationOAuth2FromAuthParams(string(authParam), transport)
-
+		adminClient, err = admin.NewPulsarClientWithAuthProvider(config, oauthProvider)
 		if err != nil {
 			return nil, err
 		}
-		adminClient = admin.NewWithAuthProvider(config, oauthProvider)
 	} else {
 		config.Token = conf.Token
 
