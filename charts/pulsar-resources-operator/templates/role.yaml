@@ -18,8 +18,20 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   creationTimestamp: null
-  name: manager-role
+  name: {{ include "pulsar-resources-operator.clusterRoleManagerName" . }}
 rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
 - apiGroups:
   - ""
   resources:
@@ -54,32 +66,6 @@ rules:
   - resource.streamnative.io
   resources:
   - pulsarconnections/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsargeoreplications
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsargeoreplications/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsargeoreplications/status
   verbs:
   - get
   - patch
@@ -184,6 +170,32 @@ rules:
   - resource.streamnative.io
   resources:
   - pulsartopics/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsargeoreplications
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsargeoreplications/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsargeoreplications/status
   verbs:
   - get
   - patch
