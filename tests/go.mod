@@ -5,7 +5,7 @@ go 1.18
 require (
 	// pulsar-client-go latest version is v0.9.0,
 	// it removed the go.mod from oauth2, this will cause the issue of ambiguous import
-	github.com/apache/pulsar-client-go v0.9.1-0.20230816081803-fbee610ddcbf
+	github.com/apache/pulsar-client-go v0.9.1-0.20230925013839-ac9c1a639933
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.19.0
 	github.com/sirupsen/logrus v1.8.1

@@ -216,6 +216,7 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 			cfg.IssuerEndpoint = oauth2.IssuerEndpoint
 			cfg.ClientID = oauth2.ClientID
 			cfg.Audience = oauth2.Audience
+			cfg.Scope = oauth2.Scope
 			value, err := GetValue(ctx, r.client, r.connection.Namespace, &oauth2.Key)
 			if err != nil {
 				return nil, err
