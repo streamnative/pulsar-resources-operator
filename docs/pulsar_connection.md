@@ -113,6 +113,8 @@ Other `PulsarConnection` configuration examples:
         issuerEndpoint: https://auth.streamnative.cloud
         clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
         audience: urn:sn:pulsar:sndev:us-west
+        # scope field is supported from 0.4.3 and optional to use
+        scope: api://pulsar-cluster-1/.default
         key: 
           # Use the keyFile contents as the oauth2 key value
           value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
