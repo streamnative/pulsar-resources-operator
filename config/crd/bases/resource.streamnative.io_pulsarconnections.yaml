@@ -122,6 +122,8 @@ spec:
                           value:
                             type: string
                         type: object
+                      scope:
+                        type: string
                     required:
                     - audience
                     - clientID
