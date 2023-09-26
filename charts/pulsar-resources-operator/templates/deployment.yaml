@@ -20,7 +20,7 @@ metadata:
   namespace: {{ include "pulsar-resources-operator.namespace" .}}
   labels:
     {{- include "pulsar-resources-operator.labels" . | nindent 4 }}
-    {{- .Values.extraLabels" . | nindent 4 }}
+    {{- .Values.extraLabels" | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -32,7 +32,7 @@ spec:
         {{- toYaml .Values.podAnnotations | nindent 8 }}
       labels:
         {{- include "pulsar-resources-operator.selectorLabels" . | nindent 8 }}
-        {{- .Values.podExtraLabels" . | nindent 8 }}
+        {{- .Values.podExtraLabels" | nindent 8 }}
     spec:
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
