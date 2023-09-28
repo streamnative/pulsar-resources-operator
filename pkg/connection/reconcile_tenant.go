@@ -88,7 +88,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 
 	if !tenant.DeletionTimestamp.IsZero() {
 		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
-		if tenant.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+		if tenant.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && !admin.IsNotFound(err) {
 				log.Error(err, "Failed to delete tenant")
 				return err

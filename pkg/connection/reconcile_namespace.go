@@ -99,7 +99,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 			}
 		}
 
-		if namespace.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+		if namespace.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && !admin.IsNotFound(err) {
 				log.Error(err, "Failed to delete namespace")
 				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))

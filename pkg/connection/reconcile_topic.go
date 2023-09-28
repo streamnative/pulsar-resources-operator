@@ -91,7 +91,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	if !topic.DeletionTimestamp.IsZero() {
 		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
 
-		if topic.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+		if topic.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			// TODO when geoReplicationRef is not nil, it should reset the replication clusters to
 			// default local cluster for the topic
 			if topic.Status.GeoReplicationEnabled {

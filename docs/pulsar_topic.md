@@ -45,7 +45,7 @@ This table lists specifications available for the `PulsarTopic` resource.
 | `backlogQuotaLimitTime` | The Backlog quota time limit (valid time units are "s", "m", "h", "d", "w"). | Optional |
 | `backlogQuotaLimitSize` | The Backlog quota size limit (such as 10Mi, 10Gi). | Optional |
 | `backlogQuotaRetentionPolicy` | The Retention policy to be enforced when the limit is reached. | Optional |
-| `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `CleanUpAfterDeletion`. | Optional |
 | `schemaInfo` | The schema of pulsar topic, default is nil. More details you can find in [schemaInfo](#schemainfo) Optional |
 | `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable Geo-replication at the topic level. It will add the topic to the clusters. | No |
 
