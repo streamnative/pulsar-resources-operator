@@ -249,11 +249,33 @@
             },
             "additionalProperties": true
         },
+        "labels": {
+            "$id": "#/properties/labels",
+            "type": "object",
+            "title": "The labels schema",
+            "description": "customized labels for deployment",
+            "examples": [
+                {}
+            ],
+            "required": [],
+            "additionalProperties": true
+        },
         "podAnnotations": {
             "$id": "#/properties/podAnnotations",
             "type": "object",
             "title": "The podAnnotations schema",
             "description": "An explanation about the purpose of this instance.",
+            "examples": [
+                {}
+            ],
+            "required": [],
+            "additionalProperties": true
+        },
+        "podLabels": {
+            "$id": "#/properties/podLabels",
+            "type": "object",
+            "title": "The labels schema",
+            "description": "customized labels for pod",
             "examples": [
                 {}
             ],
