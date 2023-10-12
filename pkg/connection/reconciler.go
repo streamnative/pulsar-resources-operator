@@ -222,7 +222,7 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 }
 
 // MakePulsarAdminConfig create pulsar admin configuration
-func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.PulsarConnection,
+func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.PulsarConnection,
 	k8sClient client.Client) (*admin.PulsarAdminConfig, error) {
 	if connection.Spec.AdminServiceURL == "" && connection.Spec.AdminServiceSecureURL == "" {
 		return nil, fmt.Errorf("adminServiceURL or adminServiceSecureURL must not be empty")

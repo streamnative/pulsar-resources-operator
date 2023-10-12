@@ -235,7 +235,6 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		if err != nil {
 			return nil, err
 		}
-		adminClient = admin.NewWithAuthProvider(config, oauthProvider)
 	} else if conf.Token != "" {
 		config.Token = conf.Token
 
