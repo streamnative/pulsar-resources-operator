@@ -222,13 +222,26 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 }
 
 // MakePulsarAdminConfig create pulsar admin configuration
-func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.PulsarConnection,
+func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.PulsarConnection,
 	k8sClient client.Client) (*admin.PulsarAdminConfig, error) {
 	if connection.Spec.AdminServiceURL == "" && connection.Spec.AdminServiceSecureURL == "" {
 		return nil, fmt.Errorf("adminServiceURL or adminServiceSecureURL must not be empty")
 	}
+
+	tlsEnableHostnameVerification := connection.Spec.TLSEnableHostnameVerification
+	tlsAllowInsecureConnection := connection.Spec.TLSAllowInsecureConnection
+	tlsTrustCertsFilePath := connection.Spec.TLSTrustCertsFilePath
+
+	if connection.Spec.AdminServiceSecureURL == "" {
+		tlsEnableHostnameVerification = false
+		tlsAllowInsecureConnection = true
+		tlsTrustCertsFilePath = ""
+	}
 	cfg := admin.PulsarAdminConfig{
-		WebServiceURL: connection.Spec.AdminServiceURL,
+		WebServiceURL:                 connection.Spec.AdminServiceURL,
+		TLSAllowInsecureConnection:    tlsAllowInsecureConnection,
+		TLSEnableHostnameVerification: tlsEnableHostnameVerification,
+		TLSTrustCertsFilePath:         tlsTrustCertsFilePath,
 	}
 	hasAuth := false
 	if authn := connection.Spec.Authentication; authn != nil {
@@ -254,6 +267,10 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			if value != nil {
 				cfg.Key = *value
 			}
+		}
+		if tls := authn.TLS; tls != nil {
+			cfg.ClientCertificatePath = tls.ClientCertificatePath
+			cfg.ClientCertificateKeyPath = tls.ClientCertificateKeyPath
 		}
 	}
 	return &cfg, nil

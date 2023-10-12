@@ -117,6 +117,24 @@ Other `PulsarConnection` configuration examples:
           # Use the keyFile contents as the oauth2 key value
           value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
 
+* TLS authentication
+
+  ```yaml
+  apiVersion: resource.streamnative.io/v1alpha1
+  kind: PulsarConnection
+  metadata:
+    name: test-tls-auth-pulsar-connection
+    namespace: test
+  spec:
+    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+  authentication:
+    tls:
+      clientCertificateKeyPath: /certs/tls.key
+      clientCertificatePath: /certs/tls.crt
+  ```
+
 This table lists specifications available for the `PulsarConnection` resource.
 
 | Option | Description | Required or not |
@@ -127,7 +145,9 @@ This table lists specifications available for the `PulsarConnection` resource.
 | `brokerServiceSecureURL` | The broker service URL for secure connection to the Pulsar cluster, such as `pulsar+ssl://cluster-broker.test.svc.cluster.local:6651`. This option is required for configuring Geo-replication when TLS is enabled. This option is available for version `0.3.0` or above. | No |
 | `adminServiceSecureURL` | The admin service URL for secure connection to the Pulsar cluster, such as `https://cluster-broker.test.svc.cluster.local:443`. This option is available for version `0.3.0` or above. | No |
 | `clusterName` | The Pulsar cluster name. You can use the `pulsar-admin clusters list` command to get the Pulsar cluster name. This option is required for configuring Geo-replication. Provided from `0.3.0` | No |
-   
+| `tlsAllowInsecureConnection` | A flag that indicates whether to allow insecure connection to the broker. Provided from `0.5.0` | No |
+| `tlsEnableHostnameVerification` | A flag that indicates wether hostname verification is enabled. Provided from `0.5.0` | No |
+| `tlsTrustCertsFilePath` | The path to the certificate used during hostname verfification. Provided from `0.5.0` | No |
 
 1. Apply the YAML file to create the Pulsar Connection. 
 
