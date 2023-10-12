@@ -270,6 +270,10 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 				cfg.Key = *value
 			}
 		}
+		if tls := authn.TLS; tls != nil {
+			cfg.ClientCertificatePath = tls.ClientCertificatePath
+			cfg.ClientCertificateKeyPath = tls.ClientCertificateKeyPath
+		}
 	}
 	return &cfg, nil
 }

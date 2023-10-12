@@ -129,6 +129,18 @@ spec:
                     - issuerEndpoint
                     - key
                     type: object
+                  tls:
+                    description: PulsarAuthenticationTLS indicates the parameters
+                      which are need by pulsar TLS Authentication
+                    properties:
+                      clientCertificateKeyPath:
+                        type: string
+                      clientCertificatePath:
+                        type: string
+                    required:
+                    - clientCertificateKeyPath
+                    - clientCertificatePath
+                    type: object
                   token:
                     description: ValueOrSecretRef is a string or a secret reference
                       of the authentication
