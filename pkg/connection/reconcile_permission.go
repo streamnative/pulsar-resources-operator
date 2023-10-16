@@ -105,7 +105,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		return nil
 	}
 
-	if permission.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+	if permission.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {

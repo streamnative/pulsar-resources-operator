@@ -126,7 +126,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		return nil
 	}
 
-	if topic.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+	if topic.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(topic, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, topic); err != nil {
