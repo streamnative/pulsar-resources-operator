@@ -30,7 +30,7 @@ This table lists specifications available for the `PulsarGeoReplication ` resour
 | ---| --- |--- |
 | `connectionRef` | The reference to a PulsarConnection. | Yes |
 | `destinationConnectionRef` | The reference to a destination PulsarConnection. | Yes |
-| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `KeepAfterDeletion`. | Optional |
+| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `CleanUpAfterDeletion`. | Optional |
 
 
 ## How to configure Geo-replication

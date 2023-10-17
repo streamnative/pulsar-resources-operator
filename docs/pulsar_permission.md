@@ -33,7 +33,7 @@ This table lists specifications available for the `PulsarPermission` resource.
 | `resourceName` | The name of the target resource which will be granted the permissions. | Yes |
 | `roles` | The list of roles which will be granted with the same permissions. | Yes
 | `actions` | The list of actions to be granted. The options include `produce`,`consume`,`functions`, `sinks`, `sources`, `packages`. | Optional |
-| `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `CleanUpAfterDeletion`. | Optional |
 
 2. Apply the YAML file to create the permission.
 

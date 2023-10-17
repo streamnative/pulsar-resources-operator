@@ -28,7 +28,7 @@ This table lists specifications available for the `PulsarTenant` resource.
 | `connectionRef` | The reference to a PulsarConnection. | Yes |
 | `adminRoles` | The list of authentication principals allowed to manage the tenant. | Optional |
 | `allowedClusters` | The list of allowed clusters. If no cluster is specified, the tenant will have access to all clusters. If you specify a list of clusters, ensure that these clusters exist.| Optional | 
-| `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `CleanUpAfterDeletion`. | Optional |
 | `geoReplicationRefs` | The reference list of the PulsarGeoReplication. It will grant permission to the tenant. | No |
 
 2. Apply the YAML file to create the tenant.

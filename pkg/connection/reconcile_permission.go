@@ -89,9 +89,8 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	per := GetPermissioner(permission)
 
 	if !permission.DeletionTimestamp.IsZero() {
-		if permission.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
-			log.Info("Revoking permission", "LifecyclePolicy", permission.Spec.LifecyclePolicy)
-
+		log.Info("Revoking permission", "LifecyclePolicy", permission.Spec.LifecyclePolicy)
+		if permission.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.RevokePermissions(per); err != nil && !admin.IsNotFound(err) {
 				log.Error(err, "Failed to revoke permission")
 				return err
@@ -106,7 +105,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		return nil
 	}
 
-	if permission.Spec.LifecyclePolicy == resourcev1alpha1.CleanUpAfterDeletion {
+	if permission.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {

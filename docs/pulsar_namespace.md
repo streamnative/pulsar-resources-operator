@@ -43,7 +43,7 @@ This table lists specifications available for the `PulsarNamespace` resource.
 | `maxConsumersPerSubscription` | The maximum number of consumers per subscription for a namespace. | Optional |
 | `retentionTime` | The retention time (valid time units are "s", "m", "h", "d", "w"). | Optional |
 | `retentionSize` | The retention size limit(such as 800Mi, 10Gi). | Optional |
-| `lifecyclePolicy` | The resource lifecycle policy, CleanUpAfterDeletion or KeepAfterDeletion, the default is KeepAfterDeletion | Optional |
+| `lifecyclePolicy` | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `CleanUpAfterDeletion`. | Optional |
 | `geoReplicationRefs` | The reference list of the PulsarGeoReplication. Enable Geo-replication at the namespace level. It will add the namespace to the clusters. | No |
 
 
