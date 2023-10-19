@@ -99,8 +99,6 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		log.Error(err, "Failed to get destination connection for geo replication")
 		return err
 	}
-	// TODO Currently, if the destination pulsarconnection is updated, the this reconcile won't notice it
-	// Need to fix it in the future work.
 
 	destClusterName := destConnection.Spec.ClusterName
 	if destClusterName == "" {
@@ -149,7 +147,9 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return err
 	}
 
-	if resourcev1alpha1.IsPulsarResourceReady(geoReplication) {
+	// if destConnection update, let's update the cluster info
+	if destConnection.Generation == destConnection.Status.ObservedGeneration &&
+		resourcev1alpha1.IsPulsarResourceReady(geoReplication) {
 		// After the previous reconcile succeed, the cluster will be created successfully,
 		// it will update the condition Ready to true, and update the observedGeneration to metadata.generation
 		// If there is no new changes in the object, there is no need to run the left code again.
