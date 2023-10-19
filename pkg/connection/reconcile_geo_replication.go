@@ -230,9 +230,9 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 				hasAuth = true
 			}
 		}
-		if auth.OAuth2 != nil && !hasAuth {
-			// TODO support oauth2
-		}
+		// TODO support oauth2
+		//if auth.OAuth2 != nil && !hasAuth {
+		//}
 	}
 	return clusterParam, nil
 }
