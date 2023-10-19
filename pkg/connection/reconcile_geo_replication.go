@@ -157,31 +157,9 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return nil
 	}
 
-	clusterParam := &admin.ClusterParams{
-		ServiceURL:                     destConnection.Spec.AdminServiceURL,
-		BrokerServiceURL:               destConnection.Spec.BrokerServiceURL,
-		ServiceSecureURL:               destConnection.Spec.AdminServiceSecureURL,
-		BrokerServiceSecureURL:         destConnection.Spec.BrokerServiceSecureURL,
-		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
-	}
-
-	hasAuth := true
-	if auth := destConnection.Spec.Authentication; auth != nil {
-		if auth.Token != nil {
-			value, err := GetValue(ctx, r.conn.client, destConnection.Namespace, auth.Token)
-			if err != nil {
-				return err
-			}
-			if value != nil {
-				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
-				clusterParam.AuthParameters = "token:" + *value
-				hasAuth = true
-			}
-		}
-		if auth.OAuth2 != nil && !hasAuth {
-			// TODO support oauth2
-			log.Info("Oauth2 will support later")
-		}
+	clusterParam, err2 := createParams(ctx, destConnection, r.conn.client)
+	if err2 != nil {
+		return err2
 	}
 
 	// If the cluster already exists, only update it
@@ -228,4 +206,33 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 
 	return nil
+}
+
+func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client) (*admin.ClusterParams, error) {
+	clusterParam := &admin.ClusterParams{
+		ServiceURL:                     destConnection.Spec.AdminServiceURL,
+		BrokerServiceURL:               destConnection.Spec.BrokerServiceURL,
+		ServiceSecureURL:               destConnection.Spec.AdminServiceSecureURL,
+		BrokerServiceSecureURL:         destConnection.Spec.BrokerServiceSecureURL,
+		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
+	}
+
+	hasAuth := true
+	if auth := destConnection.Spec.Authentication; auth != nil {
+		if auth.Token != nil {
+			value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
+			if err != nil {
+				return nil, err
+			}
+			if value != nil {
+				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
+				clusterParam.AuthParameters = "token:" + *value
+				hasAuth = true
+			}
+		}
+		if auth.OAuth2 != nil && !hasAuth {
+			// TODO support oauth2
+		}
+	}
+	return clusterParam, nil
 }
