@@ -217,7 +217,6 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
 	}
 
-	hasAuth := true
 	if auth := destConnection.Spec.Authentication; auth != nil {
 		if auth.Token != nil {
 			value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
@@ -227,12 +226,11 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 			if value != nil {
 				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
 				clusterParam.AuthParameters = "token:" + *value
-				hasAuth = true
 			}
 		}
 		// TODO support oauth2
-		//if auth.OAuth2 != nil && !hasAuth {
-		//}
+		// if auth.OAuth2 != nil && !hasAuth {
+		// }
 	}
 	return clusterParam, nil
 }
