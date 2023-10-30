@@ -77,7 +77,28 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.geoReplications {
 		r.log.V(1).Info("Reconcile Geo")
 		geoReplication := &r.conn.geoReplications[i]
-		if err := r.ReconcileGeoReplication(ctx, r.conn.pulsarAdmin, geoReplication); err != nil {
+		pulsarAdmin := r.conn.pulsarAdmin
+		if geoReplication.Spec.ConnectionRef.Name != r.conn.connection.Name {
+			// If the connectionRef is the remote connection, we need to create a new pulsarAdmin for it
+			localConnection := &resourcev1alpha1.PulsarConnection{}
+			namespacedName := types.NamespacedName{
+				Name:      geoReplication.Spec.ConnectionRef.Name,
+				Namespace: geoReplication.Namespace,
+			}
+			if err := r.conn.client.Get(ctx, namespacedName, localConnection); err != nil {
+				return fmt.Errorf("get local pulsarConnection [%w]", err)
+			}
+			cfg, err := MakePulsarAdminConfig(ctx, localConnection, r.conn.client)
+			if err != nil {
+				return fmt.Errorf("make pulsar admin config [%w]", err)
+			}
+			pulsarAdmin, err = r.conn.creator(*cfg)
+			if err != nil {
+				return fmt.Errorf("make pulsar admin [%w]", err)
+			}
+		}
+
+		if err := r.ReconcileGeoReplication(ctx, pulsarAdmin, geoReplication); err != nil {
 			return fmt.Errorf("reconcile geo replication [%w]", err)
 		}
 	}
