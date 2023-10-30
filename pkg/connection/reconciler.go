@@ -193,17 +193,22 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 
 // MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
-	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL == "" {
+	return MakePulsarAdminConfig(ctx, r.connection, r.client)
+}
+
+// MakePulsarAdminConfig create pulsar admin configuration
+func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.PulsarConnection,
+	k8sClient client.Client) (*admin.PulsarAdminConfig, error) {
+	if connection.Spec.AdminServiceURL == "" && connection.Spec.AdminServiceSecureURL == "" {
 		return nil, fmt.Errorf("adminServiceURL or adminServiceSecureURL must not be empty")
 	}
-
 	cfg := admin.PulsarAdminConfig{
-		WebServiceURL: r.connection.Spec.AdminServiceURL,
+		WebServiceURL: connection.Spec.AdminServiceURL,
 	}
 	hasAuth := false
-	if authn := r.connection.Spec.Authentication; authn != nil {
+	if authn := connection.Spec.Authentication; authn != nil {
 		if token := authn.Token; token != nil {
-			value, err := GetValue(ctx, r.client, r.connection.Namespace, token)
+			value, err := GetValue(ctx, k8sClient, connection.Namespace, token)
 			if err != nil {
 				return nil, err
 			}
@@ -217,7 +222,7 @@ func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) 
 			cfg.ClientID = oauth2.ClientID
 			cfg.Audience = oauth2.Audience
 			cfg.Scope = oauth2.Scope
-			value, err := GetValue(ctx, r.client, r.connection.Namespace, &oauth2.Key)
+			value, err := GetValue(ctx, k8sClient, connection.Namespace, &oauth2.Key)
 			if err != nil {
 				return nil, err
 			}
