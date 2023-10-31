@@ -27,8 +27,8 @@ target-branch: main
 
 
 # parameters for ct lint
-chart:
-  - pulsar-resources-operator
+charts:
+  - charts/pulsar-resources-operator
 helm-extra-args: --timeout 600s
 
 # Additional commands to run per chart.
