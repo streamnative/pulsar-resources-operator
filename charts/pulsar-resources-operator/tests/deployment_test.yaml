@@ -28,7 +28,7 @@ tests:
           pattern: -pulsar-resources-operator$
       - equal:
           path: spec.template.spec.containers[0].image
-          value: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
+          value: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
       - equal:
           path: spec.template.spec.containers[1].image
           value: docker.streamnative.io/streamnative/operators/pulsar-resources-operator:v0.4.3
