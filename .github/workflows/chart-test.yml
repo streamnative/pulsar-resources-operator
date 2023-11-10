@@ -124,7 +124,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -174,7 +174,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -224,7 +224,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -274,7 +274,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -324,7 +324,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -374,7 +374,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -424,7 +424,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
@@ -474,7 +474,7 @@ jobs:
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.4.0
+        uses: helm/chart-testing-action@v2.6.0
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Create kind cluster
