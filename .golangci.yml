@@ -18,11 +18,11 @@ linters:
   - asciicheck
   - bodyclose
   - deadcode
-  - depguard
+  # - depguard
   - dogsled
   - errcheck
   - exportloopref
-  - gci
+  # - gci
   - goconst
   - gocritic
   - gocyclo

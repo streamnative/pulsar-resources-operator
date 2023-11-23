@@ -19,7 +19,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 )
 
 // CalculateSecretKeyMd5 calculates the hash of the secret key.
