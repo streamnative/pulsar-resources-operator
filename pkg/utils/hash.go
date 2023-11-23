@@ -29,7 +29,8 @@ func CalculateSecretKeyMd5(secret *corev1.Secret, key string) (string, error) {
 		return "", fmt.Errorf("key %s not found in secret", key)
 	}
 
-	hasher := md5.New()
+	// we use md5 to calculate fingerprint of the secret key
+	hasher := md5.New() //nolint:gosec
 	if _, err := hasher.Write(data); err != nil {
 		return "", err
 	}
