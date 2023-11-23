@@ -20,7 +20,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -241,7 +241,7 @@ func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourc
 	if auth == nil || auth.Token.SecretRef == nil {
 		return false, nil
 	}
-	secret := &v1.Secret{}
+	secret := &corev1.Secret{}
 	namespacedName := types.NamespacedName{
 		Name:      auth.Token.SecretRef.Name,
 		Namespace: connection.Namespace,

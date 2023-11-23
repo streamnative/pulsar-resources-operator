@@ -19,11 +19,11 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // CalculateSecretKeyMd5 calculates the hash of the secret key.
-func CalculateSecretKeyMd5(secret *v1.Secret, key string) (string, error) {
+func CalculateSecretKeyMd5(secret *corev1.Secret, key string) (string, error) {
 	data, ok := secret.Data[key]
 	if !ok {
 		return "", fmt.Errorf("key %s not found in secret", key)
