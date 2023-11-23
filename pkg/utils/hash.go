@@ -15,11 +15,11 @@
 package utils
 
 import (
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"fmt"
 
-	v1 "k8s.io/api/core/v1"
+	"k8s.io/api/core/v1"
 )
 
 // CalculateSecretKeyMd5 calculates the hash of the secret key.
@@ -30,8 +30,7 @@ func CalculateSecretKeyMd5(secret *v1.Secret, key string) (string, error) {
 	}
 
 	hasher := md5.New()
-	_, err := hasher.Write(data)
-	if err != nil {
+	if _, err := hasher.Write(data); err != nil {
 		return "", err
 	}
 
