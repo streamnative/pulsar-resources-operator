@@ -1,4 +1,4 @@
-# Copyright 2023 StreamNative
+# Copyright 2022 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,17 +13,16 @@
 # limitations under the License.
 
 apiVersion: resource.streamnative.io/v1alpha1
-kind: PulsarGeoReplication
+kind: PulsarConnection
 metadata:
-  labels:
-    app.kubernetes.io/name: pulsargeoreplication
-    app.kubernetes.io/instance: pulsargeoreplication-sample
-    app.kubernetes.io/part-of: pulsar-resources-operator
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: pulsar-resources-operator
-  name: pulsargeoreplication-sample
+  name: remote-pulsarconnection
+  namespace: default
 spec:
-  connectionRef:
-    name: local-pulsarconnection
-  destinationConnectionRef:
-    name: remote-pulsarconnection
+  clusterName: remote-brokers
+  brokerServiceURL: pulsar://remote-brokers-broker-0.brokers-broker-headless.default.svc.cluster.local:6650
+  adminServiceURL: http://remote-brokers-broker-0.brokers-broker-headless.default.svc.cluster.local:8080
+  authentication:
+    token:
+      secretRef:
+        key: key1
+        name: my-secret

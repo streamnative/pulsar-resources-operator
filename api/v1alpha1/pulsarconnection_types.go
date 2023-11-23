@@ -70,6 +70,10 @@ type PulsarConnectionStatus struct {
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
+	// SecretKeyHash is the hash of the secret ref
+	// +optional
+	SecretKeyHash string `json:"secretKeyHash,omitempty"`
+
 	// Represents the observations of a connection's current state.
 	// +patchMergeKey=type
 	// +patchStrategy=merge
