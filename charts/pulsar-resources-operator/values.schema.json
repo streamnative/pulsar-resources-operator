@@ -126,14 +126,14 @@
                             "default": "",
                             "title": "The tag Schema",
                             "examples": [
-                                "v0.14.1"
+                                "v0.14.4"
                             ]
                         }
                     },
                     "examples": [{
                         "registry": "gcr.io",
                         "repository": "kubebuilder/kube-rbac-proxy",
-                        "tag": "v0.14.1"
+                        "tag": "v0.14.4"
                     }]
                 }
             },

@@ -54,7 +54,7 @@ IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
-KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.1
+KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
 
 REDHAT_SCAN_REGITRY ?= "quay.io"
 PROJECT_ID_PULSAR_RESOURCES_OPERATOR ?= "62f2585dfcd25442e1f1ee46"
