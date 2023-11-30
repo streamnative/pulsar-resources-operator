@@ -69,6 +69,11 @@ spec:
       kind: PulsarTopic
       name: pulsartopics.resource.streamnative.io
       version: v1alpha1
+    - description: PulsarGeoReplication is the Schema for the pulsargeoreplications API
+      displayName: Pulsar GeoReplication
+      kind: PulsarGeoReplication
+      name: pulsargeoreplication.resource.streamnative.io
+      version: v1alpha1
   description: |
     Authored by [StreamNative](https://streamnative.io), this Pulsar Resources Operator is a controller that manages the Pulsar resources automatically using the manifest on Kubernetes. Therefore, you can manage the Pulsar resources without the help of `pulsar-admin` or `pulsarctl` CLI tool. It is useful for initializing basic resources when creating a new Pulsar cluster.
 

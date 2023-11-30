@@ -28,7 +28,6 @@ spec:
   actions:
   - produce
   - consume
-
 ---
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarPermission
