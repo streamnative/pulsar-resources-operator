@@ -15,12 +15,12 @@
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
-  name: pulsarconnection-sample
-  namespace: pulsar
+  name: local-pulsarconnection
+  namespace: default
 spec:
-  adminServiceURL: http://c-sn-platform-broker.pulsar.svc.cluster.local:8080
+  clusterName: brokers
+  brokerServiceURL: pulsar://brokers-broker-0.brokers-broker-headless.default.svc.cluster.local:6650
+  adminServiceURL: http://brokers-broker-0.brokers-broker-headless.default.svc.cluster.local:8080
   authentication:
     token:
-      secretRef:
-        name: c-sn-platform-vault-secret-env-injection
-        key: brokerClientAuthenticationParameters
+      value: "fdlksjflk"

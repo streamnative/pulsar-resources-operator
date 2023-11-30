@@ -19,6 +19,8 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -168,8 +170,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return err
 	}
 
+	secretUpdated, err := r.checkSecretRefUpdate(*destConnection)
+	if err != nil {
+		return err
+	}
+
 	// if destConnection update, let's update the cluster info
-	if destConnection.Generation == destConnection.Status.ObservedGeneration &&
+	if !secretUpdated && destConnection.Generation == destConnection.Status.ObservedGeneration &&
 		resourcev1alpha1.IsPulsarResourceReady(geoReplication) {
 		// After the previous reconcile succeed, the cluster will be created successfully,
 		// it will update the condition Ready to true, and update the observedGeneration to metadata.generation
@@ -227,6 +234,26 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	}
 
 	return nil
+}
+
+func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourcev1alpha1.PulsarConnection) (bool, error) {
+	auth := connection.Spec.Authentication
+	if auth == nil || auth.Token.SecretRef == nil {
+		return false, nil
+	}
+	secret := &corev1.Secret{}
+	namespacedName := types.NamespacedName{
+		Name:      auth.Token.SecretRef.Name,
+		Namespace: connection.Namespace,
+	}
+	if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+		return false, err
+	}
+	secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+	if err != nil {
+		return false, err
+	}
+	return connection.Status.SecretKeyHash != secretHash, nil
 }
 
 func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client) (*admin.ClusterParams, error) {

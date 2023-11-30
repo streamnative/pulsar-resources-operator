@@ -12,18 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: resource.streamnative.io/v1alpha1
-kind: PulsarGeoReplication
+apiVersion: v1
+kind: Secret
 metadata:
-  labels:
-    app.kubernetes.io/name: pulsargeoreplication
-    app.kubernetes.io/instance: pulsargeoreplication-sample
-    app.kubernetes.io/part-of: pulsar-resources-operator
-    app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/created-by: pulsar-resources-operator
-  name: pulsargeoreplication-sample
-spec:
-  connectionRef:
-    name: local-pulsarconnection
-  destinationConnectionRef:
-    name: remote-pulsarconnection
+  name: my-secret
+type: Opaque
+data:
+  key1: dGVzdA==
+  key2: dGVzdA==

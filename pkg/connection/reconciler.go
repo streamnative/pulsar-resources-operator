@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -154,6 +155,22 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		}
 	}
 
+	auth := r.connection.Spec.Authentication
+	if auth != nil && auth.Token != nil && auth.Token.SecretRef != nil {
+		// calculate secret key hash
+		secret := &corev1.Secret{}
+		if err := r.client.Get(ctx, types.NamespacedName{
+			Namespace: r.connection.Namespace,
+			Name:      auth.Token.SecretRef.Name,
+		}, secret); err != nil {
+			return err
+		}
+		hash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+		if err != nil {
+			return err
+		}
+		r.connection.Status.SecretKeyHash = hash
+	}
 	r.connection.Status.ObservedGeneration = r.connection.Generation
 	meta.SetStatusCondition(&r.connection.Status.Conditions, *NewReadyCondition(r.connection.Generation))
 	if err := r.client.Status().Update(ctx, r.connection); err != nil {
