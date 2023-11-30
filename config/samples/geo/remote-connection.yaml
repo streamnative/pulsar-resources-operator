@@ -1,0 +1,16 @@
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarConnection
+metadata:
+  name: us-east-remote-connection
+  namespace: east
+spec:
+  # The destination us-west cluster name
+  clusterName: west
+  # The destination us-west cluster connection URL, you should use Kubernetes external LB address.
+  adminServiceURL: http://brokers-west-broker-0.brokers-west-broker-headless.west.svc.cluster.local:8080
+  brokerServiceURL: pulsar://brokers-west-broker-0.brokers-west-broker-headless.west.svc.cluster.local:6650
+  authentication:
+    token:
+      secretRef:
+        name: remote-secret
+        key: token-key

@@ -155,14 +155,17 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		}
 	}
 
-	auth := r.connection.Spec.Authentication.Token
-	if auth != nil && auth.SecretRef != nil {
+	auth := r.connection.Spec.Authentication
+	if auth != nil && auth.Token != nil && auth.Token.SecretRef != nil {
 		// calculate secret key hash
 		secret := &corev1.Secret{}
-		if err := r.client.Get(ctx, types.NamespacedName{Namespace: r.connection.Namespace, Name: auth.SecretRef.Name}, secret); err != nil {
+		if err := r.client.Get(ctx, types.NamespacedName{
+			Namespace: r.connection.Namespace,
+			Name:      auth.Token.SecretRef.Name,
+		}, secret); err != nil {
 			return err
 		}
-		hash, err := utils.CalculateSecretKeyMd5(secret, auth.SecretRef.Key)
+		hash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
 		if err != nil {
 			return err
 		}

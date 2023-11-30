@@ -1,0 +1,84 @@
+apiVersion: zookeeper.streamnative.io/v1alpha1
+kind: ZooKeeperCluster
+metadata:
+  name: zookeepers-west
+  namespace: west
+spec:
+  image: streamnative/private-cloud:3.0.1.4
+  replicas: 3
+  pod:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    securityContext:
+      runAsNonRoot: true
+---
+# apiVersion: bookkeeper.streamnative.io/v1alpha1
+# kind: BookKeeperCluster
+# metadata:
+#   name: bookies-west
+#   namespace: west
+# spec:
+#   image: streamnative/private-cloud:3.0.1.4
+#   replicas: 3
+#   zkServers: zookeepers-west-zk:2181
+#   pod:
+#     resources:
+#       requests:
+#         cpu: 200m
+#         memory: 512Mi
+#     securityContext:
+#       runAsNonRoot: true
+#   storage:
+#     journal:
+#       volumeClaimTemplate:
+#         accessModes:
+#           - ReadWriteOnce
+#         resources:
+#           requests:
+#             storage: 8Gi
+#     ledger:
+#       volumeClaimTemplate:
+#         accessModes:
+#           - ReadWriteOnce
+#         resources:
+#           requests:
+#             storage: 16Gi
+#     reclaimPolicy: Delete
+# ---
+apiVersion: pulsar.streamnative.io/v1alpha1
+kind: PulsarBroker
+metadata:
+  name: brokers-west
+  namespace: west
+spec:
+  image: streamnative/private-cloud:3.0.1.4
+  replicas: 1
+  zkServers: zookeepers-west-zk:2181
+  config:
+    clusterName: west
+  pod:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    securityContext:
+      runAsNonRoot: true
+---
+apiVersion: pulsar.streamnative.io/v1alpha1
+kind: PulsarProxy
+metadata:
+  name: proxys
+  namespace: west
+spec:
+  image: streamnative/private-cloud:3.0.1.4
+  replicas: 1
+  brokerAddress: brokers-west-broker
+  pod:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+    securityContext:
+      runAsNonRoot: true

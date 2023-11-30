@@ -1,0 +1,11 @@
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarGeoReplication
+metadata:
+  name: us-east-geo
+  namespace: east
+spec:
+  connectionRef:
+    name: us-east-local-connection
+  destinationConnectionRef:
+    name: us-east-remote-connection
+  lifecyclePolicy: CleanUpAfterDeletion
