@@ -250,6 +250,9 @@ spec:
                   is updated on mutation by the API Server.
                 format: int64
                 type: integer
+              secretKeyHash:
+                description: SecretKeyHash is the hash of the secret ref
+                type: string
             type: object
         type: object
     served: true
@@ -262,3 +265,4 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
+
