@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -250,6 +249,9 @@ spec:
                   is updated on mutation by the API Server.
                 format: int64
                 type: integer
+              secretKeyHash:
+                description: SecretKeyHash is the hash of the secret ref
+                type: string
             type: object
         type: object
     served: true
