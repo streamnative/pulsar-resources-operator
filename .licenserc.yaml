@@ -26,6 +26,7 @@ header:
     - 'NOTICE'
     - '.github/CODEOWNERS'
     - '.github/operatorhub/'
+    - '.github/openshift/'
     - 'PROJECT'
     - '**/go.mod'
     - '**/go.sum'
