@@ -66,8 +66,8 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 
 	r.conn.geoReplications = geoList.Items
 	// Force the `hasUnreadyResource` to be `true`` to trigger the PulsarConnection reload the auth config
-	if len(geoList.Items) != 0 {
-		r.conn.hasUnreadyResource = true
+	for _, geo := range r.conn.geoReplications {
+		r.conn.addUnreadyResource(&geo)
 	}
 
 	r.log.V(1).Info("Observe Done")

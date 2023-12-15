@@ -56,12 +56,9 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed tenants items", "Count", len(tenantList.Items))
 
 	r.conn.tenants = tenantList.Items
-	if !r.conn.hasUnreadyResource {
-		for i := range r.conn.tenants {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.tenants[i]) {
-				r.conn.hasUnreadyResource = true
-				break
-			}
+	for i := range r.conn.tenants {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.tenants[i]) {
+			r.conn.addUnreadyResource(&r.conn.tenants[i])
 		}
 	}
 

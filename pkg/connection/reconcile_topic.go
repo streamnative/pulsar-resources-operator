@@ -58,10 +58,10 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed topic items", "Count", len(topicsList.Items))
 
 	r.conn.topics = topicsList.Items
-	if !r.conn.hasUnreadyResource {
+	if !r.conn.hasUnreadyResource() {
 		for i := range r.conn.topics {
 			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.topics[i]) {
-				r.conn.hasUnreadyResource = true
+				r.conn.addUnreadyResource(&r.conn.topics[i])
 				break
 			}
 		}

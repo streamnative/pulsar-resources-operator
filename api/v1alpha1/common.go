@@ -17,6 +17,7 @@ package v1alpha1
 import (
 	"reflect"
 
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -73,6 +74,10 @@ type PulsarAuthenticationOAuth2 struct {
 // 2. Status ObservedGeneration is equal with meta.ObservedGeneration
 // 3. StatusCondition Ready is true
 func IsPulsarResourceReady(instance reconciler.Object) bool {
+	if feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
+		// Always request pulsar service
+		return false
+	}
 	objVal := reflect.ValueOf(instance).Elem()
 	stVal := objVal.FieldByName("Status")
 

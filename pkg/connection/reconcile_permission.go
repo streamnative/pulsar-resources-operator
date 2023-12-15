@@ -55,10 +55,10 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed permissions items", "Count", len(permissionList.Items))
 	r.conn.permissions = permissionList.Items
 
-	if !r.conn.hasUnreadyResource {
+	if !r.conn.hasUnreadyResource() {
 		for i := range r.conn.permissions {
 			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
-				r.conn.hasUnreadyResource = true
+				r.conn.addUnreadyResource(&r.conn.permissions[i])
 				break
 			}
 		}

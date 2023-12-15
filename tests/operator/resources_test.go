@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	v1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -50,6 +51,9 @@ var _ = Describe("Resources", func() {
 		ptopic              *v1alphav1.PulsarTopic
 		ptopicName          string = "test-topic"
 		topicName           string = "persistent://cloud/stage/user"
+		ptopic2             *v1alphav1.PulsarTopic
+		ptopicName2         string = "test-topic2"
+		topicName2          string = "persistent://cloud/stage/user2"
 		ppermission         *v1alphav1.PulsarPermission
 		ppermissionName     string = "test-permission"
 		exampleSchemaDef           = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
@@ -69,6 +73,7 @@ var _ = Describe("Resources", func() {
 		ptenant = utils.MakePulsarTenant(namespaceName, ptenantName, tenantName, pconnName, adminRoles, allowedClusters, lifecyclePolicy)
 		pnamespace = utils.MakePulsarNamespace(namespaceName, pnamespaceName, pulsarNamespaceName, pconnName, lifecyclePolicy)
 		ptopic = utils.MakePulsarTopic(namespaceName, ptopicName, topicName, pconnName, lifecyclePolicy)
+		ptopic2 = utils.MakePulsarTopic(namespaceName, ptopicName2, topicName2, pconnName, lifecyclePolicy)
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
@@ -160,6 +165,8 @@ var _ = Describe("Resources", func() {
 			It("should create the pulsartopic successfully", func() {
 				err := k8sClient.Create(ctx, ptopic)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+				err = k8sClient.Create(ctx, ptopic2)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
 			It("should be ready", func() {
@@ -172,14 +179,10 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should have the schema set", func() {
-				topic := &v1alphav1.PulsarTopic{}
-				tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
-				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
-				topic.Spec.SchemaInfo = &v1alphav1.SchemaInfo{
-					Type:   "JSON",
-					Schema: exampleSchemaDef,
-				}
-				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
+				// set schema for two topics
+				updateTopicSchema(ctx, ptopicName, exampleSchemaDef)
+				updateTopicSchema(ctx, ptopicName2, exampleSchemaDef)
+
 				Eventually(func(g Gomega) {
 					podName := fmt.Sprintf("%s-proxy-0", proxyName)
 					containerName := "pulsar-proxy"
@@ -189,27 +192,69 @@ var _ = Describe("Resources", func() {
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
 					g.Expect(stdout).Should(ContainSubstring("JSON"))
+
+					stdout, _, err = utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic2.Spec.Name)
+					g.Expect(err).Should(Succeed())
+					g.Expect(stdout).Should(Not(BeEmpty()))
+					format.MaxLength = 0
+					g.Expect(stdout).Should(ContainSubstring("JSON"))
 				}, "20s", "100ms").Should(Succeed())
 			})
 
-			It("should delete the schema", func() {
-				topic := &v1alphav1.PulsarTopic{}
-				tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
-				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
-				topic.Spec.SchemaInfo = nil
-				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
-				Eventually(func(g Gomega) {
+			When("enable AlwaysUpdatePulsarResource", func() {
+				BeforeEach(func() {
+					err := feature.DefaultMutableFeatureGate.SetFromMap(map[string]bool{
+						string(feature.AlwaysUpdatePulsarResource): true,
+					})
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
+				AfterEach(func() {
+					err := feature.DefaultMutableFeatureGate.SetFromMap(map[string]bool{
+						string(feature.AlwaysUpdatePulsarResource): false,
+					})
+					Expect(err).ShouldNot(HaveOccurred())
+				})
+
+				It("should always update pulsar resource", func() {
 					podName := fmt.Sprintf("%s-proxy-0", proxyName)
 					containerName := "pulsar-proxy"
-					_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
-					g.Expect(err).ShouldNot(BeNil())
-					g.Expect(stderr).Should(Not(BeEmpty()))
-					format.MaxLength = 0
-					g.Expect(stderr).Should(ContainSubstring("404"))
-				}, "5s", "100ms").Should(Succeed())
-			})
 
+					By("delete topic2 schema with pulsarctl")
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN schemas delete "+ptopic2.Spec.Name)
+					Expect(err).ShouldNot(HaveOccurred())
+					Expect(stdout).Should(ContainSubstring("successfully"))
+
+					By("delete topic1 schema in k8s")
+					topic := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
+					Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+					topic.Spec.SchemaInfo = nil
+					Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
+
+					By("check topic1 schema is deleted in pulsar")
+					Eventually(func(g Gomega) {
+						_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
+						g.Expect(err).ShouldNot(BeNil())
+						g.Expect(stderr).Should(Not(BeEmpty()))
+						format.MaxLength = 0
+						g.Expect(stderr).Should(ContainSubstring("404"))
+					}, "5s", "100ms").Should(Succeed())
+
+					By("check topic2 schema is restored in pulsar")
+					Eventually(func(g Gomega) {
+						stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic2.Spec.Name)
+						g.Expect(err).Should(Succeed())
+						g.Expect(stdout).Should(Not(BeEmpty()))
+						format.MaxLength = 0
+						g.Expect(stdout).Should(ContainSubstring("JSON"))
+					}).Should(Succeed())
+				})
+			})
 		})
 
 		Context("PulsarPermission operation", func() {
@@ -267,3 +312,14 @@ var _ = Describe("Resources", func() {
 	})
 
 })
+
+func updateTopicSchema(ctx context.Context, topicName, exampleSchemaDef string) {
+	topic := &v1alphav1.PulsarTopic{}
+	tns := types.NamespacedName{Namespace: namespaceName, Name: topicName}
+	Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+	topic.Spec.SchemaInfo = &v1alphav1.SchemaInfo{
+		Type:   "JSON",
+		Schema: exampleSchemaDef,
+	}
+	Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
+}

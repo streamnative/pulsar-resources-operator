@@ -56,10 +56,10 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed namespace items", "Count", len(namespaceList.Items))
 
 	r.conn.namespaces = namespaceList.Items
-	if !r.conn.hasUnreadyResource {
+	if !r.conn.hasUnreadyResource() {
 		for i := range r.conn.namespaces {
 			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
-				r.conn.hasUnreadyResource = true
+				r.conn.addUnreadyResource(&r.conn.namespaces[i])
 				break
 			}
 		}
