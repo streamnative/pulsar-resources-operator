@@ -222,9 +222,12 @@ var _ = Describe("Resources", func() {
 					containerName := "pulsar-proxy"
 
 					By("delete topic2 schema with pulsarctl")
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+					stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN schemas delete "+ptopic2.Spec.Name)
 					Expect(err).ShouldNot(HaveOccurred())
+					Expect(stdout).Should(Not(BeEmpty()))
+					format.MaxLength = 0
+					Expect(stderr).Should(BeEmpty())
 					Expect(stdout).Should(ContainSubstring("successfully"))
 
 					By("delete topic1 schema in k8s")

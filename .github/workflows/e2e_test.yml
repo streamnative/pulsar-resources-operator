@@ -28,7 +28,7 @@ jobs:
     env:
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      IMAGE: apachepulsar/pulsar:latest
+      IMAGE: apachepulsar/pulsar:latestt
       WATCH_CERT_MANAGER_CRDS: "false"
     steps:
       - name: clean disk
