@@ -12,15 +12,5 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package feature implements the feature gate
 package feature
-
-import "k8s.io/component-base/featuregate"
-
-const (
-	// AlwaysUpdatePulsarResource is the feature gate for always update pulsar resource
-	AlwaysUpdatePulsarResource featuregate.Feature = "AlwaysUpdatePulsarResource"
-)
-
-var defaultFeatureGates = map[featuregate.Feature]featuregate.FeatureSpec{
-	AlwaysUpdatePulsarResource: {Default: false, PreRelease: featuregate.Alpha},
-}

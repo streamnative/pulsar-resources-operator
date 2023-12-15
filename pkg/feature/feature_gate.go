@@ -35,6 +35,7 @@ func init() {
 	runtime.Must(DefaultMutableFeatureGate.Add(defaultFeatureGates))
 }
 
+// SetFeatureGates sets the provided feature gates.
 func SetFeatureGates() error {
 	m := map[string]bool{}
 	if v, ok := os.LookupEnv("ALWAYS_UPDATE_PULSAR_RESOURCE"); ok {
