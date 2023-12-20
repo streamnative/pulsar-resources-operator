@@ -244,7 +244,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		}
 	} else if conf.ClientCertificatePath != "" {
 		config.AuthPlugin = auth.TLSPluginName
-		config.AuthParams = fmt.Sprintf("{\"tlsCertFile\": %q, \"tlsKeyFile\": %q}", conf.ClientCertificatePath, conf.ClientCertificateKeyPath)
+		config.AuthParams = fmt.Sprintf(`{"tlsCertFile": %q, "tlsKeyFile": %q}`, conf.ClientCertificatePath, conf.ClientCertificateKeyPath)
 
 		adminClient, err = admin.New(config)
 		if err != nil {
