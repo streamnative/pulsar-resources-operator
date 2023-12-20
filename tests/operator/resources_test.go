@@ -17,6 +17,7 @@ package operator_test
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -221,11 +222,11 @@ var _ = Describe("Resources", func() {
 					podName := fmt.Sprintf("%s-proxy-0", proxyName)
 					containerName := "pulsar-proxy"
 
-					By("delete topic2 schema with pulsarctl")
-					stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN schemas delete "+ptopic2.Spec.Name)
+					By("delete topic2 with pulsarctl")
+					_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN "+
+							"topics delete -f --non-partitioned "+ptopic2.Spec.Name)
 					Expect(err).ShouldNot(HaveOccurred())
-					Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
 					Expect(stderr).Should(ContainSubstring("successfully"))
 
@@ -246,14 +247,14 @@ var _ = Describe("Resources", func() {
 						g.Expect(stderr).Should(ContainSubstring("404"))
 					}, "5s", "100ms").Should(Succeed())
 
-					By("check topic2 schema is restored in pulsar")
+					By("check topic2 is restored in pulsar")
 					Eventually(func(g Gomega) {
 						stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic2.Spec.Name)
-						g.Expect(err).Should(Succeed())
-						g.Expect(stdout).Should(Not(BeEmpty()))
+							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN"+
+								" topics get "+strings.Split(ptopic2.Spec.Name, "://")[1])
 						format.MaxLength = 0
-						g.Expect(stdout).Should(ContainSubstring("JSON"))
+						g.Expect(err).Should(Succeed())
+						g.Expect(stdout).Should(ContainSubstring("partition"))
 					}, "20s", "100ms").Should(Succeed())
 				})
 			})
