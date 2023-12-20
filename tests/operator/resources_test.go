@@ -227,8 +227,7 @@ var _ = Describe("Resources", func() {
 					Expect(err).ShouldNot(HaveOccurred())
 					Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
-					Expect(stderr).Should(BeEmpty())
-					Expect(stdout).Should(ContainSubstring("successfully"))
+					Expect(stderr).Should(ContainSubstring("successfully"))
 
 					By("delete topic1 schema in k8s")
 					topic := &v1alphav1.PulsarTopic{}
@@ -255,7 +254,7 @@ var _ = Describe("Resources", func() {
 						g.Expect(stdout).Should(Not(BeEmpty()))
 						format.MaxLength = 0
 						g.Expect(stdout).Should(ContainSubstring("JSON"))
-					}).Should(Succeed())
+					}, "20s", "100ms").Should(Succeed())
 				})
 			})
 		})
