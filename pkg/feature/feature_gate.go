@@ -40,7 +40,7 @@ func SetFeatureGates() error {
 	envFlags := map[string]featuregate.Feature{
 		"ALWAYS_UPDATE_PULSAR_RESOURCE": AlwaysUpdatePulsarResource,
 	}
-	
+
 	m := map[string]bool{}
 	for envVar, feature := range envFlags {
 		if v, ok := os.LookupEnv(envVar); ok {

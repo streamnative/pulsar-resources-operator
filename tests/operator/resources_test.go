@@ -249,12 +249,13 @@ var _ = Describe("Resources", func() {
 
 					By("check topic2 is restored in pulsar")
 					Eventually(func(g Gomega) {
-						stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN"+
 								" topics get "+strings.Split(ptopic2.Spec.Name, "://")[1])
 						format.MaxLength = 0
-						g.Expect(err).Should(Succeed())
+						g.Expect(stderr).Should(BeEmpty())
 						g.Expect(stdout).Should(ContainSubstring("partition"))
+						g.Expect(err).Should(Succeed())
 					}, "20s", "100ms").Should(Succeed())
 				})
 			})
