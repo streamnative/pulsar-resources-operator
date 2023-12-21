@@ -62,6 +62,7 @@ var _ = Describe("Resources", func() {
 	)
 
 	BeforeEach(func() {
+		Expect(feature.SetFeatureGates()).ShouldNot(HaveOccurred())
 		ctx = context.TODO()
 		// use ClusterIP svc when run operator in k8s
 		adminServiceURL := fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName)
@@ -203,50 +204,36 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(Succeed())
 			})
 
-			When("enable AlwaysUpdatePulsarResource", Ordered, func() {
-				BeforeEach(func() {
-					err := feature.DefaultMutableFeatureGate.SetFromMap(map[string]bool{
-						string(feature.AlwaysUpdatePulsarResource): true,
-					})
-					Expect(err).ShouldNot(HaveOccurred())
-				})
+			It("should always update pulsar resource when enable AlwaysUpdatePulsarResource", func() {
+				podName := fmt.Sprintf("%s-proxy-0", proxyName)
+				containerName := "pulsar-proxy"
 
-				AfterEach(func() {
-					err := feature.DefaultMutableFeatureGate.SetFromMap(map[string]bool{
-						string(feature.AlwaysUpdatePulsarResource): false,
-					})
-					Expect(err).ShouldNot(HaveOccurred())
-				})
+				By("delete topic2 with pulsarctl")
+				_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+					"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN "+
+						"topics delete -f --non-partitioned "+ptopic2.Spec.Name)
+				Expect(err).ShouldNot(HaveOccurred())
+				format.MaxLength = 0
+				Expect(stderr).Should(ContainSubstring("successfully"))
 
-				It("should always update pulsar resource", func() {
-					podName := fmt.Sprintf("%s-proxy-0", proxyName)
-					containerName := "pulsar-proxy"
+				By("delete topic1 schema in k8s")
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+				topic.Spec.SchemaInfo = nil
+				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
 
-					By("delete topic2 with pulsarctl")
+				By("check topic1 schema is deleted in pulsar")
+				Eventually(func(g Gomega) {
 					_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN "+
-							"topics delete -f --non-partitioned "+ptopic2.Spec.Name)
-					Expect(err).ShouldNot(HaveOccurred())
+						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
+					g.Expect(err).ShouldNot(BeNil())
+					g.Expect(stderr).Should(Not(BeEmpty()))
 					format.MaxLength = 0
-					Expect(stderr).Should(ContainSubstring("successfully"))
+					g.Expect(stderr).Should(ContainSubstring("404"))
+				}, "5s", "100ms").Should(Succeed())
 
-					By("delete topic1 schema in k8s")
-					topic := &v1alphav1.PulsarTopic{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
-					Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
-					topic.Spec.SchemaInfo = nil
-					Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
-
-					By("check topic1 schema is deleted in pulsar")
-					Eventually(func(g Gomega) {
-						_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
-						g.Expect(err).ShouldNot(BeNil())
-						g.Expect(stderr).Should(Not(BeEmpty()))
-						format.MaxLength = 0
-						g.Expect(stderr).Should(ContainSubstring("404"))
-					}, "5s", "100ms").Should(Succeed())
-
+				if feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 					By("check topic2 is restored in pulsar")
 					Eventually(func(g Gomega) {
 						stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
@@ -257,7 +244,7 @@ var _ = Describe("Resources", func() {
 						g.Expect(stdout).Should(ContainSubstring("partition"))
 						g.Expect(err).Should(Succeed())
 					}, "20s", "100ms").Should(Succeed())
-				})
+				}
 			})
 		})
 
