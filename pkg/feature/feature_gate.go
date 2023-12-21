@@ -37,13 +37,20 @@ func init() {
 
 // SetFeatureGates sets the provided feature gates.
 func SetFeatureGates() error {
-	m := map[string]bool{}
-	if v, ok := os.LookupEnv("ALWAYS_UPDATE_PULSAR_RESOURCE"); ok {
-		val, err := strconv.ParseBool(v)
-		if err != nil {
-			return err
-		}
-		m[string(AlwaysUpdatePulsarResource)] = val
+	envFlags := map[string]featuregate.Feature{
+		"ALWAYS_UPDATE_PULSAR_RESOURCE": AlwaysUpdatePulsarResource,
 	}
+	
+	m := map[string]bool{}
+	for envVar, feature := range envFlags {
+		if v, ok := os.LookupEnv(envVar); ok {
+			val, err := strconv.ParseBool(v)
+			if err != nil {
+				return err
+			}
+			m[string(feature)] = val
+		}
+	}
+
 	return DefaultMutableFeatureGate.SetFromMap(m)
 }
