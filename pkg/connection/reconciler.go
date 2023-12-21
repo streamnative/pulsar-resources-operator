@@ -185,7 +185,7 @@ func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
 
 func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
 	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s:%s:%s", obj.GetNamespace(),
-		obj.GetNamespace(), obj.GetObjectKind().GroupVersionKind().String()))
+		obj.GetName(), obj.GetObjectKind().GroupVersionKind().String()))
 }
 
 // NewErrorCondition create a condition with error

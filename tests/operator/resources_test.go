@@ -162,7 +162,7 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
-		Context("PulsarTopic operation", func() {
+		Context("PulsarTopic operation", Ordered, func() {
 			It("should create the pulsartopic successfully", func() {
 				err := k8sClient.Create(ctx, ptopic)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
@@ -203,7 +203,7 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(Succeed())
 			})
 
-			When("enable AlwaysUpdatePulsarResource", func() {
+			When("enable AlwaysUpdatePulsarResource", Ordered, func() {
 				BeforeEach(func() {
 					err := feature.DefaultMutableFeatureGate.SetFromMap(map[string]bool{
 						string(feature.AlwaysUpdatePulsarResource): true,
