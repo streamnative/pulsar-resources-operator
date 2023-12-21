@@ -20,6 +20,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
@@ -135,7 +136,8 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		}
 	}
 
-	if resourcev1alpha1.IsPulsarResourceReady(topic) {
+	if resourcev1alpha1.IsPulsarResourceReady(topic) &&
+		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		log.V(1).Info("Resource is ready")
 		return nil
 	}
