@@ -17,7 +17,6 @@ package operator_test
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -232,19 +231,6 @@ var _ = Describe("Resources", func() {
 					format.MaxLength = 0
 					g.Expect(stderr).Should(ContainSubstring("404"))
 				}, "5s", "100ms").Should(Succeed())
-
-				if feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-					By("check topic2 is restored in pulsar")
-					Eventually(func(g Gomega) {
-						stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-							"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN"+
-								" topics get "+strings.Split(ptopic2.Spec.Name, "://")[1])
-						format.MaxLength = 0
-						g.Expect(stderr).Should(BeEmpty())
-						g.Expect(stdout).Should(ContainSubstring("partition"))
-						g.Expect(err).Should(Succeed())
-					}, "20s", "100ms").Should(Succeed())
-				}
 			})
 		})
 

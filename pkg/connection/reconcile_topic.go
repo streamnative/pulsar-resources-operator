@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
@@ -142,46 +143,15 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		return nil
 	}
 
-	params := &admin.TopicParams{
-		Persistent:                        topic.Spec.Persistent,
-		Partitions:                        topic.Spec.Partitions,
-		MaxProducers:                      topic.Spec.MaxProducers,
-		MaxConsumers:                      topic.Spec.MaxConsumers,
-		MessageTTL:                        topic.Spec.MessageTTL,
-		MaxUnAckedMessagesPerConsumer:     topic.Spec.MaxUnAckedMessagesPerConsumer,
-		MaxUnAckedMessagesPerSubscription: topic.Spec.MaxUnAckedMessagesPerSubscription,
-		RetentionTime:                     topic.Spec.RetentionTime,
-		RetentionSize:                     topic.Spec.RetentionSize,
-		BacklogQuotaLimitTime:             topic.Spec.BacklogQuotaLimitTime,
-		BacklogQuotaLimitSize:             topic.Spec.BacklogQuotaLimitSize,
-		BacklogQuotaRetentionPolicy:       topic.Spec.BacklogQuotaRetentionPolicy,
-	}
+	params := createTopicParams(topic)
 
 	r.applyDefault(params)
 
 	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
 		for _, ref := range refs {
-			geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
-			namespacedName := types.NamespacedName{
-				Namespace: topic.Namespace,
-				Name:      ref.Name,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+			if err := r.applyGeo(ctx, params, ref, topic); err != nil {
 				return err
 			}
-			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
-			destConnection := &resourcev1alpha1.PulsarConnection{}
-			namespacedName = types.NamespacedName{
-				Name:      geoReplication.Spec.DestinationConnectionRef.Name,
-				Namespace: geoReplication.Namespace,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
-				log.Error(err, "Failed to get destination connection for geo replication")
-				return err
-			}
-
-			params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
-			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
 		}
 
 		log.Info("apply topic with replication clusters", "clusters", params.ReplicationClusters)
@@ -244,6 +214,23 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	return nil
 }
 
+func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
+	return &admin.TopicParams{
+		Persistent:                        topic.Spec.Persistent,
+		Partitions:                        topic.Spec.Partitions,
+		MaxProducers:                      topic.Spec.MaxProducers,
+		MaxConsumers:                      topic.Spec.MaxConsumers,
+		MessageTTL:                        topic.Spec.MessageTTL,
+		MaxUnAckedMessagesPerConsumer:     topic.Spec.MaxUnAckedMessagesPerConsumer,
+		MaxUnAckedMessagesPerSubscription: topic.Spec.MaxUnAckedMessagesPerSubscription,
+		RetentionTime:                     topic.Spec.RetentionTime,
+		RetentionSize:                     topic.Spec.RetentionSize,
+		BacklogQuotaLimitTime:             topic.Spec.BacklogQuotaLimitTime,
+		BacklogQuotaLimitSize:             topic.Spec.BacklogQuotaLimitSize,
+		BacklogQuotaRetentionPolicy:       topic.Spec.BacklogQuotaRetentionPolicy,
+	}
+}
+
 func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {
 	if params.Persistent == nil {
 		// by default create persistent topic
@@ -254,4 +241,28 @@ func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {
 		// by default create non-partitioned topic
 		params.Partitions = pointer.Int32Ptr(0)
 	}
+}
+
+func (r *PulsarTopicReconciler) applyGeo(ctx context.Context, params *admin.TopicParams,
+	ref *corev1.LocalObjectReference, topic *resourcev1alpha1.PulsarTopic) error {
+	geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
+	if err := r.conn.client.Get(ctx, types.NamespacedName{
+		Namespace: topic.Namespace,
+		Name:      ref.Name,
+	}, geoReplication); err != nil {
+		return err
+	}
+	r.log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
+	destConnection := &resourcev1alpha1.PulsarConnection{}
+	if err := r.conn.client.Get(ctx, types.NamespacedName{
+		Name:      geoReplication.Spec.DestinationConnectionRef.Name,
+		Namespace: geoReplication.Namespace,
+	}, destConnection); err != nil {
+		r.log.Error(err, "Failed to get destination connection for geo replication")
+		return err
+	}
+
+	params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
+	params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
+	return nil
 }
