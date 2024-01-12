@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -56,10 +57,10 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed namespace items", "Count", len(namespaceList.Items))
 
 	r.conn.namespaces = namespaceList.Items
-	if !r.conn.hasUnreadyResource {
+	if !r.conn.hasUnreadyResource() {
 		for i := range r.conn.namespaces {
 			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
-				r.conn.hasUnreadyResource = true
+				r.conn.addUnreadyResource(&r.conn.namespaces[i])
 				break
 			}
 		}
@@ -130,7 +131,8 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		}
 	}
 
-	if resourcev1alpha1.IsPulsarResourceReady(namespace) {
+	if resourcev1alpha1.IsPulsarResourceReady(namespace) &&
+		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		log.V(1).Info("Resource is ready")
 		return nil
 	}

@@ -19,6 +19,7 @@ import (
 	"flag"
 	"os"
 
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -73,6 +74,11 @@ func main() {
 		encoderConfig.TimeKey = "timestamp"
 		encoderConfig.EncodeTime = zapcore.RFC3339TimeEncoder
 		encoder = zapcore.NewJSONEncoder(encoderConfig)
+	}
+
+	if err := feature.SetFeatureGates(); err != nil {
+		setupLog.Error(err, "failed to set feature gates")
+		os.Exit(1)
 	}
 
 	ctrl.SetLogger(k8szap.New(k8szap.UseFlagOptions(&opts), k8szap.Encoder(encoder)))

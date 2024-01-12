@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -66,8 +67,8 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 
 	r.conn.geoReplications = geoList.Items
 	// Force the `hasUnreadyResource` to be `true`` to trigger the PulsarConnection reload the auth config
-	if len(geoList.Items) != 0 {
-		r.conn.hasUnreadyResource = true
+	for i := range geoList.Items {
+		r.conn.addUnreadyResource(&geoList.Items[i])
 	}
 
 	r.log.V(1).Info("Observe Done")
@@ -177,7 +178,8 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 	// if destConnection update, let's update the cluster info
 	if !secretUpdated && destConnection.Generation == destConnection.Status.ObservedGeneration &&
-		resourcev1alpha1.IsPulsarResourceReady(geoReplication) {
+		resourcev1alpha1.IsPulsarResourceReady(geoReplication) &&
+		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		// After the previous reconcile succeed, the cluster will be created successfully,
 		// it will update the condition Ready to true, and update the observedGeneration to metadata.generation
 		// If there is no new changes in the object, there is no need to run the left code again.

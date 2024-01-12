@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -55,10 +56,10 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed permissions items", "Count", len(permissionList.Items))
 	r.conn.permissions = permissionList.Items
 
-	if !r.conn.hasUnreadyResource {
+	if !r.conn.hasUnreadyResource() {
 		for i := range r.conn.permissions {
 			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
-				r.conn.hasUnreadyResource = true
+				r.conn.addUnreadyResource(&r.conn.permissions[i])
 				break
 			}
 		}
@@ -114,7 +115,8 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		}
 	}
 
-	if resourcev1alpha1.IsPulsarResourceReady(permission) {
+	if resourcev1alpha1.IsPulsarResourceReady(permission) &&
+		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		r.conn.log.V(1).Info("Resource is ready")
 		return nil
 	}

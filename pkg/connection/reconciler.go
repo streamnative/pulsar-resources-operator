@@ -35,16 +35,16 @@ import (
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
 type PulsarConnectionReconciler struct {
-	connection         *resourcev1alpha1.PulsarConnection
-	log                logr.Logger
-	client             client.Client
-	creator            admin.PulsarAdminCreator
-	tenants            []resourcev1alpha1.PulsarTenant
-	namespaces         []resourcev1alpha1.PulsarNamespace
-	topics             []resourcev1alpha1.PulsarTopic
-	permissions        []resourcev1alpha1.PulsarPermission
-	geoReplications    []resourcev1alpha1.PulsarGeoReplication
-	hasUnreadyResource bool
+	connection       *resourcev1alpha1.PulsarConnection
+	log              logr.Logger
+	client           client.Client
+	creator          admin.PulsarAdminCreator
+	tenants          []resourcev1alpha1.PulsarTenant
+	namespaces       []resourcev1alpha1.PulsarNamespace
+	topics           []resourcev1alpha1.PulsarTopic
+	permissions      []resourcev1alpha1.PulsarPermission
+	geoReplications  []resourcev1alpha1.PulsarGeoReplication
+	unreadyResources []string
 
 	pulsarAdmin admin.PulsarAdmin
 	reconcilers []reconciler.Interface
@@ -56,11 +56,10 @@ var _ reconciler.Interface = &PulsarConnectionReconciler{}
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
 	connection *resourcev1alpha1.PulsarConnection) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
-		log:                log,
-		connection:         connection,
-		creator:            creator,
-		client:             k8sClient,
-		hasUnreadyResource: false,
+		log:        log,
+		connection: connection,
+		creator:    creator,
+		client:     k8sClient,
 	}
 	r.reconcilers = []reconciler.Interface{
 		makeGeoReplicationReconciler(r),
@@ -86,7 +85,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
 
-	if !r.hasUnreadyResource {
+	if !r.hasUnreadyResource() {
 		if !r.connection.DeletionTimestamp.IsZero() {
 			if len(r.tenants) == 0 && len(r.namespaces) == 0 && len(r.topics) == 0 && len(r.geoReplications) == 0 {
 				// keep the connection until all resources has been removed
@@ -112,7 +111,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		r.log.Info("Doesn't have unReady resource")
 		return nil
 	}
-	r.log.Info("have unReady resource")
+	r.log.Info("have unReady resource", "unReadyResources", r.unreadyResources)
 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
@@ -178,6 +177,15 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
+	return len(r.unreadyResources) > 0
+}
+
+func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
+	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s:%s:%s", obj.GetNamespace(),
+		obj.GetName(), obj.GetObjectKind().GroupVersionKind().String()))
 }
 
 // NewErrorCondition create a condition with error

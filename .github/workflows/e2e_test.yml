@@ -24,8 +24,12 @@ on:
 jobs:
   e2e-test:
     name: E2e tests for Operators
+    strategy:
+      matrix:
+        alwaysUpdatePulsar: [ "true", "false" ]
     runs-on: ubuntu-latest
     env:
+      ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       IMAGE: apachepulsar/pulsar:latest
