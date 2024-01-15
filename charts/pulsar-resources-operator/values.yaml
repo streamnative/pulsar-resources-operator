@@ -49,6 +49,10 @@ imagePullSecrets: []
 # If you want to specify secrets, follow this format
 # - name: test
 
+features:
+  # Enable to force always sync k8s resource status to pulsar.
+  alwaysUpdatePulsarResource: false
+
 # -- It will override the value of label `app.kubernetes.io/name` on pod
 nameOverride: ""
 

@@ -68,6 +68,11 @@ spec:
         - --leader-elect
         command:
         - /manager
+        {{- if .Values.features.alwaysUpdatePulsarResource }}
+        env:
+        - name: ALWAYS_UPDATE_PULSAR_RESOURCE
+          value: "true"
+        {{- end }}
         name: manager
         securityContext:
           {{- toYaml .Values.securityContext | nindent 10 }}
