@@ -116,3 +116,6 @@ affinity: {}
 
 # -- The period seconds that pod will be termiated gracefully
 terminationGracePeriodSeconds: 10
+
+extraVolumeMounts: []
+extraVolumes: []
