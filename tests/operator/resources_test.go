@@ -204,12 +204,18 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should increase the partitions successfully", func() {
-				ptopic.Spec.Partitions = pointer.Int32Ptr(2)
-				err := k8sClient.Update(ctx, ptopic)
+				curTopic := &v1alphav1.PulsarTopic{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{
+					Namespace: partitionedTopic.Namespace,
+					Name:      partitionedTopic.Name,
+				}, curTopic)).ShouldNot(HaveOccurred())
+
+				curTopic.Spec.Partitions = pointer.Int32Ptr(2)
+				err := k8sClient.Update(ctx, curTopic)
 				Expect(err).ShouldNot(HaveOccurred())
 				Eventually(func() bool {
 					t := &v1alphav1.PulsarTopic{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
+					tns := types.NamespacedName{Namespace: curTopic.Namespace, Name: curTopic.Name}
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}).Should(BeTrue())
