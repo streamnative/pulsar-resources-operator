@@ -23,8 +23,11 @@ import (
 	"github.com/onsi/gomega/format"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	v1 "k8s.io/api/apps/v1"
+	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/utils/pointer"
 
 	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
@@ -58,6 +61,19 @@ var _ = Describe("Resources", func() {
 		ppermissionName     string = "test-permission"
 		exampleSchemaDef           = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
 			"\"fields\":[{\"name\":\"ID\",\"type\":\"int\"},{\"name\":\"Name\",\"type\":\"string\"}]}"
+		partitionedTopic = &v1alphav1.PulsarTopic{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: namespaceName,
+				Name:      "test-partitioned-topic",
+			},
+			Spec: v1alphav1.PulsarTopicSpec{
+				Name:       "persistent://cloud/stage/partitioned-topic",
+				Partitions: pointer.Int32Ptr(1),
+				ConnectionRef: corev1.LocalObjectReference{
+					Name: pconnName,
+				},
+			},
+		}
 	)
 
 	BeforeEach(func() {
@@ -168,6 +184,8 @@ var _ = Describe("Resources", func() {
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 				err = k8sClient.Create(ctx, ptopic2)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+				err = k8sClient.Create(ctx, partitionedTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
 			It("should be ready", func() {
@@ -177,6 +195,24 @@ var _ = Describe("Resources", func() {
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: partitionedTopic.Namespace, Name: partitionedTopic.Name}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should increase the partitions successfully", func() {
+				ptopic.Spec.Partitions = pointer.Int32Ptr(2)
+				err := k8sClient.Update(ctx, ptopic)
+				Expect(err).ShouldNot(HaveOccurred())
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}).Should(BeTrue())
 			})
 
 			It("should have the schema set", func() {
