@@ -133,6 +133,11 @@ func (p *PulsarAdminClient) ApplyTopic(name string, params *TopicParams) error {
 		return err
 	}
 
+	err = p.adminClient.Topics().Update(*topicName, int(*params.Partitions))
+	if err != nil {
+		return err
+	}
+
 	err = p.applyTopicPolicies(topicName, params)
 	if err != nil {
 		return err
