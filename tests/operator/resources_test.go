@@ -203,24 +203,6 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(BeTrue())
 			})
 
-			It("should increase the partitions successfully", func() {
-				curTopic := &v1alphav1.PulsarTopic{}
-				Expect(k8sClient.Get(ctx, types.NamespacedName{
-					Namespace: partitionedTopic.Namespace,
-					Name:      partitionedTopic.Name,
-				}, curTopic)).ShouldNot(HaveOccurred())
-
-				curTopic.Spec.Partitions = pointer.Int32Ptr(2)
-				err := k8sClient.Update(ctx, curTopic)
-				Expect(err).ShouldNot(HaveOccurred())
-				Eventually(func() bool {
-					t := &v1alphav1.PulsarTopic{}
-					tns := types.NamespacedName{Namespace: curTopic.Namespace, Name: curTopic.Name}
-					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
-					return v1alphav1.IsPulsarResourceReady(t)
-				}).Should(BeTrue())
-			})
-
 			It("should have the schema set", func() {
 				// set schema for two topics
 				updateTopicSchema(ctx, ptopicName, exampleSchemaDef)
@@ -274,6 +256,25 @@ var _ = Describe("Resources", func() {
 					g.Expect(stderr).Should(ContainSubstring("404"))
 				}, "5s", "100ms").Should(Succeed())
 			})
+
+			It("should increase the partitions successfully", func() {
+				curTopic := &v1alphav1.PulsarTopic{}
+				Expect(k8sClient.Get(ctx, types.NamespacedName{
+					Namespace: partitionedTopic.Namespace,
+					Name:      partitionedTopic.Name,
+				}, curTopic)).ShouldNot(HaveOccurred())
+
+				curTopic.Spec.Partitions = pointer.Int32Ptr(2)
+				err := k8sClient.Update(ctx, curTopic)
+				Expect(err).ShouldNot(HaveOccurred())
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: curTopic.Namespace, Name: curTopic.Name}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}).Should(BeTrue())
+			})
+
 		})
 
 		Context("PulsarPermission operation", func() {
