@@ -128,9 +128,18 @@ func (p *PulsarAdminClient) ApplyTopic(name string, params *TopicParams) error {
 	if err != nil {
 		return err
 	}
-	err = p.adminClient.Topics().Create(*topicName, int(*params.Partitions))
-	if err != nil && !IsAlreadyExist(err) {
-		return err
+	partitionNum := int(*params.Partitions)
+	err = p.adminClient.Topics().Create(*topicName, partitionNum)
+	if err != nil {
+		if !IsAlreadyExist(err) {
+			return err
+		}
+		if partitionNum > 0 {
+			// for partitioned topic, allow to change the partition number
+			if err = p.adminClient.Topics().Update(*topicName, partitionNum); err != nil {
+				return err
+			}
+		}
 	}
 
 	err = p.applyTopicPolicies(topicName, params)
