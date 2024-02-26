@@ -115,7 +115,7 @@ Other `PulsarConnection` configuration examples:
         audience: urn:sn:pulsar:sndev:us-west
         key: 
           # Use the keyFile contents as the oauth2 key value
-          value: {"type":"sn_service_account","client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
+          value: {"type":"sn_service_account","client_id":"pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
 
 This table lists specifications available for the `PulsarConnection` resource.
 
