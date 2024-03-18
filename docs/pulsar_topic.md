@@ -70,7 +70,7 @@ test-pulsar-topic123   persistent://test-tenant/testns/topic123   1            1
 You can update the topic policies by editing the topic.yaml, then apply if again. 
 
 Please be noticed:
-1. The field `name`, `persistent` and `partitions` couldn’t be updated.
+1. The field `name`, `persistent` couldn’t be updated.
 
 
 ## Delete PulsarTopic
