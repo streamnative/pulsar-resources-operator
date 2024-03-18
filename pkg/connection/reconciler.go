@@ -108,10 +108,10 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
-		r.log.Info("Doesn't have unReady resource")
+		r.log.Info("Doesn't have unReady resource, skip reconcile")
 		return nil
 	}
-	r.log.Info("have unReady resource", "unReadyResources", r.unreadyResources)
+	r.log.Info("have unready resource, start reconciler", "unReadyResources", r.unreadyResources)
 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
@@ -184,8 +184,8 @@ func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
 }
 
 func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
-	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s:%s:%s", obj.GetNamespace(),
-		obj.GetName(), obj.GetObjectKind().GroupVersionKind().String()))
+	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s/%s/%s", obj.GetNamespace(),
+		obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind))
 }
 
 // NewErrorCondition create a condition with error
