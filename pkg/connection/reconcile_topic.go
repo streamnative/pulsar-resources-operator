@@ -42,7 +42,7 @@ type PulsarTopicReconciler struct {
 func makeTopicsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarTopicReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarTopic"),
+		log:  makeSubResourceLog(r, "PulsarTopic"),
 	}
 }
 
@@ -60,12 +60,9 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed topic items", "Count", len(topicsList.Items))
 
 	r.conn.topics = topicsList.Items
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.topics {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.topics[i]) {
-				r.conn.addUnreadyResource(&r.conn.topics[i])
-				break
-			}
+	for i := range r.conn.topics {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.topics[i]) {
+			r.conn.addUnreadyResource(&r.conn.topics[i])
 		}
 	}
 

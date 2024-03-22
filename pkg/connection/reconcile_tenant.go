@@ -39,7 +39,7 @@ type PulsarTenantReconciler struct {
 func makeTenantsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarTenantReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarTenant"),
+		log:  makeSubResourceLog(r, "PulsarTenant"),
 	}
 }
 

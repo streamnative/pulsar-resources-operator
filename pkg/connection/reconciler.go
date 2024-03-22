@@ -71,6 +71,11 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 	return r
 }
 
+func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger {
+	return r.log.WithName(name).WithValues("connectionRef",
+		fmt.Sprintf("%s/%s", r.connection.Namespace, r.connection.Name))
+}
+
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 	for _, reconciler := range r.reconcilers {
@@ -108,10 +113,10 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
-		r.log.Info("Doesn't have unReady resource, skip reconcile")
+		r.log.Info("Doesn't have associated unready resource, skip reconcile")
 		return nil
 	}
-	r.log.Info("have unready resource, start reconciler", "unReadyResources", r.unreadyResources)
+	r.log.Info("Have associated unready resource, start reconcile", "unReadyResources", r.unreadyResources)
 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
@@ -184,7 +189,14 @@ func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
 }
 
 func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
-	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s/%s/%s", obj.GetNamespace(),
+	if len(r.unreadyResources) == 30 {
+		// avoid add too many unready resources
+		r.unreadyResources = append(r.unreadyResources, "...")
+	}
+	if len(r.unreadyResources) > 30 {
+		return
+	}
+	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s/%s <%s>", obj.GetNamespace(),
 		obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind))
 }
 

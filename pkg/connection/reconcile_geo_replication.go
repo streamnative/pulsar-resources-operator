@@ -41,7 +41,7 @@ type PulsarGeoReplicationReconciler struct {
 func makeGeoReplicationReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarGeoReplicationReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarGeoReplication"),
+		log:  makeSubResourceLog(r, "PulsarGeoReplication"),
 	}
 }
 

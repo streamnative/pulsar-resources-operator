@@ -38,7 +38,7 @@ type PulsarPermissionReconciler struct {
 func makePermissionsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarPermissionReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarPermission"),
+		log:  makeSubResourceLog(r, "PulsarPermission"),
 	}
 }
 
@@ -56,12 +56,9 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed permissions items", "Count", len(permissionList.Items))
 	r.conn.permissions = permissionList.Items
 
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.permissions {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
-				r.conn.addUnreadyResource(&r.conn.permissions[i])
-				break
-			}
+	for i := range r.conn.permissions {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
+			r.conn.addUnreadyResource(&r.conn.permissions[i])
 		}
 	}
 

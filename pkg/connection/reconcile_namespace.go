@@ -39,7 +39,7 @@ type PulsarNamespaceReconciler struct {
 func makeNamespacesReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarNamespaceReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarNamespace"),
+		log:  makeSubResourceLog(r, "PulsarNamespace"),
 	}
 }
 
@@ -57,12 +57,9 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed namespace items", "Count", len(namespaceList.Items))
 
 	r.conn.namespaces = namespaceList.Items
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.namespaces {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
-				r.conn.addUnreadyResource(&r.conn.namespaces[i])
-				break
-			}
+	for i := range r.conn.namespaces {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
+			r.conn.addUnreadyResource(&r.conn.namespaces[i])
 		}
 	}
 
