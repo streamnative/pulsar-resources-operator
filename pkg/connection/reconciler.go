@@ -89,6 +89,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
+	log := r.log.WithValues("namespace", r.connection.Namespace, "name", r.connection.Name)
 
 	if !r.hasUnreadyResource() {
 		if !r.connection.DeletionTimestamp.IsZero() {
@@ -113,10 +114,10 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
-		r.log.Info("Doesn't have associated unready resource, skip reconcile")
+		log.Info("Doesn't have associated unready resource, reconcile completed")
 		return nil
 	}
-	r.log.Info("Have associated unready resource, start reconcile", "unReadyResources", r.unreadyResources)
+	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
@@ -134,12 +135,12 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 	r.pulsarAdmin, err = r.creator(*pulsarConfig)
 	if err != nil {
-		r.log.Error(err, "create pulsar admin", "Namespace", r.connection.Namespace, "Name", r.connection.Name)
+		log.Error(err, "create pulsar admin")
 		return err
 	}
 	defer func() {
 		if err := r.pulsarAdmin.Close(); err != nil {
-			r.log.Error(err, "close pulsar admin", "Namespace", r.connection.Namespace, "Name", r.connection.Name)
+			log.Error(err, "close pulsar admin")
 		}
 		r.pulsarAdmin = nil
 	}()
@@ -196,8 +197,8 @@ func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
 	if len(r.unreadyResources) > 30 {
 		return
 	}
-	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s/%s <%s>", obj.GetNamespace(),
-		obj.GetName(), obj.GetObjectKind().GroupVersionKind().Kind))
+	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s:%s/%s",
+		obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 }
 
 // NewErrorCondition create a condition with error
