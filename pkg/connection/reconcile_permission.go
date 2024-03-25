@@ -38,7 +38,7 @@ type PulsarPermissionReconciler struct {
 func makePermissionsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarPermissionReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarPermission"),
+		log:  makeSubResourceLog(r, "PulsarPermission"),
 	}
 }
 
@@ -56,12 +56,9 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed permissions items", "Count", len(permissionList.Items))
 	r.conn.permissions = permissionList.Items
 
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.permissions {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
-				r.conn.addUnreadyResource(&r.conn.permissions[i])
-				break
-			}
+	for i := range r.conn.permissions {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.permissions[i]) {
+			r.conn.addUnreadyResource(&r.conn.permissions[i])
 		}
 	}
 
@@ -84,8 +81,8 @@ func (r *PulsarPermissionReconciler) Reconcile(ctx context.Context) error {
 // ReconcilePermission move the current state of the toic closer to the desired state
 func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	permission *resourcev1alpha1.PulsarPermission) error {
-	log := r.log.WithValues("pulsarpermission", permission.Name, "namespace", permission.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", permission.Name, "namespace", permission.Namespace)
+	log.Info("Start Reconcile")
 
 	per := GetPermissioner(permission)
 
@@ -100,7 +97,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
-			r.conn.log.Error(err, "Failed to remove finalizer")
+			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
 		return nil
@@ -110,14 +107,14 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, permission); err != nil {
-			r.conn.log.Error(err, "Failed to add finalizer")
+			log.Error(err, "Failed to add finalizer")
 			return err
 		}
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(permission) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		r.conn.log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, permission resource is ready")
 		return nil
 	}
 

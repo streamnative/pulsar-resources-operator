@@ -39,7 +39,7 @@ type PulsarNamespaceReconciler struct {
 func makeNamespacesReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarNamespaceReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarNamespace"),
+		log:  makeSubResourceLog(r, "PulsarNamespace"),
 	}
 }
 
@@ -57,12 +57,9 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed namespace items", "Count", len(namespaceList.Items))
 
 	r.conn.namespaces = namespaceList.Items
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.namespaces {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
-				r.conn.addUnreadyResource(&r.conn.namespaces[i])
-				break
-			}
+	for i := range r.conn.namespaces {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
+			r.conn.addUnreadyResource(&r.conn.namespaces[i])
 		}
 	}
 
@@ -84,8 +81,8 @@ func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
 // ReconcileNamespace move the current state of the toic closer to the desired state
 func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	namespace *resourcev1alpha1.PulsarNamespace) error {
-	log := r.log.WithValues("pulsarnamespace", namespace.Name, "namespace", namespace.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", namespace.Name, "namespace", namespace.Namespace)
+	log.Info("Start Reconcile")
 
 	if !namespace.DeletionTimestamp.IsZero() {
 		log.Info("Deleting namespace", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
@@ -133,7 +130,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 
 	if resourcev1alpha1.IsPulsarResourceReady(namespace) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, namespace resource is ready")
 		return nil
 	}
 

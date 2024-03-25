@@ -42,7 +42,7 @@ type PulsarTopicReconciler struct {
 func makeTopicsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarTopicReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarTopic"),
+		log:  makeSubResourceLog(r, "PulsarTopic"),
 	}
 }
 
@@ -60,12 +60,9 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed topic items", "Count", len(topicsList.Items))
 
 	r.conn.topics = topicsList.Items
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.topics {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.topics[i]) {
-				r.conn.addUnreadyResource(&r.conn.topics[i])
-				break
-			}
+	for i := range r.conn.topics {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.topics[i]) {
+			r.conn.addUnreadyResource(&r.conn.topics[i])
 		}
 	}
 
@@ -87,8 +84,8 @@ func (r *PulsarTopicReconciler) Reconcile(ctx context.Context) error {
 // ReconcileTopic move the current state of the toic closer to the desired state
 func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	topic *resourcev1alpha1.PulsarTopic) error {
-	log := r.log.WithValues("pulsartopic", topic.Name, "namespace", topic.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", topic.Name, "namespace", topic.Namespace)
+	log.Info("Start Reconcile")
 
 	if !topic.DeletionTimestamp.IsZero() {
 		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
@@ -139,7 +136,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 
 	if resourcev1alpha1.IsPulsarResourceReady(topic) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, topic resource is ready")
 		return nil
 	}
 
@@ -150,6 +147,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
 		for _, ref := range refs {
 			if err := r.applyGeo(ctx, params, ref, topic); err != nil {
+				log.Error(err, "Failed to get destination connection for geo replication")
 				return err
 			}
 		}
@@ -258,7 +256,6 @@ func (r *PulsarTopicReconciler) applyGeo(ctx context.Context, params *admin.Topi
 		Name:      geoReplication.Spec.DestinationConnectionRef.Name,
 		Namespace: geoReplication.Namespace,
 	}, destConnection); err != nil {
-		r.log.Error(err, "Failed to get destination connection for geo replication")
 		return err
 	}
 

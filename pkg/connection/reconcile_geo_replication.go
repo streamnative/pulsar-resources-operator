@@ -41,7 +41,7 @@ type PulsarGeoReplicationReconciler struct {
 func makeGeoReplicationReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarGeoReplicationReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarGeoReplication"),
+		log:  makeSubResourceLog(r, "PulsarGeoReplication"),
 	}
 }
 
@@ -111,8 +111,8 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 // ReconcileGeoReplication handle the current state of the geo replication to the desired state
 func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	geoReplication *resourcev1alpha1.PulsarGeoReplication) error {
-	log := r.log.WithValues("pulsargeoreplication", geoReplication.Name, "namespace", geoReplication.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", geoReplication.Name, "namespace", geoReplication.Namespace)
+	log.Info("Start Reconcile")
 
 	destConnection := &resourcev1alpha1.PulsarConnection{}
 	namespacedName := types.NamespacedName{
@@ -183,7 +183,8 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		// After the previous reconcile succeed, the cluster will be created successfully,
 		// it will update the condition Ready to true, and update the observedGeneration to metadata.generation
 		// If there is no new changes in the object, there is no need to run the left code again.
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, geo resource is ready",
+			"Name", geoReplication.Name, "Namespace", geoReplication.Namespace)
 		return nil
 	}
 
@@ -208,6 +209,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			}
 			return err
 		}
+		log.Info("Update cluster success", "ClusterName", destClusterName)
 	} else {
 		// Create Clusters
 		log.V(1).Info("Create cluster", "ClusterName", destClusterName, "params", clusterParam)
@@ -220,11 +222,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			}
 			return err
 		}
+		log.Info("Create cluster success", "ClusterName", destClusterName)
 	}
 
 	destConnection.Status.ObservedGeneration = destConnection.Generation
 	meta.SetStatusCondition(&destConnection.Status.Conditions, *NewReadyCondition(destConnection.Generation))
 	if err := r.conn.client.Status().Update(ctx, destConnection); err != nil {
+		log.Error(err, "Failed to update the destination connection status")
 		return err
 	}
 
