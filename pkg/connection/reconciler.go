@@ -89,7 +89,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
-	log := r.log.WithValues("namespace", r.connection.Namespace, "name", r.connection.Name)
+	log := r.log.WithValues("name", r.connection.Name, "namespace", r.connection.Namespace)
 
 	if !r.hasUnreadyResource() {
 		if !r.connection.DeletionTimestamp.IsZero() {
