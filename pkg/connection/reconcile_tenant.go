@@ -39,7 +39,7 @@ type PulsarTenantReconciler struct {
 func makeTenantsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarTenantReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarTenant"),
+		log:  makeSubResourceLog(r, "PulsarTenant"),
 	}
 }
 
@@ -81,8 +81,8 @@ func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
 // ReconcileTenant move the current state of the toic closer to the desired state
 func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	tenant *resourcev1alpha1.PulsarTenant) error {
-	log := r.log.WithValues("pulsartenant", tenant.Name, "namespace", tenant.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", tenant.Name, "namespace", tenant.Namespace)
+	log.Info("Start Reconcile")
 
 	if !tenant.DeletionTimestamp.IsZero() {
 		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
@@ -112,7 +112,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 
 	if resourcev1alpha1.IsPulsarResourceReady(tenant) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, tenant resource is ready")
 		return nil
 	}
 

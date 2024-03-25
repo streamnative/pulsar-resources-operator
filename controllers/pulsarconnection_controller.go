@@ -81,8 +81,6 @@ type PulsarConnectionReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.0/pkg/reconcile
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("pulsarconnection", req.NamespacedName)
-
 	pulsarConnection := &resourcev1alpha1.PulsarConnection{}
 	if err := r.Get(ctx, req.NamespacedName, pulsarConnection); err != nil {
 		if apierrors.IsNotFound(err) {
@@ -92,11 +90,12 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}
 
 	if !utils.IsManaged(pulsarConnection) {
-		log.Info("Skipping the object not managed by the controller", "Name", req.String())
+		r.Log.Info("Skipping the object not managed by the controller",
+			"name", req.Name, "namespace", req.Namespace)
 		return reconcile.Result{}, nil
 	}
 
-	reconciler := connection.MakeReconciler(log, r.Client, r.PulsarAdminCreator, pulsarConnection)
+	reconciler := connection.MakeReconciler(r.Log, r.Client, r.PulsarAdminCreator, pulsarConnection)
 	if err := reconciler.Observe(ctx); err != nil {
 		return ctrl.Result{}, err
 	}
