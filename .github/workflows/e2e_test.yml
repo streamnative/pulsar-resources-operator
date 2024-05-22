@@ -21,6 +21,7 @@ on:
     paths:
       - '**.go'
       - '.github/workflows/e2e_test.yml'
+      - 'go.mod'
 jobs:
   e2e-test:
     name: E2e tests for Operators
