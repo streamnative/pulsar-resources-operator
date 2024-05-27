@@ -91,7 +91,7 @@ jobs:
           export IMG=$IMAGE_TAG_BASE_QUAY:v$VERSION
           export IMG_LATEST=$IMAGE_TAG_BASE_QUAY:latest
           make docker-build-redhat
-          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.6.11/preflight-linux-amd64 -O preflight
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.9.6/preflight-linux-amd64 -O preflight
           chmod +x preflight
           mv preflight /usr/local/bin
           preflight -v
