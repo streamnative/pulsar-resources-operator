@@ -27,7 +27,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.20-alpine as builder
+FROM golang:1.21.10-alpine3.20 as builder
 
 ARG ACCESS_TOKEN="none"
 
