@@ -27,7 +27,7 @@ jobs:
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       IMAGE_TAG_BASE: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
-      IMAGE_TAG_BASE_QUAY: quay.io/streamnativeio/pulsar-resources-operator
+      IMAGE_TAG_BASE_QUAY: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
       REDHAT_API_KEY: ${{ secrets.REDHAT_API_KEY }}
     outputs:
       version: ${{ steps.redhat.outputs.version }}
