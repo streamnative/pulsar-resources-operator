@@ -8,11 +8,10 @@
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
-  name: test-pulsar-connection
-  namespace: test
+  name: pulsar-connection
 spec:
-  adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
-  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  adminServiceURL: http://pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650
   clusterName: pulsar-cluster
 ```
 
@@ -24,11 +23,11 @@ Other `PulsarConnection` configuration examples:
   apiVersion: resource.streamnative.io/v1alpha1
   kind: PulsarConnection
   metadata:
-    name: test-tls-pulsar-connection
+    name: pulsar-connection-tls
     namespace: test
   spec:
-    adminServiceSecureURL: https://test-pulsar-sn-platform-broker.test.svc.cluster.local:443
-    brokerServiceSecureURL: pulsar+ssl//test-pulsar-sn-platform-broker.test.svc.cluster.local:6651
+    adminServiceSecureURL: https://pulsar-sn-platform-broker.test.svc.cluster.local:443
+    brokerServiceSecureURL: pulsar+ssl//pulsar-sn-platform-broker.test.svc.cluster.local:6651
     clusterName: pulsar-cluster
   ```
 
@@ -38,11 +37,10 @@ Other `PulsarConnection` configuration examples:
   apiVersion: resource.streamnative.io/v1alpha1
   kind: PulsarConnection
   metadata:
-    name: test-tls-pulsar-connection
-    namespace: test
+    name: pulsar-connection-jwt-secret
   spec:
-    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
-    brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+    adminServiceURL: http://pulsar-sn-platform-broker.test.svc.cluster.local:8080
+    brokerServiceURL: pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650
     clusterName: pulsar-cluster
     authentication:
       token:
@@ -59,11 +57,10 @@ Other `PulsarConnection` configuration examples:
   apiVersion: resource.streamnative.io/v1alpha1
   kind: PulsarConnection
   metadata:
-    name: test-tls-pulsar-connection
-    namespace: test
+    name: pulsar-connection-jwt-value
   spec:
-    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
-    brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+    adminServiceURL: http://pulsar-sn-platform-broker.test.svc.cluster.local:8080
+    brokerServiceURL: pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650
     clusterName: pulsar-cluster
     authentication:
       token:
@@ -72,16 +69,19 @@ Other `PulsarConnection` configuration examples:
   ```
 
 * OAuth2 authentication with Secret
+  
+  ```bash
+  kubectl create secret generic oauth2-key-file --from-file=sndev-admin.json
+  ```
 
   ```yaml
   apiVersion: resource.streamnative.io/v1alpha1
   kind: PulsarConnection
   metadata:
-    name: test-tls-pulsar-connection
-    namespace: test
+    name: pulsar-connection-oauth2-secret
   spec:
-    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
-    brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+    adminServiceURL: http://pulsar-sn-platform-broker.test.svc.cluster.local:8080
+    brokerServiceURL: pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650
     clusterName: pulsar-cluster
     authentication:
       oauth2:
@@ -89,11 +89,9 @@ Other `PulsarConnection` configuration examples:
         clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
         audience: urn:sn:pulsar:sndev:us-west
         key: 
-          # Use a Kubernetes Secret to store the OAuth2 keyFile contents. https://kubernetes.io/docs/concepts/configuration/secret/
-          # Secret data field have to be base64-encoded strings. https://kubernetes.io/docs/concepts/configuration/secret/#restriction-names-data
           secretRef:
-            name: key-file-secret
-            key: key-file
+            name: oauth2-key-file
+            key: sndev-admin.json
   ```
 
 * OAuth2 authentication with value
@@ -102,39 +100,28 @@ Other `PulsarConnection` configuration examples:
   apiVersion: resource.streamnative.io/v1alpha1
   kind: PulsarConnection
   metadata:
-    name: test-tls-pulsar-connection
-    namespace: test
+    name: pulsar-connection-oauth2-values
   spec:
-    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
-    brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
+    adminServiceURL: http://pulsar-sn-platform-broker.test.svc.cluster.local:8080
+    brokerServiceURL: pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650
     clusterName: pulsar-cluster
     authentication:
       oauth2:
         issuerEndpoint: https://auth.streamnative.cloud
         clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
         audience: urn:sn:pulsar:sndev:us-west
+        # Use the keyFile contents as the oauth2 key value
         key: 
-          # Use the keyFile contents as the oauth2 key value
-          value: {"type":"sn_service_account","client_id":"pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ","client_secret":"60J6fo81j-h69_vVvYvqFOHs2NfOyy6pqGqwIhTgnxpQ7O3UH8PdCbVtdm_SJjIf","client_email":"contoso@sndev.auth.streamnative.cloud","issuer_url":"https://auth.streamnative.cloud"}
-
-* TLS authentication
-
-  ```yaml
-  apiVersion: resource.streamnative.io/v1alpha1
-  kind: PulsarConnection
-  metadata:
-    name: test-tls-auth-pulsar-connection
-    namespace: test
-  spec:
-    adminServiceURL: http://test-pulsar-sn-platform-broker.test.svc.cluster.local:8080
-  brokerServiceURL: pulsar://test-pulsar-sn-platform-broker.test.svc.cluster.local:6650
-  clusterName: pulsar-cluster
-  authentication:
-    tls:
-      clientCertificateKeyPath: /certs/tls.key
-      clientCertificatePath: /certs/tls.crt
-  ```
-
+          value: |
+          {
+            "type":"sn_service_account",
+            "client_id":"pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ",
+            "grant_type":"client_credentials",
+            "client_secret":"zZr_adLu4LuPrN5FwYWH7was07-23nlzBgK50l_Rfsl2hjzUXKHsbKt",
+            "issuer_url":"https://auth.streamnative.cloud"
+          }
+ ```
+ 
 This table lists specifications available for the `PulsarConnection` resource.
 
 | Option | Description | Required or not |
