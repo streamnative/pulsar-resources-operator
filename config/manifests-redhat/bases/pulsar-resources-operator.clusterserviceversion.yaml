@@ -43,11 +43,12 @@ metadata:
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
+    operators.openshift.io/valid-subscription: '["StreamNative Private Cloud License"]'
     containerImage: ""
     createdAt: "2022-02-07T18:21:00Z"
-    description: Authored by StreamNative, this Pulsar Resources Operator manages the Pulsar resources automatically 
+    description: Authored by StreamNative, this Pulsar Resources Operator manages the Pulsar resources automatically 
      using the manifest on Kubernetes.
-    support: StreamNative
+    support: StreamNative, Inc.
   name: pulsar-resources-operator.v0.0.0
   namespace: placeholder
 spec:

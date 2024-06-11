@@ -29,6 +29,7 @@ metadata:
     features.operators.openshift.io/cnf: "false"
     features.operators.openshift.io/cni: "false"
     features.operators.openshift.io/csi: "false"
+    operators.openshift.io/valid-subscription: '["StreamNative Private Cloud License"]'
   name: pulsar-resources-operator.v0.0.0
   namespace: placeholder
 spec:
