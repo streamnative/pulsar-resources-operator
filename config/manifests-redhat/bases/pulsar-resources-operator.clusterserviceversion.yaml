@@ -31,13 +31,24 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: '[]'
-    capabilities: Full Lifecycle
+    capabilities: Auto Pilot
     categories: Streaming & Messaging
+    features.operators.openshift.io/disconnected: "true"
+    features.operators.openshift.io/fips-compliant: "false"
+    features.operators.openshift.io/proxy-aware: "false"
+    features.operators.openshift.io/tls-profiles: "false"
+    features.operators.openshift.io/token-auth-aws: "false"
+    features.operators.openshift.io/token-auth-azure: "false"
+    features.operators.openshift.io/token-auth-gcp: "false"
+    features.operators.openshift.io/cnf: "false"
+    features.operators.openshift.io/cni: "false"
+    features.operators.openshift.io/csi: "false"
+    operators.openshift.io/valid-subscription: '["StreamNative Private Cloud License"]'
     containerImage: ""
     createdAt: "2022-02-07T18:21:00Z"
-    description: Authored by StreamNative, this Pulsar Resources Operator manages the Pulsar resources automatically 
+    description: Authored by StreamNative, this Pulsar Resources Operator manages the Pulsar resources automatically 
      using the manifest on Kubernetes.
-    support: StreamNative
+    support: StreamNative, Inc.
   name: pulsar-resources-operator.v0.0.0
   namespace: placeholder
 spec:
