@@ -28,6 +28,7 @@ jobs:
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       IMAGE_TAG_BASE: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
       IMAGE_TAG_BASE_QUAY: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
+      IMAGE_TAG_BASE_DOCKERHUB: docker.io/streamnative/pulsar-resources-operator
       REDHAT_API_KEY: ${{ secrets.REDHAT_API_KEY }}
     outputs:
       version: ${{ steps.redhat.outputs.version }}
@@ -68,8 +69,16 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_DOCKER_USERNAME }}
           password: ${{ secrets.QUAY_DOCKER_PASSWORD }}
-
-      - name: Build
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      # CloudSmith: To be removed after we fully migrate to DockerHub
+      - name: Build image and Publish to CloudSmith
         run: |
           _tag_version=${GITHUB_REF##*/}
           export VERSION=${_tag_version/v/}
@@ -77,9 +86,17 @@ jobs:
           export IMG=$IMAGE_TAG_BASE:v$VERSION
           make docker-build
           make docker-push
-          make bundle
-          make bundle-build
-          make bundle-push
+      
+      - name: Build image and Publish to DockerHub
+        id: dockerhub
+        run: |
+          _tag_version=${GITHUB_REF##*/}
+          export VERSION=${_tag_version/v/}
+          echo $_tag_version, $VERSION
+          export IMG=$IMAGE_TAG_BASE_DOCKERHUB:v$VERSION
+          echo "resource-operator-image=$IMG" >> $GITHUB_OUTPUT
+          make docker-build
+          make docker-push
 
       - name: Build image And Publish to Quay
         id: redhat
