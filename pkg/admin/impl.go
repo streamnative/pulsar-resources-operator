@@ -671,9 +671,9 @@ func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description
 		return err
 	}
 	if changed {
-		err = p.adminClient.Packages().UpdateMetadata(packageName.GetCompleteName(), description, contact, properties)
+		err = p.adminClient.Packages().UpdateMetadata(packageName.String(), description, contact, properties)
 	} else {
-		err = p.adminClient.Packages().Upload(packageName.GetCompleteName(), filePath, description, contact, properties)
+		err = p.adminClient.Packages().Upload(packageName.String(), filePath, description, contact, properties)
 	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
