@@ -77,14 +77,11 @@ var _ = Describe("Resources", func() {
 		ppackage          *v1alphav1.PulsarPackage
 		ppackageurl       string = "source://public/default/test-source@latest"
 		pfuncName         string = "test-func"
-		pfuncClassName    string = "org.apache.pulsar.functions.api.examples.ExclamationFunction"
 		pfunc             *v1alphav1.PulsarFunction
 		psinkpackageurl   string = "builtin://data-generator"
 		psink             *v1alphav1.PulsarSink
-		psinkClassName    string = "org.apache.pulsar.io.datagenerator.DataGeneratorPrintSink"
 		psource           *v1alphav1.PulsarSource
 		psourcepackageurl string = "builtin://data-generator"
-		psourceClassName  string = "org.apache.pulsar.io.datagenerator.DataGeneratorSource"
 	)
 
 	BeforeEach(func() {
@@ -309,7 +306,7 @@ var _ = Describe("Resources", func() {
 
 		Context("PulsarFunction & PulsarPackage operation", func() {
 			It("should create the pulsarpackage successfully", func() {
-				err := k8sClient.Create(ctx, pfuncpackage)
+				err := k8sClient.Create(ctx, ppackage)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
