@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.21.10-alpine3.20 as builder
+FROM golang:1.22.4-alpine3.20 as builder
 
 ARG ACCESS_TOKEN="none"
 
@@ -28,6 +28,7 @@ COPY go.sum go.sum
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
 RUN go mod download
+RUN go mod tidy
 
 # Copy the go source
 COPY main.go main.go
