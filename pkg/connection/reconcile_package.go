@@ -167,7 +167,7 @@ func createTmpFile(fileURL string) (string, error) {
 	defer tmpFile.Close()
 
 	// make HTTP GET request to the URL
-	resp, err := http.Get(fileURL) //nolint
+	resp, err := http.Get(fileURL) //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to download file: %v", err)
 	}
