@@ -45,6 +45,32 @@ rules:
 - apiGroups:
   - resource.streamnative.io
   resources:
+  - pulsarfunctions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarfunctions/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarfunctions/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
   - pulsargeoreplications
   verbs:
   - create
@@ -97,84 +123,6 @@ rules:
 - apiGroups:
   - resource.streamnative.io
   resources:
-  - pulsarpermissions
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsarpermissions/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsarpermissions/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsartenants
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsartenants/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsartenants/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsartopics
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsartopics/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
-  - pulsartopics/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - resource.streamnative.io
-  resources:
   - pulsarpackages
   verbs:
   - create
@@ -201,7 +149,7 @@ rules:
 - apiGroups:
   - resource.streamnative.io
   resources:
-  - pulsarfunctions
+  - pulsarpermissions
   verbs:
   - create
   - delete
@@ -213,13 +161,13 @@ rules:
 - apiGroups:
   - resource.streamnative.io
   resources:
-  - pulsarfunctions/finalizers
+  - pulsarpermissions/finalizers
   verbs:
   - update
 - apiGroups:
   - resource.streamnative.io
   resources:
-  - pulsarfunctions/status
+  - pulsarpermissions/status
   verbs:
   - get
   - patch
@@ -272,6 +220,58 @@ rules:
   - resource.streamnative.io
   resources:
   - pulsarsources/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartenants
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartenants/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartenants/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartopics
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartopics/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsartopics/status
   verbs:
   - get
   - patch

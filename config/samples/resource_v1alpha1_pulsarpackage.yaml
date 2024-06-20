@@ -12,13 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-## Append samples you want in your CSV to this file as resources ##
-resources:
-- resource_v1alpha1_pulsarconnection.yaml
-- resource_v1alpha1_pulsarnamespace.yaml
-- resource_v1alpha1_pulsartenant.yaml
-- resource_v1alpha1_pulsartopic.yaml
-- resource_v1alpha1_pulsarpermission.yaml
-- resource_v1alpha1_pulsargeoreplication.yaml
-- resource_v1alpha1_pulsarpackage.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarPackage
+metadata:
+  name: pulsarpackage-sample
+  namespace: pulsar
+spec:
+  packageURL: function://public/default/test@latest
+  fileURL: https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.10.4/connectors/pulsar-io-file-2.10.4.nar
+  connectionRef:
+    name: pulsarconnection-sample
+  description: "test"
+  lifecyclePolicy: CleanUpAfterDeletion
