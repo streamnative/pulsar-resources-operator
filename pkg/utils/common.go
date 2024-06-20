@@ -14,6 +14,7 @@
 
 package utils
 
+// ConvertMap converts a map[string]string to a map[string]interface{}
 func ConvertMap(input map[string]string) map[string]interface{} {
 	// Create an empty map[string]interface{}
 	result := make(map[string]interface{})

@@ -129,34 +129,42 @@ func (d *DummyPulsarAdmin) CheckClusterExist(name string) (bool, error) {
 	return true, nil
 }
 
+// DeletePulsarPackage is a fake implements of DeletePulsarPackage
 func (d *DummyPulsarAdmin) DeletePulsarPackage(packageURL string) error {
 	return nil
 }
 
+// ApplyPulsarPackage is a fake implements of ApplyPulsarPackage
 func (d *DummyPulsarAdmin) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error {
 	return nil
 }
 
+// DeletePulsarFunction is a fake implements of DeletePulsarFunction
 func (d *DummyPulsarAdmin) DeletePulsarFunction(tenant, namespace, name string) error {
 	return nil
 }
 
+// ApplyPulsarFunction is a fake implements of ApplyPulsarFunction
 func (d *DummyPulsarAdmin) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error {
 	return nil
 }
 
+// DeletePulsarSink is a fake implements of DeletePulsarSink
 func (d *DummyPulsarAdmin) DeletePulsarSink(tenant, namespace, name string) error {
 	return nil
 }
 
+// ApplyPulsarSink is a fake implements of ApplyPulsarSink
 func (d *DummyPulsarAdmin) ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error {
 	return nil
 }
 
+// DeletePulsarSource is a fake implements of DeletePulsarSource
 func (d *DummyPulsarAdmin) DeletePulsarSource(tenant, namespace, name string) error {
 	return nil
 }
 
+// ApplyPulsarSource is a fake implements of ApplyPulsarSource
 func (d *DummyPulsarAdmin) ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error {
 	return nil
 }

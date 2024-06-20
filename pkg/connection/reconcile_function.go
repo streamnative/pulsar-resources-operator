@@ -18,13 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
+
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
-	"strings"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -119,24 +120,24 @@ func (r *PulsarFunctionReconciler) ReconcileFunction(ctx context.Context, pulsar
 		return nil
 	}
 
-	packageUrl := ""
+	packageURL := ""
 	if instance.Spec.Jar != nil && instance.Spec.Jar.URL != "" {
-		packageUrl = validateUrl(instance.Spec.Jar.URL)
+		packageURL = validateURL(instance.Spec.Jar.URL)
 	} else if instance.Spec.Py != nil && instance.Spec.Py.URL != "" {
-		packageUrl = validateUrl(instance.Spec.Py.URL)
+		packageURL = validateURL(instance.Spec.Py.URL)
 	} else if instance.Spec.Go != nil && instance.Spec.Go.URL != "" {
-		packageUrl = validateUrl(instance.Spec.Go.URL)
+		packageURL = validateURL(instance.Spec.Go.URL)
 	} else {
 		err := errors.New("no package URL found")
 		return err
 	}
 
-	if packageUrl == "" {
+	if packageURL == "" {
 		err := errors.New("invalid package URL")
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarFunction(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name, packageUrl, &instance.Spec, instance.Status.ObservedGeneration > 1); err != nil {
+	if err := pulsarAdmin.ApplyPulsarFunction(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name, packageURL, &instance.Spec, instance.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, err.Error()))
 		log.Error(err, "Failed to apply function")
 		if err := r.conn.client.Status().Update(ctx, instance); err != nil {
@@ -155,12 +156,12 @@ func (r *PulsarFunctionReconciler) ReconcileFunction(ctx context.Context, pulsar
 	return nil
 }
 
-func validateUrl(url string) string {
+func validateURL(url string) string {
 	if url == "" {
 		return ""
 	}
-	lowerUrl := strings.ToLower(url)
-	if strings.HasPrefix(lowerUrl, "http://") || strings.HasPrefix(lowerUrl, "https://") || strings.HasPrefix(lowerUrl, "builtin://") {
+	lowerURL := strings.ToLower(url)
+	if strings.HasPrefix(lowerURL, "http://") || strings.HasPrefix(lowerURL, "https://") || strings.HasPrefix(lowerURL, "builtin://") {
 		return url
 	}
 	if _, err := utils.GetPackageName(url); err != nil {

@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -123,14 +124,14 @@ func (r *PulsarSinkReconciler) ReconcileSink(ctx context.Context, pulsarAdmin ad
 		return err
 	}
 
-	packageUrl := validateUrl(sink.Spec.Archive.URL)
+	packageURL := validateURL(sink.Spec.Archive.URL)
 
-	if packageUrl == "" {
+	if packageURL == "" {
 		err := errors.New("invalid package URL")
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageUrl, &sink.Spec, sink.Status.ObservedGeneration > 1); err != nil {
+	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageURL, &sink.Spec, sink.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&sink.Status.Conditions, *NewErrorCondition(sink.Generation, err.Error()))
 		log.Error(err, "Failed to apply sink")
 		if err := r.conn.client.Status().Update(ctx, sink); err != nil {
@@ -147,5 +148,4 @@ func (r *PulsarSinkReconciler) ReconcileSink(ctx context.Context, pulsarAdmin ad
 		return err
 	}
 	return nil
-
 }

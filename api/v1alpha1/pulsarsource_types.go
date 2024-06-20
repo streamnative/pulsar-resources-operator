@@ -107,6 +107,7 @@ type PulsarSourceSpec struct {
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
+// BatchSourceConfig represents the batch source config of the PulsarSource
 type BatchSourceConfig struct {
 	DiscoveryTriggererClassName string `json:"discoveryTriggererClassName" yaml:"discoveryTriggererClassName"`
 

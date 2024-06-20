@@ -16,8 +16,9 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -89,20 +90,23 @@ func IsPulsarResourceReady(instance reconciler.Object) bool {
 		meta.IsStatusConditionTrue(conditions, ConditionReady)
 }
 
+// PackageContentRef indicates the package content reference
 type PackageContentRef struct {
 	// +optional
-	//persistentVolumeTemplate *corev1.PersistentVolumeClaim `json:"persistentVolumeTemplate,omitempty"`
+	// persistentVolumeTemplate *corev1.PersistentVolumeClaim `json:"persistentVolumeTemplate,omitempty"`
 
 	// +optional
 	URL string `json:"url,omitempty"`
 }
 
+// Resources indicates the resources for the pulsar functions and connectors
 type Resources struct {
 	CPU  float64 `json:"cpu"`
 	Disk int64   `json:"disk"`
 	RAM  int64   `json:"ram"`
 }
 
+// ProducerConfig represents the configuration for the producer of the pulsar functions and connectors
 type ProducerConfig struct {
 	MaxPendingMessages                 int `json:"maxPendingMessages" yaml:"maxPendingMessages"`
 	MaxPendingMessagesAcrossPartitions int `json:"maxPendingMessagesAcrossPartitions" yaml:"maxPendingMessagesAcrossPartitions"`
@@ -113,6 +117,7 @@ type ProducerConfig struct {
 	CompressionType         string        `json:"compressionType" yaml:"compressionType"`
 }
 
+// ConsumerConfig represents the configuration for the consumer of the pulsar functions and connectors
 type ConsumerConfig struct {
 	SchemaType         string            `json:"schemaType,omitempty" yaml:"schemaType"`
 	SerdeClassName     string            `json:"serdeClassName,omitempty" yaml:"serdeClassName"`
@@ -124,6 +129,7 @@ type ConsumerConfig struct {
 	PoolMessages       bool              `json:"poolMessages,omitempty" yaml:"poolMessages"`
 }
 
+// CryptoConfig represents the configuration for the crypto of the pulsar functions and connectors
 type CryptoConfig struct {
 	CryptoKeyReaderClassName string            `json:"cryptoKeyReaderClassName" yaml:"cryptoKeyReaderClassName"`
 	CryptoKeyReaderConfig    map[string]string `json:"cryptoKeyReaderConfig" yaml:"cryptoKeyReaderConfig"`

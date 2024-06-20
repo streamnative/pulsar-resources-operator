@@ -17,9 +17,10 @@ package admin
 import (
 	"errors"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"os"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
@@ -657,10 +658,12 @@ func (p *PulsarAdminClient) CheckClusterExist(name string) (bool, error) {
 	return true, nil
 }
 
+// DeletePulsarPackage deletes a pulsar package
 func (p *PulsarAdminClient) DeletePulsarPackage(packageURL string) error {
 	return p.adminClient.Packages().Delete(packageURL)
 }
 
+// ApplyPulsarPackage creates or updates a pulsar package
 func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error {
 	packageName, err := utils.GetPackageName(packageURL)
 	if err != nil {
@@ -680,12 +683,13 @@ func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description
 	return nil
 }
 
+// DeletePulsarFunction deletes a pulsar function
 func (p *PulsarAdminClient) DeletePulsarFunction(tenant, namespace, name string) error {
 	return p.adminClient.Functions().DeleteFunction(tenant, namespace, name)
 }
 
+// ApplyPulsarFunction creates or updates a pulsar function
 func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error {
-
 	functionConfig := utils.FunctionConfig{
 		Tenant:                         tenant,
 		Namespace:                      namespace,
@@ -837,10 +841,12 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 	return nil
 }
 
+// DeletePulsarSink deletes a pulsar sink
 func (p *PulsarAdminClient) DeletePulsarSink(tenant, namespace, name string) error {
 	return p.adminClient.Sinks().DeleteSink(tenant, namespace, name)
 }
 
+// ApplyPulsarSink creates or updates a pulsar sink
 func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error {
 	sinkConfig := utils.SinkConfig{
 		Tenant:    tenant,
@@ -947,10 +953,12 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 	return nil
 }
 
+// DeletePulsarSource deletes a pulsar source
 func (p *PulsarAdminClient) DeletePulsarSource(tenant, namespace, name string) error {
 	return p.adminClient.Sources().DeleteSource(tenant, namespace, name)
 }
 
+// ApplyPulsarSource creates or updates a pulsar source
 func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error {
 	sourceConfig := utils.SourceConfig{
 		Tenant:    tenant,

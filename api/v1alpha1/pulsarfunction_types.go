@@ -203,6 +203,7 @@ type PulsarFunctionSpec struct {
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
+// WindowConfig defines the window config of the function
 type WindowConfig struct {
 	WindowLengthCount             *int    `json:"windowLengthCount" yaml:"windowLengthCount"`
 	WindowLengthDurationMs        *int64  `json:"windowLengthDurationMs" yaml:"windowLengthDurationMs"`

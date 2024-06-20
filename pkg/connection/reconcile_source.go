@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -123,14 +124,14 @@ func (r *PulsarSourceReconciler) ReconcileSource(ctx context.Context, pulsarAdmi
 		return err
 	}
 
-	packageUrl := validateUrl(source.Spec.Archive.URL)
+	packageURL := validateURL(source.Spec.Archive.URL)
 
-	if packageUrl == "" {
+	if packageURL == "" {
 		err := errors.New("invalid package URL")
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarSource(source.Spec.Tenant, source.Spec.Namespace, source.Spec.Name, packageUrl, &source.Spec, source.Status.ObservedGeneration > 1); err != nil {
+	if err := pulsarAdmin.ApplyPulsarSource(source.Spec.Tenant, source.Spec.Namespace, source.Spec.Name, packageURL, &source.Spec, source.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&source.Status.Conditions, *NewErrorCondition(source.Generation, err.Error()))
 		log.Error(err, "Failed to apply source")
 		if err := r.conn.client.Status().Update(ctx, source); err != nil {
@@ -147,5 +148,4 @@ func (r *PulsarSourceReconciler) ReconcileSource(ctx context.Context, pulsarAdmi
 		return err
 	}
 	return nil
-
 }

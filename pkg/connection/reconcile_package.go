@@ -18,13 +18,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/go-logr/logr"
-	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"io"
-	"k8s.io/apimachinery/pkg/api/meta"
 	"net/http"
 	"net/url"
 	"os"
+
+	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
+	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -81,7 +82,7 @@ func (r *PulsarPackageReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
-// ReconcileTopic move the current state of the toic closer to the desired state
+// ReconcilePackage move the current state of the package closer to the desired state
 func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	pkg *resourcev1alpha1.PulsarPackage) error {
 	log := r.log.WithValues("name", pkg.Name, "namespace", pkg.Namespace)
@@ -147,14 +148,14 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	return nil
 }
 
-func createTmpFile(fileUrl string) (string, error) {
+func createTmpFile(fileURL string) (string, error) {
 	// get the file from the url and save it to a temp file
-	parsedUrl, err := url.Parse(fileUrl)
+	parsedURL, err := url.Parse(fileURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %v", err)
 	}
 
-	if parsedUrl.Scheme != "http" && parsedUrl.Scheme != "https" {
+	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
 		return "", errors.New("URL must be HTTP or HTTPS")
 	}
 
@@ -166,7 +167,7 @@ func createTmpFile(fileUrl string) (string, error) {
 	defer tmpFile.Close()
 
 	// make HTTP GET request to the URL
-	resp, err := http.Get(fileUrl)
+	resp, err := http.Get(fileURL)
 	if err != nil {
 		return "", fmt.Errorf("failed to download file: %v", err)
 	}
