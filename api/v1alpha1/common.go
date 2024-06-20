@@ -16,7 +16,6 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
 
@@ -90,14 +89,9 @@ func IsPulsarResourceReady(instance reconciler.Object) bool {
 		meta.IsStatusConditionTrue(conditions, ConditionReady)
 }
 
-type FileRef struct {
-	ConfigMapRef *corev1.LocalObjectReference `json:"configMapRef"`
-	Key          string                       `json:"key"`
-}
-
 type PackageContentRef struct {
 	// +optional
-	FileRef *FileRef `json:"fileRef,omitempty"`
+	//persistentVolumeTemplate *corev1.PersistentVolumeClaim `json:"persistentVolumeTemplate,omitempty"`
 
 	// +optional
 	URL string `json:"url,omitempty"`

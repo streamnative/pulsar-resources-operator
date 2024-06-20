@@ -28,10 +28,12 @@ type PulsarPackageSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// PackageURL is the Pulsar Package URL, in format of type://tenant/namespace/package@version
+	// +kubebuilder:validation:Required
 	PackageURL string `json:"packageURL"`
 
-	// FileRef is the reference to the PulsarPackage File content
-	FileRef FileRef `json:"fileRef"`
+	// FileURL is the download-able URL of the package from http or https protocol
+	// +kubebuilder:validation:Required
+	FileURL string `json:"fileURL"`
 
 	// ConnectionRef is the reference to the PulsarConnection resource
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
@@ -44,6 +46,10 @@ type PulsarPackageSpec struct {
 
 	// +optional
 	Properties map[string]string `json:"properties,omitempty"`
+
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
 // PulsarPackageStatus defines the observed state of PulsarPackage

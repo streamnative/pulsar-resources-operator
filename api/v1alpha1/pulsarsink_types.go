@@ -157,6 +157,10 @@ type PulsarSinkSpec struct {
 
 	// ConnectionRef is the reference to the PulsarConnection resource
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
 // PulsarSinkStatus defines the observed state of PulsarSink

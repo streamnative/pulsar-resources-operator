@@ -99,10 +99,6 @@ type PulsarFunctionSpec struct {
 	// +optional
 	OutputTypeClassName string `json:"outputTypeClassName,omitempty"`
 
-	// Runtime is the runtime of the function
-	// +optional
-	Runtime string `json:"runtime,omitempty"`
-
 	// DeadLetterTopic is the dead letter topic of the function
 	// +optional
 	DeadLetterTopic string `json:"deadLetterTopic,omitempty"`
@@ -110,10 +106,6 @@ type PulsarFunctionSpec struct {
 	// SubName is the sub name of the function
 	// +optional
 	SubName string `json:"subName,omitempty"`
-
-	// FQFN is the FQFN of the function
-	// +optional
-	FQFN string `json:"fqfn,omitempty"`
 
 	// Jar is the jar of the function
 	// +optional
@@ -126,10 +118,6 @@ type PulsarFunctionSpec struct {
 	// Go is the go of the function
 	// +optional
 	Go *PackageContentRef `json:"go,omitempty"`
-
-	// FunctionType is the function type of the function
-	// +optional
-	FunctionType string `json:"functionType,omitempty"`
 
 	// RuntimeFlags is the runtime flags of the function
 	// +optional
@@ -209,6 +197,10 @@ type PulsarFunctionSpec struct {
 
 	// ConnectionRef is the reference to the PulsarConnection resource
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
 type WindowConfig struct {

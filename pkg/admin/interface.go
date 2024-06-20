@@ -151,6 +151,30 @@ type PulsarAdmin interface {
 
 	// CheckClusterExist check wether the cluster is created or not
 	CheckClusterExist(name string) (bool, error)
+
+	// DeletePulsarPackage delete pulsar package
+	DeletePulsarPackage(packageURL string) error
+
+	// ApplyPulsarPackage apply pulsar package
+	ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string) error
+
+	// DeletePulsarFunction delete pulsar function
+	DeletePulsarFunction(tenant, namespace, name string) error
+
+	// ApplyPulsarFunction apply pulsar function
+	ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec) error
+
+	// DeletePulsarSink delete pulsar sink
+	DeletePulsarSink(tenant, namespace, name string) error
+
+	// ApplyPulsarSink apply pulsar sink
+	ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec) error
+
+	// DeletePulsarSource delete pulsar source
+	DeletePulsarSource(tenant, namespace, name string) error
+
+	// ApplyPulsarSource apply pulsar source
+	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec) error
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config
