@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -774,8 +775,12 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 	}
 
 	if param.Resources != nil {
+		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
+		if err != nil {
+			return err
+		}
 		functionConfig.Resources = &utils.Resources{
-			CPU:  param.Resources.CPU,
+			CPU:  s,
 			RAM:  param.Resources.RAM,
 			Disk: param.Resources.Disk,
 		}
@@ -885,8 +890,12 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 	}
 
 	if param.Resources != nil {
+		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
+		if err != nil {
+			return err
+		}
 		sinkConfig.Resources = &utils.Resources{
-			CPU:  param.Resources.CPU,
+			CPU:  s,
 			RAM:  param.Resources.RAM,
 			Disk: param.Resources.Disk,
 		}
@@ -981,8 +990,12 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 	}
 
 	if param.Resources != nil {
+		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
+		if err != nil {
+			return err
+		}
 		sourceConfig.Resources = &utils.Resources{
-			CPU:  param.Resources.CPU,
+			CPU:  s,
 			RAM:  param.Resources.RAM,
 			Disk: param.Resources.Disk,
 		}

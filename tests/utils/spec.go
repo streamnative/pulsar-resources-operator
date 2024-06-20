@@ -206,7 +206,7 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 			AutoAck:                    true,
 			ClassName:                  "org.apache.pulsar.io.datagenerator.DataGeneratorPrintSink",
 			Resources: &v1alpha1.Resources{
-				CPU:  1,
+				CPU:  "1",
 				RAM:  2048,
 				Disk: 102400,
 			},
@@ -248,7 +248,7 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 				"sleepBetweenMessages": 1000,
 			}},
 			Resources: &v1alpha1.Resources{
-				CPU:  1,
+				CPU:  "1",
 				RAM:  512,
 				Disk: 102400,
 			},

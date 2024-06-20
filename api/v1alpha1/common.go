@@ -101,9 +101,9 @@ type PackageContentRef struct {
 
 // Resources indicates the resources for the pulsar functions and connectors
 type Resources struct {
-	CPU  float64 `json:"cpu"`
-	Disk int64   `json:"disk"`
-	RAM  int64   `json:"ram"`
+	CPU  string `json:"cpu"`
+	Disk int64  `json:"disk"`
+	RAM  int64  `json:"ram"`
 }
 
 // ProducerConfig represents the configuration for the producer of the pulsar functions and connectors
