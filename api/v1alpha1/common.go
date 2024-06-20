@@ -159,8 +159,7 @@ func (c *Config) MarshalJSON() ([]byte, error) {
 // UnmarshalJSON implements the Unmarshaler interface.
 func (c *Config) UnmarshalJSON(data []byte) error {
 	var out map[string]interface{}
-	err := json.Unmarshal(data, &out)
-	if err != nil {
+	if err := json.Unmarshal(data, &out); err != nil {
 		return err
 	}
 	c.Data = out
