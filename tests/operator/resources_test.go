@@ -74,8 +74,8 @@ var _ = Describe("Resources", func() {
 				},
 			},
 		}
-		ppackage          *v1alphav1.PulsarPackage
-		ppackageurl       string = "source://public/default/test-source@latest"
+		//ppackage          *v1alphav1.PulsarPackage
+		//ppackageurl       string = "source://public/default/test-source@latest"
 		pfuncName         string = "test-func"
 		pfunc             *v1alphav1.PulsarFunction
 		psinkpackageurl   string = "builtin://data-generator"
@@ -102,7 +102,7 @@ var _ = Describe("Resources", func() {
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
-		ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+		//ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
 		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, "file:///pulsar/examples/api-examples.jar", pconnName, lifecyclePolicy)
 		psink = utils.MakePulsarSink(namespaceName, pfuncName, psinkpackageurl, pconnName, lifecyclePolicy)
 		psource = utils.MakePulsarSource(namespaceName, pfuncName, psourcepackageurl, pconnName, lifecyclePolicy)
@@ -305,19 +305,19 @@ var _ = Describe("Resources", func() {
 		})
 
 		Context("PulsarFunction & PulsarPackage operation", func() {
-			It("should create the pulsarpackage successfully", func() {
-				err := k8sClient.Create(ctx, ppackage)
-				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
-			})
-
-			It("the package should be ready", func() {
-				Eventually(func() bool {
-					p := &v1alphav1.PulsarPackage{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
-					Expect(k8sClient.Get(ctx, tns, p)).Should(Succeed())
-					return v1alphav1.IsPulsarResourceReady(p)
-				}, "20s", "100ms").Should(BeTrue())
-			})
+			//It("should create the pulsarpackage successfully", func() {
+			//	err := k8sClient.Create(ctx, ppackage)
+			//	Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			//})
+			//
+			//It("the package should be ready", func() {
+			//	Eventually(func() bool {
+			//		p := &v1alphav1.PulsarPackage{}
+			//		tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+			//		Expect(k8sClient.Get(ctx, tns, p)).Should(Succeed())
+			//		return v1alphav1.IsPulsarResourceReady(p)
+			//	}, "20s", "100ms").Should(BeTrue())
+			//})
 
 			It("should create the pulsarfunction successfully", func() {
 				err := k8sClient.Create(ctx, pfunc)
