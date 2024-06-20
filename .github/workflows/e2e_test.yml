@@ -87,7 +87,7 @@ jobs:
           kubectl create namespace sn-system
           helm install pulsar-operators --namespace sn-system streamnative/pulsar-operator
           helm install cert-manager --namespace sn-system jetstack/cert-manager --set installCRDs=true
-          helm install test streamnative/sn-platform --version 1.2.38 --set initialize=true,auth.authentication.enabled=false,auth.authorization.enabled=false,components.toolset=false,components.streamnative_console=false,components.vault=false,components.pulsar_detector=false,monitoring.prometheus=false,monitoring.grafana=false,monitoring.node_exporter=false,monitoring.alert_manager=false,zookeeper.resources.requests.cpu=10m,bookkeeper.resources.requests.cpu=10m,broker.resources.requests.cpu=10m,proxy.resources.requests.cpu=10m
+          helm install test streamnative/sn-platform --version 1.2.38 --set initialize=true,auth.authentication.enabled=false,auth.authorization.enabled=false,components.toolset=false,components.streamnative_console=false,components.vault=false,components.pulsar_detector=false,monitoring.prometheus=false,monitoring.grafana=false,monitoring.node_exporter=false,monitoring.alert_manager=false,zookeeper.resources.requests.cpu=10m,bookkeeper.resources.requests.cpu=10m,broker.resources.requests.cpu=10m,proxy.resources.requests.cpu=10m,broker.functionmesh=false
           df -h
 
       - name: Build and Setup Pulsar Resources Operator
