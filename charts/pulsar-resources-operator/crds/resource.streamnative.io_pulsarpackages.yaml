@@ -4,19 +4,19 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  name: pulsartenants.resource.streamnative.io
+  name: pulsarpackages.resource.streamnative.io
 spec:
   group: resource.streamnative.io
   names:
     categories:
     - pulsar
     - pulsarres
-    kind: PulsarTenant
-    listKind: PulsarTenantList
-    plural: pulsartenants
+    kind: PulsarPackage
+    listKind: PulsarPackageList
+    plural: pulsarpackages
     shortNames:
-    - ptenant
-    singular: pulsartenant
+    - ppackage
+    singular: pulsarpackage
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
@@ -35,7 +35,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarTenant is the Schema for the pulsartenants API
+        description: PulsarPackage is the Schema for the pulsar package management
+          service's package API
         properties:
           apiVersion:
             description: |-
@@ -55,16 +56,8 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarTenantSpec defines the desired state of PulsarTenant
+            description: PulsarPackageSpec defines the desired state of PulsarPackage
             properties:
-              adminRoles:
-                items:
-                  type: string
-                type: array
-              allowedClusters:
-                items:
-                  type: string
-                type: array
               connectionRef:
                 description: ConnectionRef is the reference to the PulsarConnection
                   resource
@@ -77,23 +70,14 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
-              geoReplicationRefs:
-                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
-                  resource
-                items:
-                  description: |-
-                    LocalObjectReference contains enough information to let you locate the
-                    referenced object inside the same namespace.
-                  properties:
-                    name:
-                      description: |-
-                        Name of the referent.
-                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                        TODO: Add other useful fields. apiVersion, kind, uid?
-                      type: string
-                  type: object
-                  x-kubernetes-map-type: atomic
-                type: array
+              contact:
+                type: string
+              description:
+                type: string
+              fileURL:
+                description: FileURL is the download-able URL of the package from
+                  http or https protocol
+                type: string
               lifecyclePolicy:
                 description: |-
                   PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
@@ -103,15 +87,20 @@ spec:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
-              name:
-                description: Name is the tenant name
+              packageURL:
+                description: PackageURL is the Pulsar Package URL, in format of type://tenant/namespace/package@version
                 type: string
+              properties:
+                additionalProperties:
+                  type: string
+                type: object
             required:
             - connectionRef
-            - name
+            - fileURL
+            - packageURL
             type: object
           status:
-            description: PulsarTenantStatus defines the observed state of PulsarTenant
+            description: PulsarPackageStatus defines the observed state of PulsarPackage
             properties:
               conditions:
                 description: Represents the observations of a connection's current
