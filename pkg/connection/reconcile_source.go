@@ -130,7 +130,7 @@ func (r *PulsarSourceReconciler) ReconcileSource(ctx context.Context, pulsarAdmi
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarSource(source.Spec.Tenant, source.Spec.Namespace, source.Spec.Name, packageUrl, &source.Spec); err != nil {
+	if err := pulsarAdmin.ApplyPulsarSource(source.Spec.Tenant, source.Spec.Namespace, source.Spec.Name, packageUrl, &source.Spec, source.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&source.Status.Conditions, *NewErrorCondition(source.Generation, err.Error()))
 		log.Error(err, "Failed to apply source")
 		if err := r.conn.client.Status().Update(ctx, source); err != nil {

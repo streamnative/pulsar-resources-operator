@@ -128,3 +128,35 @@ func (d *DummyPulsarAdmin) DeleteCluster(name string) error {
 func (d *DummyPulsarAdmin) CheckClusterExist(name string) (bool, error) {
 	return true, nil
 }
+
+func (d *DummyPulsarAdmin) DeletePulsarPackage(packageURL string) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) DeletePulsarFunction(tenant, namespace, name string) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) DeletePulsarSink(tenant, namespace, name string) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) DeletePulsarSource(tenant, namespace, name string) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error {
+	return nil
+}

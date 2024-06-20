@@ -130,7 +130,7 @@ func (r *PulsarSinkReconciler) ReconcileSink(ctx context.Context, pulsarAdmin ad
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageUrl, &sink.Spec); err != nil {
+	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageUrl, &sink.Spec, sink.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&sink.Status.Conditions, *NewErrorCondition(sink.Generation, err.Error()))
 		log.Error(err, "Failed to apply sink")
 		if err := r.conn.client.Status().Update(ctx, sink); err != nil {

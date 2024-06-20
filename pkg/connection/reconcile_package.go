@@ -128,7 +128,7 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	}
 	defer os.Remove(filePath)
 
-	if err := pulsarAdmin.ApplyPulsarPackage(pkg.Spec.PackageURL, filePath, pkg.Spec.Description, pkg.Spec.Contact, pkg.Spec.Properties); err != nil {
+	if err := pulsarAdmin.ApplyPulsarPackage(pkg.Spec.PackageURL, filePath, pkg.Spec.Description, pkg.Spec.Contact, pkg.Spec.Properties, pkg.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, err.Error()))
 		log.Error(err, "Failed to apply package")
 		if err := r.conn.client.Status().Update(ctx, pkg); err != nil {

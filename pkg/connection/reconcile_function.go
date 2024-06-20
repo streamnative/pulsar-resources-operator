@@ -136,7 +136,7 @@ func (r *PulsarFunctionReconciler) ReconcileFunction(ctx context.Context, pulsar
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarFunction(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name, packageUrl, &instance.Spec); err != nil {
+	if err := pulsarAdmin.ApplyPulsarFunction(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name, packageUrl, &instance.Spec, instance.Status.ObservedGeneration > 1); err != nil {
 		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, err.Error()))
 		log.Error(err, "Failed to apply function")
 		if err := r.conn.client.Status().Update(ctx, instance); err != nil {

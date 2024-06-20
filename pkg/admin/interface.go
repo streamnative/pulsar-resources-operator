@@ -156,25 +156,25 @@ type PulsarAdmin interface {
 	DeletePulsarPackage(packageURL string) error
 
 	// ApplyPulsarPackage apply pulsar package
-	ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string) error
+	ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error
 
 	// DeletePulsarFunction delete pulsar function
 	DeletePulsarFunction(tenant, namespace, name string) error
 
 	// ApplyPulsarFunction apply pulsar function
-	ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec) error
+	ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error
 
 	// DeletePulsarSink delete pulsar sink
 	DeletePulsarSink(tenant, namespace, name string) error
 
 	// ApplyPulsarSink apply pulsar sink
-	ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec) error
+	ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error
 
 	// DeletePulsarSource delete pulsar source
 	DeletePulsarSource(tenant, namespace, name string) error
 
 	// ApplyPulsarSource apply pulsar source
-	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec) error
+	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

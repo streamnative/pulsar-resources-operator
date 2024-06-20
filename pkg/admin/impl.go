@@ -661,12 +661,16 @@ func (p *PulsarAdminClient) DeletePulsarPackage(packageURL string) error {
 	return p.adminClient.Packages().Delete(packageURL)
 }
 
-func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string) error {
+func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error {
 	packageName, err := utils.GetPackageName(packageURL)
 	if err != nil {
 		return err
 	}
-	err = p.adminClient.Packages().Upload(packageName.GetCompleteName(), filePath, description, contact, properties)
+	if changed {
+		err = p.adminClient.Packages().UpdateMetadata(packageName.GetCompleteName(), description, contact, properties)
+	} else {
+		err = p.adminClient.Packages().Upload(packageName.GetCompleteName(), filePath, description, contact, properties)
+	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
 			return err
@@ -680,7 +684,7 @@ func (p *PulsarAdminClient) DeletePulsarFunction(tenant, namespace, name string)
 	return p.adminClient.Functions().DeleteFunction(tenant, namespace, name)
 }
 
-func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec) error {
+func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error {
 
 	functionConfig := utils.FunctionConfig{
 		Tenant:                         tenant,
@@ -818,7 +822,12 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 		return errors.New("FunctionConfig need to specify Jar, Py, or Go package URL")
 	}
 
-	err := p.adminClient.Functions().CreateFuncWithURL(&functionConfig, packageURL)
+	var err error
+	if changed {
+		err = p.adminClient.Functions().UpdateFunctionWithURL(&functionConfig, packageURL, nil)
+	} else {
+		err = p.adminClient.Functions().CreateFuncWithURL(&functionConfig, packageURL)
+	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
 			return err
@@ -832,7 +841,7 @@ func (p *PulsarAdminClient) DeletePulsarSink(tenant, namespace, name string) err
 	return p.adminClient.Sinks().DeleteSink(tenant, namespace, name)
 }
 
-func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec) error {
+func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error {
 	sinkConfig := utils.SinkConfig{
 		Tenant:    tenant,
 		Namespace: namespace,
@@ -923,7 +932,12 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		sinkConfig.Secrets = secrets
 	}
 
-	err := p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
+	var err error
+	if changed {
+		err = p.adminClient.Sinks().UpdateSinkWithURL(&sinkConfig, packageURL, nil)
+	} else {
+		err = p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
+	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
 			return err
@@ -937,7 +951,7 @@ func (p *PulsarAdminClient) DeletePulsarSource(tenant, namespace, name string) e
 	return p.adminClient.Sources().DeleteSource(tenant, namespace, name)
 }
 
-func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec) error {
+func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error {
 	sourceConfig := utils.SourceConfig{
 		Tenant:    tenant,
 		Namespace: namespace,
@@ -1012,7 +1026,13 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 		sourceConfig.CustomRuntimeOptions = string(jByte)
 	}
 
-	err := p.adminClient.Sources().CreateSourceWithURL(&sourceConfig, packageURL)
+	var err error
+
+	if changed {
+		err = p.adminClient.Sources().UpdateSourceWithURL(&sourceConfig, packageURL, nil)
+	} else {
+		err = p.adminClient.Sources().CreateSourceWithURL(&sourceConfig, packageURL)
+	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
 			return err
