@@ -188,6 +188,18 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarGeoReplication{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarPackage{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarFunction{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSink{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSource{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(r.findSecretsForConnection),
 			builder.WithPredicates(secretPredicate())).
