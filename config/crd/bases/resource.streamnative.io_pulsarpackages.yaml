@@ -18,21 +18,39 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  name: pulsargeoreplications.resource.streamnative.io
+  name: pulsarpackages.resource.streamnative.io
 spec:
   group: resource.streamnative.io
   names:
-    kind: PulsarGeoReplication
-    listKind: PulsarGeoReplicationList
-    plural: pulsargeoreplications
-    singular: pulsargeoreplication
+    categories:
+    - pulsar
+    - pulsarres
+    kind: PulsarPackage
+    listKind: PulsarPackageList
+    plural: pulsarpackages
+    shortNames:
+    - ppackage
+    singular: pulsarpackage
   scope: Namespaced
   versions:
-  - name: v1alpha1
+  - additionalPrinterColumns:
+    - jsonPath: .spec.name
+      name: RESOURCE_NAME
+      type: string
+    - jsonPath: .metadata.generation
+      name: GENERATION
+      type: string
+    - jsonPath: .status.observedGeneration
+      name: OBSERVED_GENERATION
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="Ready")].status
+      name: READY
+      type: string
+    name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarGeoReplication is the Schema for the pulsargeoreplications
-          API
+        description: PulsarPackage is the Schema for the pulsar package management
+          service's package API
         properties:
           apiVersion:
             description: |-
@@ -52,10 +70,11 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarGeoReplicationSpec defines the desired state of PulsarGeoReplication
+            description: PulsarPackageSpec defines the desired state of PulsarPackage
             properties:
               connectionRef:
-                description: ConnectionRef is the reference to the source PulsarConnection
+                description: ConnectionRef is the reference to the PulsarConnection
+                  resource
                 properties:
                   name:
                     description: |-
@@ -65,18 +84,14 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
-              destinationConnectionRef:
-                description: DestinationConnectionRef is the connection reference
-                  to the remote cluster
-                properties:
-                  name:
-                    description: |-
-                      Name of the referent.
-                      More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
-                      TODO: Add other useful fields. apiVersion, kind, uid?
-                    type: string
-                type: object
-                x-kubernetes-map-type: atomic
+              contact:
+                type: string
+              description:
+                type: string
+              fileURL:
+                description: FileURL is the download-able URL of the package from
+                  http or https protocol
+                type: string
               lifecyclePolicy:
                 description: |-
                   PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
@@ -86,17 +101,24 @@ spec:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
+              packageURL:
+                description: PackageURL is the Pulsar Package URL, in format of type://tenant/namespace/package@version
+                type: string
+              properties:
+                additionalProperties:
+                  type: string
+                type: object
             required:
             - connectionRef
-            - destinationConnectionRef
+            - fileURL
+            - packageURL
             type: object
           status:
-            description: PulsarGeoReplicationStatus defines the observed state of
-              PulsarGeoReplication
+            description: PulsarPackageStatus defines the observed state of PulsarPackage
             properties:
               conditions:
-                description: Conditions Represents the observations of a connection's
-                  current state.
+                description: Represents the observations of a connection's current
+                  state.
                 items:
                   description: |-
                     Condition contains details for one aspect of the current state of this API Resource.

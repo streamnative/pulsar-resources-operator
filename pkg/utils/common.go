@@ -40,8 +40,7 @@ func ConvertJSONToMapStringInterface(raw *apiextensionsv1.JSON) (map[string]inte
 	result := make(map[string]interface{})
 
 	// Unmarshal the raw JSON object into the result map
-	err := json.Unmarshal(raw.Raw, &result)
-	if err != nil {
+	if err := json.Unmarshal(raw.Raw, &result); err != nil {
 		return nil, err
 	}
 
