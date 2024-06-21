@@ -955,9 +955,18 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 
 	var err error
 	if changed {
-		err = p.adminClient.Sinks().UpdateSinkWithURL(&sinkConfig, packageURL, nil)
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sinks().UpdateSink(&sinkConfig, packageURL, nil)
+		} else {
+			err = p.adminClient.Sinks().UpdateSinkWithURL(&sinkConfig, packageURL, nil)
+		}
 	} else {
-		err = p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sinks().CreateSink(&sinkConfig, packageURL)
+		} else {
+			err = p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
+		}
+
 	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
@@ -1066,9 +1075,17 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 	var err error
 
 	if changed {
-		err = p.adminClient.Sources().UpdateSourceWithURL(&sourceConfig, packageURL, nil)
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sources().UpdateSource(&sourceConfig, packageURL, nil)
+		} else {
+			err = p.adminClient.Sources().UpdateSourceWithURL(&sourceConfig, packageURL, nil)
+		}
 	} else {
-		err = p.adminClient.Sources().CreateSourceWithURL(&sourceConfig, packageURL)
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sources().CreateSource(&sourceConfig, packageURL)
+		} else {
+			err = p.adminClient.Sources().CreateSourceWithURL(&sourceConfig, packageURL)
+		}
 	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
