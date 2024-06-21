@@ -208,7 +208,7 @@ var _ = Describe("Resources", func() {
 
 				Eventually(func(g Gomega) {
 					podName := fmt.Sprintf("%s-broker-0", brokerName)
-					containerName := "pulsar-broker"
+					containerName := fmt.Sprintf("%s-broker", brokerName)
 					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
 					g.Expect(err).Should(Succeed())
@@ -227,7 +227,7 @@ var _ = Describe("Resources", func() {
 
 			It("should always update pulsar resource when enable AlwaysUpdatePulsarResource", func() {
 				podName := fmt.Sprintf("%s-broker-0", brokerName)
-				containerName := "pulsar-broker"
+				containerName := fmt.Sprintf("%s-broker", brokerName)
 
 				By("delete topic2 with pulsarctl")
 				_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
