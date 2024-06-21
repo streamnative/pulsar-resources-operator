@@ -54,6 +54,9 @@ IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
+# Architecture to use envtest with
+ENVTEST_ARCH ?= amd64
+
 KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
 
 REDHAT_SCAN_REGITRY ?= "quay.io"
@@ -112,7 +115,7 @@ vet: ## Run go vet against code.
 
 .PHONY: test
 test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --arch=${ENVTEST_ARCH} -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
