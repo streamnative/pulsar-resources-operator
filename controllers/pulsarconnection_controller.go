@@ -107,6 +107,8 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return reconcile.Result{}, nil
 	}
 
+	r.Log.Info("Reconciling PulsarConnection", "name", pulsarConnection.Name, "namespace", pulsarConnection.Namespace)
+
 	reconciler := connection.MakeReconciler(r.Log, r.Client, r.PulsarAdminCreator, pulsarConnection)
 	if err := reconciler.Observe(ctx); err != nil {
 		return ctrl.Result{}, err

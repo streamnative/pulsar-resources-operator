@@ -56,6 +56,7 @@ func (r *PulsarSourceReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed sources items", "Count", len(sourcesList.Items))
 
 	r.conn.sources = sourcesList.Items
+	r.log.Info("Observe sources", "Count", len(r.conn.sources))
 	for i := range r.conn.sources {
 		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.sources[i]) {
 			r.conn.addUnreadyResource(&r.conn.sources[i])
@@ -72,6 +73,7 @@ func (r *PulsarSourceReconciler) Reconcile(ctx context.Context) error {
 
 	for i := range r.conn.sources {
 		source := &r.conn.sources[i]
+		r.log.Info("Reconcile source", "Name", source.Name)
 		if err := r.ReconcileSource(ctx, r.conn.pulsarAdminV3, source); err != nil {
 			return fmt.Errorf("reconcile source [%s] [%w]", source.Name, err)
 		}

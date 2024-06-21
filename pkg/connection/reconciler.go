@@ -89,6 +89,7 @@ func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger 
 
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
+	r.log.Info("Start PulsarConnectionReconciler Observe")
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.Observe(ctx); err != nil {
 			return err
