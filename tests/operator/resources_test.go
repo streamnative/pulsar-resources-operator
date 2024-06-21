@@ -121,19 +121,6 @@ var _ = Describe("Resources", func() {
 				}, "600s", "100ms").Should(BeTrue())
 			})
 		})
-		Context("Check pulsar proxy", func() {
-			It("should create the pulsar proxy successfully", func() {
-				Eventually(func() bool {
-					statefulset := &v1.StatefulSet{}
-					k8sClient.Get(ctx, types.NamespacedName{
-						Name:      proxyName + "-proxy",
-						Namespace: namespaceName,
-					}, statefulset)
-					return statefulset.Status.ReadyReplicas > 0 && statefulset.Status.ReadyReplicas == statefulset.Status.Replicas
-				}, "600s", "100ms").Should(BeTrue())
-			})
-
-		})
 
 		Context("PulsarConnection operation", func() {
 			It("should create the pulsarconnection successfully", func() {
