@@ -45,16 +45,16 @@ monitoring:
 
 images:
   zookeeper:
-    repository: streamnative/sn-platform
+    repository: streamnative/pulsar-all
     tag: 2.10.4.3
   bookie:
-    repository: streamnative/sn-platform
+    repository: streamnative/pulsar-all
     tag: 2.10.4.3
   broker:
-    repository: streamnative/sn-platform
+    repository: streamnative/pulsar-all
     tag: 2.10.4.3
   functions:
-    repository: streamnative/sn-platform
+    repository: streamnative/pulsar-all
     tag: 2.10.4.3
 
 zookeeper:
@@ -68,7 +68,7 @@ bookkeeper:
   replicaCount: 1
   metadata:
     image:
-      repository: streamnative/sn-platform
+      repository: streamnative/pulsar-all
       tag: 2.10.4.3
   resources:
     requests:
@@ -106,7 +106,7 @@ bookkeeper:
 
 pulsar_metadata:
   image:
-    repository: streamnative/sn-platform
+    repository: streamnative/pulsar-all
     tag: 2.10.4.3
 
 broker:
