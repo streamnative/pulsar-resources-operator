@@ -32,7 +32,7 @@ jobs:
       ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      IMAGE: apachepulsar/pulsar:latest
+      IMAGE: streamnative/sn-platform-slim:2.10.4.3
       WATCH_CERT_MANAGER_CRDS: "false"
     steps:
       - name: clean disk
@@ -64,7 +64,7 @@ jobs:
       # TODO the k8s version should be configurable
       - name: Setup K8s cluster
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.1/kind-linux-amd64
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
           chmod +x ./kind
           export PATH="$PWD:$PATH"
           kind version
@@ -79,15 +79,21 @@ jobs:
           df -h
 
 
-      - name: Install Pulsar Operators and sn-platform 
+      - name: Install Pulsar Operators and sn-platform
         run: |
           helm repo add streamnative https://charts.streamnative.io
           helm repo add jetstack https://charts.jetstack.io
           helm repo update
-          kubectl create namespace sn-system
-          helm install pulsar-operators --namespace sn-system streamnative/pulsar-operator
-          helm install cert-manager --namespace sn-system jetstack/cert-manager --set installCRDs=true
-          helm install test streamnative/sn-platform --version 1.2.38 --set initialize=true,auth.authentication.enabled=false,auth.authorization.enabled=false,components.toolset=false,components.streamnative_console=false,components.vault=false,components.pulsar_detector=false,monitoring.prometheus=false,monitoring.grafana=false,monitoring.node_exporter=false,monitoring.alert_manager=false,zookeeper.resources.requests.cpu=10m,bookkeeper.resources.requests.cpu=10m,broker.resources.requests.cpu=10m,proxy.resources.requests.cpu=10m
+          helm install cert-manager jetstack/cert-manager --set installCRDs=true --version v1.8.2
+
+          rm -rf pulsar-charts/
+          git clone --branch pulsar-operator-0.17.10 https://github.com/streamnative/charts.git pulsar-charts
+          cd pulsar-charts/
+          ./scripts/pulsar/prepare_helm_release.sh -n default -k test -c
+          helm repo add grafana https://grafana.github.io/helm-charts
+          helm repo update
+          helm dependency update charts/sn-platform
+          helm install test --set initialize=true --values ../.ci/clusters/values.yaml charts/sn-platform
           df -h
 
       - name: Build and Setup Pulsar Resources Operator
