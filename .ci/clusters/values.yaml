@@ -129,3 +129,5 @@ broker:
 functions:
   functionState: false
   useDedicatedRunner: false
+  configData:
+    narExtractionDirectory: /pulsar/data
