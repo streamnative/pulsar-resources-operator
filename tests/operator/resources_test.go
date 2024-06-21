@@ -77,6 +77,8 @@ var _ = Describe("Resources", func() {
 		ppackage          *v1alphav1.PulsarPackage
 		ppackageurl       string = "function://public/default/api-examples@v3.2.3.3"
 		pfuncName         string = "test-func"
+		psinkName         string = "test-sink"
+		psourceName       string = "test-source"
 		pfunc             *v1alphav1.PulsarFunction
 		psinkpackageurl   string = "builtin://data-generator"
 		psink             *v1alphav1.PulsarSink
@@ -104,8 +106,8 @@ var _ = Describe("Resources", func() {
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
 		ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
 		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
-		psink = utils.MakePulsarSink(namespaceName, pfuncName, psinkpackageurl, pconnName, lifecyclePolicy)
-		psource = utils.MakePulsarSource(namespaceName, pfuncName, psourcepackageurl, pconnName, lifecyclePolicy)
+		psink = utils.MakePulsarSink(namespaceName, psinkName, psinkpackageurl, pconnName, lifecyclePolicy)
+		psource = utils.MakePulsarSource(namespaceName, psourceName, psourcepackageurl, pconnName, lifecyclePolicy)
 	})
 
 	Describe("Basic resource operations", Ordered, func() {
@@ -330,7 +332,7 @@ var _ = Describe("Resources", func() {
 			It("the sink should be ready", func() {
 				Eventually(func() bool {
 					s := &v1alphav1.PulsarSink{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psinkName}
 					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(s)
 				}, "40s", "100ms").Should(BeTrue())
@@ -346,7 +348,7 @@ var _ = Describe("Resources", func() {
 			It("the source should be ready", func() {
 				Eventually(func() bool {
 					s := &v1alphav1.PulsarSource{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psourceName}
 					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(s)
 				}, "40s", "100ms").Should(BeTrue())
