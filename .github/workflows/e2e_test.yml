@@ -32,7 +32,7 @@ jobs:
       ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      IMAGE: streamnative/sn-platform-slim:2.10.4.3
+      IMAGE: streamnative/sn-platform:2.10.4.3
       WATCH_CERT_MANAGER_CRDS: "false"
     steps:
       - name: clean disk
