@@ -36,6 +36,12 @@ monitoring:
   grafana: false
   # monitoring - node_exporter
   node_exporter: false
+  # alerting - alert-manager
+  alert_manager: false
+  # monitoring - loki
+  loki: false
+  # monitoring - datadog
+  datadog: false
 
 images:
   zookeeper:
@@ -121,5 +127,5 @@ broker:
       cpu: 10m
 
 functions:
-  functionState: true
+  functionState: false
   useDedicatedRunner: false

@@ -92,8 +92,8 @@ jobs:
           ./scripts/pulsar/prepare_helm_release.sh -n default -k test -c
           helm repo add grafana https://grafana.github.io/helm-charts
           helm repo update
-          helm dependency update charts/sn-platform
-          helm install test --set initialize=true --values ../.ci/clusters/values.yaml charts/sn-platform
+          helm dependency update charts/pulsar
+          helm install test --set initialize=true --values ../.ci/clusters/values.yaml charts/pulsar
           df -h
 
       - name: Build and Setup Pulsar Resources Operator
