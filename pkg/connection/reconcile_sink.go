@@ -72,7 +72,7 @@ func (r *PulsarSinkReconciler) Reconcile(ctx context.Context) error {
 
 	for i := range r.conn.sinks {
 		sink := &r.conn.sinks[i]
-		if err := r.ReconcileSink(ctx, r.conn.pulsarAdmin, sink); err != nil {
+		if err := r.ReconcileSink(ctx, r.conn.pulsarAdminV3, sink); err != nil {
 			return fmt.Errorf("reconcile sink [%s] [%w]", sink.Name, err)
 		}
 	}

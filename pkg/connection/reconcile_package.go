@@ -75,7 +75,7 @@ func (r *PulsarPackageReconciler) Observe(ctx context.Context) error {
 func (r *PulsarPackageReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.packages {
 		pkg := &r.conn.packages[i]
-		if err := r.ReconcilePackage(ctx, r.conn.pulsarAdmin, pkg); err != nil {
+		if err := r.ReconcilePackage(ctx, r.conn.pulsarAdminV3, pkg); err != nil {
 			return fmt.Errorf("reconcile pulsar package [%w]", err)
 		}
 	}

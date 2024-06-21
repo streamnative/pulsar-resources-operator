@@ -203,6 +203,8 @@ type PulsarAdminConfig struct {
 	Audience       string
 	Key            string
 	Scope          string
+
+	PulsarAPIVersion *config.APIVersion
 }
 
 // NewPulsarAdmin initialize a pulsar admin client with configuration
@@ -215,8 +217,12 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	config := &config.Config{
 		WebServiceURL:              conf.WebServiceURL,
 		TLSAllowInsecureConnection: true,
-		// V2 / V3 admin endpoint contains operations for tenant, namespace and topic.
-		PulsarAPIVersion: config.V3,
+		// V2 admin endpoint contains operations for tenant, namespace and topic.
+		PulsarAPIVersion: config.V2,
+	}
+
+	if conf.PulsarAPIVersion != nil {
+		config.PulsarAPIVersion = *conf.PulsarAPIVersion
 	}
 
 	if conf.Key != "" {

@@ -73,7 +73,7 @@ func (r *PulsarFunctionReconciler) Observe(ctx context.Context) error {
 func (r *PulsarFunctionReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.functions {
 		instance := &r.conn.functions[i]
-		if err := r.ReconcileFunction(ctx, r.conn.pulsarAdmin, instance); err != nil {
+		if err := r.ReconcileFunction(ctx, r.conn.pulsarAdminV3, instance); err != nil {
 			return fmt.Errorf("reconcile pulsar function [%w]", err)
 		}
 	}

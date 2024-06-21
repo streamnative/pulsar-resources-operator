@@ -72,7 +72,7 @@ func (r *PulsarSourceReconciler) Reconcile(ctx context.Context) error {
 
 	for i := range r.conn.sources {
 		source := &r.conn.sources[i]
-		if err := r.ReconcileSource(ctx, r.conn.pulsarAdmin, source); err != nil {
+		if err := r.ReconcileSource(ctx, r.conn.pulsarAdminV3, source); err != nil {
 			return fmt.Errorf("reconcile source [%s] [%w]", source.Name, err)
 		}
 	}

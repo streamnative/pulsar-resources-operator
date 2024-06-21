@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
+
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -50,8 +52,9 @@ type PulsarConnectionReconciler struct {
 	functions        []resourcev1alpha1.PulsarFunction
 	unreadyResources []string
 
-	pulsarAdmin admin.PulsarAdmin
-	reconcilers []reconciler.Interface
+	pulsarAdmin   admin.PulsarAdmin
+	pulsarAdminV3 admin.PulsarAdmin
+	reconcilers   []reconciler.Interface
 }
 
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
@@ -153,6 +156,22 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		r.pulsarAdmin = nil
 	}()
 
+	pulsarConfig, err = r.MakePulsarAdminConfigWithAPIVersion(ctx, config.V3)
+	if err != nil {
+		return err
+	}
+	r.pulsarAdminV3, err = r.creator(*pulsarConfig)
+	if err != nil {
+		log.Error(err, "create pulsar admin v3")
+		return err
+	}
+	defer func() {
+		if err := r.pulsarAdminV3.Close(); err != nil {
+			log.Error(err, "close pulsar admin v3")
+		}
+		r.pulsarAdminV3 = nil
+	}()
+
 	if r.connection.DeletionTimestamp.IsZero() {
 		for _, reconciler := range r.reconcilers {
 			if err = reconciler.Reconcile(ctx); err != nil {
@@ -240,6 +259,16 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 // MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
 	return MakePulsarAdminConfig(ctx, r.connection, r.client)
+}
+
+// MakePulsarAdminConfigWithAPIVersion create pulsar admin configuration with api version
+func (r *PulsarConnectionReconciler) MakePulsarAdminConfigWithAPIVersion(ctx context.Context, ver config.APIVersion) (*admin.PulsarAdminConfig, error) {
+	c, e := MakePulsarAdminConfig(ctx, r.connection, r.client)
+	if e != nil {
+		return nil, e
+	}
+	c.PulsarAPIVersion = &ver
+	return c, nil
 }
 
 // MakePulsarAdminConfig create pulsar admin configuration
