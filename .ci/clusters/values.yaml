@@ -39,17 +39,17 @@ monitoring:
 
 images:
   zookeeper:
-      repository: streamnative/sn-platform-slim
-      tag: 2.10.4.3
-    bookie:
-      repository: streamnative/sn-platform-slim
-      tag: 2.10.4.3
-    broker:
-      repository: streamnative/sn-platform-slim
-      tag: 2.10.4.3
-    functions:
-      repository: streamnative/sn-platform-slim
-      tag: 2.10.4.3
+    repository: streamnative/sn-platform-slim
+    tag: 2.10.4.3
+  bookie:
+    repository: streamnative/sn-platform-slim
+    tag: 2.10.4.3
+  broker:
+    repository: streamnative/sn-platform-slim
+    tag: 2.10.4.3
+  functions:
+    repository: streamnative/sn-platform-slim
+    tag: 2.10.4.3
 
 zookeeper:
   replicaCount: 1
