@@ -21,8 +21,6 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/apimachinery/pkg/runtime"
-
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -802,7 +800,11 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 	}
 
 	if param.UserConfig != nil {
-		functionConfig.UserConfig = runtime.DeepCopyJSON(param.UserConfig.Data)
+		var err error
+		functionConfig.UserConfig, err = rutils.ConvertJSONToMapStringInterface(param.UserConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	if param.CustomRuntimeOptions != nil {
@@ -928,7 +930,11 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 	}
 
 	if param.Configs != nil {
-		sinkConfig.Configs = runtime.DeepCopyJSON(param.Configs.Data)
+		var err error
+		sinkConfig.Configs, err = rutils.ConvertJSONToMapStringInterface(param.Configs)
+		if err != nil {
+			return err
+		}
 	}
 
 	if param.CustomRuntimeOptions != nil {
@@ -1023,12 +1029,22 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 	if param.BatchSourceConfig != nil {
 		sourceConfig.BatchSourceConfig = &utils.BatchSourceConfig{
 			DiscoveryTriggererClassName: param.BatchSourceConfig.DiscoveryTriggererClassName,
-			DiscoveryTriggererConfig:    runtime.DeepCopyJSON(param.BatchSourceConfig.DiscoveryTriggererConfig.Data),
+		}
+		if param.BatchSourceConfig.DiscoveryTriggererConfig != nil {
+			var err error
+			sourceConfig.BatchSourceConfig.DiscoveryTriggererConfig, err = rutils.ConvertJSONToMapStringInterface(param.BatchSourceConfig.DiscoveryTriggererConfig)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
 	if param.Configs != nil {
-		sourceConfig.Configs = runtime.DeepCopyJSON(param.Configs.Data)
+		var err error
+		sourceConfig.Configs, err = rutils.ConvertJSONToMapStringInterface(param.Configs)
+		if err != nil {
+			return err
+		}
 	}
 
 	if param.Secrets != nil && len(param.Secrets) > 0 {

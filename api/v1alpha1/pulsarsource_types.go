@@ -16,6 +16,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,7 +62,7 @@ type PulsarSourceSpec struct {
 
 	// Configs is the map of configs of the PulsarSource
 	// +optional
-	Configs *Config `json:"configs,omitempty"`
+	Configs *apiextensionsv1.JSON `json:"configs,omitempty"`
 
 	// Secrets is the map of secrets of the PulsarSource
 	// +optional
@@ -89,7 +90,7 @@ type PulsarSourceSpec struct {
 
 	// CustomRuntimeOptions is the custom runtime options of the PulsarSource
 	// +optional
-	CustomRuntimeOptions *Config `json:"customRuntimeOptions,omitempty"`
+	CustomRuntimeOptions *apiextensionsv1.JSON `json:"customRuntimeOptions,omitempty"`
 
 	// BatchSourceConfig is the batch source config of the PulsarSource
 	// +optional
@@ -111,7 +112,7 @@ type PulsarSourceSpec struct {
 type BatchSourceConfig struct {
 	DiscoveryTriggererClassName string `json:"discoveryTriggererClassName" yaml:"discoveryTriggererClassName"`
 
-	DiscoveryTriggererConfig *Config `json:"discoveryTriggererConfig" yaml:"discoveryTriggererConfig"`
+	DiscoveryTriggererConfig *apiextensionsv1.JSON `json:"discoveryTriggererConfig" yaml:"discoveryTriggererConfig"`
 }
 
 // PulsarSourceStatus defines the observed state of PulsarSource

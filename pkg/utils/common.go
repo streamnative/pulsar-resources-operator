@@ -14,6 +14,12 @@
 
 package utils
 
+import (
+	"encoding/json"
+
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+)
+
 // ConvertMap converts a map[string]string to a map[string]interface{}
 func ConvertMap(input map[string]string) map[string]interface{} {
 	// Create an empty map[string]interface{}
@@ -26,4 +32,18 @@ func ConvertMap(input map[string]string) map[string]interface{} {
 	}
 
 	return result
+}
+
+// ConvertJSONToMapStringInterface converts a JSON object to a map[string]interface{}
+func ConvertJSONToMapStringInterface(raw *apiextensionsv1.JSON) (map[string]interface{}, error) {
+	// Create an empty map[string]interface{}
+	result := make(map[string]interface{})
+
+	// Unmarshal the raw JSON object into the result map
+	err := json.Unmarshal(raw.Raw, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

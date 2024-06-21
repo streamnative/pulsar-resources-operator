@@ -16,6 +16,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -153,7 +154,7 @@ type PulsarFunctionSpec struct {
 
 	// UserConfig is the user config of the function
 	// +optional
-	UserConfig *Config `json:"userConfig,omitempty"`
+	UserConfig *apiextensionsv1.JSON `json:"userConfig,omitempty"`
 
 	// CustomSerdeInputs is the custom serde inputs of the function
 	// +optional
@@ -173,7 +174,7 @@ type PulsarFunctionSpec struct {
 
 	// CustomRuntimeOptions is the custom runtime options of the function
 	// +optional
-	CustomRuntimeOptions *Config `json:"customRuntimeOptions,omitempty"`
+	CustomRuntimeOptions *apiextensionsv1.JSON `json:"customRuntimeOptions,omitempty"`
 
 	// Secrets is the secrets of the function
 	// +optional

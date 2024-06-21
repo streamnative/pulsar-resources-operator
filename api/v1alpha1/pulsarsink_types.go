@@ -16,6 +16,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -117,7 +118,7 @@ type PulsarSinkSpec struct {
 
 	// Configs is the map of configs of the PulsarSink
 	// +optional
-	Configs *Config `json:"configs,omitempty"`
+	Configs *apiextensionsv1.JSON `json:"configs,omitempty"`
 
 	// TopicToSchemaProperties is the map of topic to schema properties of the PulsarSink
 	// +optional
@@ -125,7 +126,7 @@ type PulsarSinkSpec struct {
 
 	// CustomRuntimeOptions is the custom runtime options of the PulsarSink
 	// +optional
-	CustomRuntimeOptions *Config `json:"customRuntimeOptions,omitempty"`
+	CustomRuntimeOptions *apiextensionsv1.JSON `json:"customRuntimeOptions,omitempty"`
 
 	// Secrets is the map of secrets of the PulsarSink
 	// +optional

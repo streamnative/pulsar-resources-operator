@@ -15,7 +15,10 @@
 package utils
 
 import (
+	"encoding/json"
+
 	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -173,11 +176,11 @@ func MakePulsarFunction(namespace, name, functionPackageUrl, connectionName stri
 					"sectest", "hello",
 				},
 			},
-			CustomRuntimeOptions: &v1alpha1.Config{Data: map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
-			}},
+			}),
 		},
 	}
 }
@@ -215,13 +218,32 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 					"sectest", "hello",
 				},
 			},
-			CustomRuntimeOptions: &v1alpha1.Config{Data: map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
-			}},
+			}),
 		},
 	}
+}
+
+func getPulsarSourceConfig() *v1.JSON {
+	c := map[string]interface{}{
+		"sleepBetweenMessages": 1000,
+	}
+	bytes, err := json.Marshal(c)
+	if err != nil {
+		return nil
+	}
+	return &v1.JSON{Raw: bytes}
+}
+
+func getMapToJSON(c map[string]interface{}) *v1.JSON {
+	bytes, err := json.Marshal(c)
+	if err != nil {
+		return nil
+	}
+	return &v1.JSON{Raw: bytes}
 }
 
 // MakePulsarSource will generate a object of PulsarSource
@@ -244,9 +266,7 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 			Parallelism:          1,
 			ProcessingGuarantees: "EFFECTIVELY_ONCE",
 			ClassName:            "org.apache.pulsar.io.datagenerator.DataGeneratorSource",
-			Configs: &v1alpha1.Config{Data: map[string]interface{}{
-				"sleepBetweenMessages": 1000,
-			}},
+			Configs:              getPulsarSourceConfig(),
 			Resources: &v1alpha1.Resources{
 				CPU:  "1",
 				RAM:  512,
@@ -257,11 +277,11 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 					"sectest", "hello",
 				},
 			},
-			CustomRuntimeOptions: &v1alpha1.Config{Data: map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
-			}},
+			}),
 		},
 	}
 }
