@@ -65,7 +65,7 @@ zookeeper:
       cpu: 10m
 
 bookkeeper:
-  replicaCount: 0
+	replicaCount: 1
   metadata:
     image:
       repository: streamnative/sn-platform-slim
