@@ -103,7 +103,7 @@ var _ = Describe("Resources", func() {
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
 		//ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
-		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, "file:///pulsar/examples/api-examples.jar", pconnName, lifecyclePolicy)
+		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, "function://public/default/api-examples@latest", pconnName, lifecyclePolicy)
 		psink = utils.MakePulsarSink(namespaceName, pfuncName, psinkpackageurl, pconnName, lifecyclePolicy)
 		psource = utils.MakePulsarSource(namespaceName, pfuncName, psourcepackageurl, pconnName, lifecyclePolicy)
 	})
