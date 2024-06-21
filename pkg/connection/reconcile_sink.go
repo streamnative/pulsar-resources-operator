@@ -119,16 +119,19 @@ func (r *PulsarSinkReconciler) ReconcileSink(ctx context.Context, pulsarAdmin ad
 		return nil
 	}
 
-	if sink.Spec.Archive == nil {
-		err := errors.New("invalid package URL")
+	if sink.Spec.Archive == nil && sink.Spec.SinkType == "" {
+		err := errors.New("no package URL or sink type provided")
 		return err
 	}
 
-	packageURL := validateURL(sink.Spec.Archive.URL)
+	packageURL := ""
 
-	if packageURL == "" {
-		err := errors.New("invalid package URL")
-		return err
+	if sink.Spec.Archive.URL != "" {
+		packageURL = validateURL(sink.Spec.Archive.URL)
+		if packageURL == "" {
+			err := errors.New("invalid package URL")
+			return err
+		}
 	}
 
 	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageURL, &sink.Spec, sink.Status.ObservedGeneration > 1); err != nil {
