@@ -132,8 +132,8 @@ func MakePulsarPackage(namespace, name, packageURL, connectionName string, polic
 				Name: connectionName,
 			},
 			PackageURL:      packageURL,
-			FileURL:         "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.10.4/connectors/pulsar-io-file-2.10.4.nar",
-			Description:     "pulsar-io-file-2.10.4",
+			FileURL:         "https://github.com/freeznet/pulsar-functions-api-examples/raw/main/api-examples-2.10.4.3.jar",
+			Description:     "api-examples.jar",
 			LifecyclePolicy: policy,
 		},
 	}
