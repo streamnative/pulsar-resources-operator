@@ -966,7 +966,6 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		} else {
 			err = p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
 		}
-
 	}
 	if err != nil {
 		if !IsAlreadyExist(err) {
