@@ -19,7 +19,7 @@ import (
 )
 
 // NewDummyPulsarAdmin is a dummy initialization function
-func NewDummyPulsarAdmin(config PulsarAdminConfig) (PulsarAdmin, error) {
+func NewDummyPulsarAdmin(PulsarAdminConfig) (PulsarAdmin, error) {
 	return &DummyPulsarAdmin{}, nil
 }
 
@@ -30,52 +30,52 @@ type DummyPulsarAdmin struct {
 var _ PulsarAdmin = &DummyPulsarAdmin{}
 
 // ApplyTenant is a fake implements of ApplyTenant
-func (d *DummyPulsarAdmin) ApplyTenant(name string, params *TenantParams) error {
+func (d *DummyPulsarAdmin) ApplyTenant(string, *TenantParams) error {
 	return nil
 }
 
 // DeleteTenant is a fake implements of DeleteTenant
-func (d *DummyPulsarAdmin) DeleteTenant(name string) error {
+func (d *DummyPulsarAdmin) DeleteTenant(string) error {
 	return nil
 }
 
 // ApplyNamespace is a fake implements of ApplyNamespace
-func (d *DummyPulsarAdmin) ApplyNamespace(name string, params *NamespaceParams) error {
+func (d *DummyPulsarAdmin) ApplyNamespace(string, *NamespaceParams) error {
 	return nil
 }
 
 // DeleteNamespace is a fake implements of DeleteNamespace
-func (d *DummyPulsarAdmin) DeleteNamespace(name string) error {
+func (d *DummyPulsarAdmin) DeleteNamespace(string) error {
 	return nil
 }
 
 // GetNamespaceClusters is a fake implements of GetNamespaceClusters
-func (d *DummyPulsarAdmin) GetNamespaceClusters(name string) ([]string, error) {
+func (d *DummyPulsarAdmin) GetNamespaceClusters(string) ([]string, error) {
 	return []string{}, nil
 }
 
 // SetNamespaceClusters is a fake implements of SetNamespaceClusters
-func (d *DummyPulsarAdmin) SetNamespaceClusters(name string, clusters []string) error {
+func (d *DummyPulsarAdmin) SetNamespaceClusters(string, []string) error {
 	return nil
 }
 
 // ApplyTopic is a fake implements of ApplyTopic
-func (d *DummyPulsarAdmin) ApplyTopic(name string, params *TopicParams) error {
+func (d *DummyPulsarAdmin) ApplyTopic(string, *TopicParams) error {
 	return nil
 }
 
 // DeleteTopic is a fake implements of DeleteTopic
-func (d *DummyPulsarAdmin) DeleteTopic(name string) error {
+func (d *DummyPulsarAdmin) DeleteTopic(string) error {
 	return nil
 }
 
 // GetTopicClusters is a fake implements of GetTopicClusters
-func (d *DummyPulsarAdmin) GetTopicClusters(name string, persistent *bool) ([]string, error) {
+func (d *DummyPulsarAdmin) GetTopicClusters(string, *bool) ([]string, error) {
 	return []string{}, nil
 }
 
 // SetTopicClusters is a fake implements of SetTopicClusters
-func (d *DummyPulsarAdmin) SetTopicClusters(name string, persistent *bool, clusters []string) error {
+func (d *DummyPulsarAdmin) SetTopicClusters(string, *bool, []string) error {
 	return nil
 }
 
@@ -85,46 +85,46 @@ func (d *DummyPulsarAdmin) Close() error {
 }
 
 // GrantPermissions is a fake implements of GrantPermissions
-func (d *DummyPulsarAdmin) GrantPermissions(p Permissioner) error {
+func (d *DummyPulsarAdmin) GrantPermissions(Permissioner) error {
 	return nil
 }
 
 // RevokePermissions is a fake implements of RevokePermissions
-func (d *DummyPulsarAdmin) RevokePermissions(p Permissioner) error {
+func (d *DummyPulsarAdmin) RevokePermissions(Permissioner) error {
 	return nil
 }
 
 // GetSchema is a fake implements of GetSchema
-func (d *DummyPulsarAdmin) GetSchema(topic string) (*v1alpha1.SchemaInfo, error) {
+func (d *DummyPulsarAdmin) GetSchema(string) (*v1alpha1.SchemaInfo, error) {
 	return nil, nil
 }
 
 // UploadSchema is a fake implements of UploadSchema
-func (d *DummyPulsarAdmin) UploadSchema(topic string, params *SchemaParams) error {
+func (d *DummyPulsarAdmin) UploadSchema(string, *SchemaParams) error {
 	return nil
 }
 
 // DeleteSchema is a fake implements of DeleteSchema
-func (d *DummyPulsarAdmin) DeleteSchema(topic string) error {
+func (d *DummyPulsarAdmin) DeleteSchema(string) error {
 	return nil
 }
 
 // CreateCluster is a fake implements of CreateCluster
-func (d *DummyPulsarAdmin) CreateCluster(name string, param *ClusterParams) error {
+func (d *DummyPulsarAdmin) CreateCluster(string, *ClusterParams) error {
 	return nil
 }
 
 // UpdateCluster is a fake implements of UpdateCluster
-func (d *DummyPulsarAdmin) UpdateCluster(name string, param *ClusterParams) error {
+func (d *DummyPulsarAdmin) UpdateCluster(string, *ClusterParams) error {
 	return nil
 }
 
 // DeleteCluster is a fake implements of DeleteCluster
-func (d *DummyPulsarAdmin) DeleteCluster(name string) error {
+func (d *DummyPulsarAdmin) DeleteCluster(string) error {
 	return nil
 }
 
 // CheckClusterExist checks whether the cluster exists
-func (d *DummyPulsarAdmin) CheckClusterExist(name string) (bool, error) {
+func (d *DummyPulsarAdmin) CheckClusterExist(string) (bool, error) {
 	return true, nil
 }
