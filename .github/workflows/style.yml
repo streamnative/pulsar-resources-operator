@@ -31,10 +31,10 @@ jobs:
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
       GOPRIVATE: github.com/streamnative
     steps:
-    - name: Set up Go 1.20
+    - name: Set up Go 1.21
       uses: actions/setup-go@v3
       with:
-        go-version: '1.20'
+        go-version: '1.21'
       id: go
 
     - name: Set up git token
