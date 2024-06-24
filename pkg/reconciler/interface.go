@@ -38,12 +38,12 @@ type Dummy struct {
 }
 
 // Observe is a fake implements of Observe
-func (d *Dummy) Observe(ctx context.Context) error {
+func (d *Dummy) Observe(context.Context) error {
 	return nil
 }
 
 // Reconcile is a fake implements of Reconcile
-func (d *Dummy) Reconcile(ctx context.Context) error {
+func (d *Dummy) Reconcile(context.Context) error {
 	return nil
 }
 
