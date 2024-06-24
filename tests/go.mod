@@ -1,6 +1,6 @@
 module github.com/streamnative/pulsar-resources-operator/tests
 
-go 1.22
+go 1.21
 
 require (
 	// pulsar-client-go latest version is v0.9.0,
@@ -16,7 +16,10 @@ require (
 	sigs.k8s.io/controller-runtime v0.11.0
 )
 
-require k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
+require (
+	k8s.io/apiextensions-apiserver v0.23.0
+	k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
+)
 
 require (
 	cloud.google.com/go v0.81.0 // indirect
@@ -75,7 +78,6 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/apiextensions-apiserver v0.23.0 // indirect
 	k8s.io/component-base v0.23.0 // indirect
 	k8s.io/klog/v2 v2.30.0 // indirect
 	k8s.io/kube-openapi v0.0.0-20211115234752-e816edb12b65 // indirect
