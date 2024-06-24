@@ -45,4 +45,7 @@ WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
 
+# Upgrade all packages to get latest versions with security fixes
+RUN apk upgrade --no-cache
+
 ENTRYPOINT ["/manager"]
