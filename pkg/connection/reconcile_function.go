@@ -160,8 +160,10 @@ func validateURL(url string) string {
 	if url == "" {
 		return ""
 	}
-	lowerURL := strings.ToLower(url)
-	if strings.HasPrefix(lowerURL, "http://") || strings.HasPrefix(lowerURL, "https://") || strings.HasPrefix(lowerURL, "builtin://") || strings.HasPrefix(lowerURL, "file://") {
+	if lowerURL := strings.ToLower(url); strings.HasPrefix(lowerURL, "http://") ||
+		strings.HasPrefix(lowerURL, "https://") ||
+		strings.HasPrefix(lowerURL, "builtin://") ||
+		strings.HasPrefix(lowerURL, "file://") {
 		return url
 	}
 	if _, err := utils.GetPackageName(url); err != nil {
