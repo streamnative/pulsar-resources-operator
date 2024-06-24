@@ -26,8 +26,8 @@ Pulsar: `>= 2.9.0.x`
 | affinity | object | `{}` | Add affinity for pod |
 | fullnameOverride | string | `""` | It will override the name of deployment |
 | image.pullPolicy | string | `"IfNotPresent"` | Image pull policy for the container. |
-| image.registry | string | `"docker.cloudsmith.io"` | Specififies the registry of images, especially when user want to use a different image hub |
-| image.repository | string | `"streamnative/operators/pulsar-resources-operator"` | The full repo name for image. |
+| image.registry | string | `"docker.io"` | Specififies the registry of images, especially when user want to use a different image hub |
+| image.repository | string | `"streamnative/pulsar-resources-operator"` | The full repo name for image. |
 | image.tag | string | `""` | Image tag, it can override the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` | Specifies image pull secrets for private registry, the format is `- name: gcr` |
 | nameOverride | string | `""` | It will override the value of label `app.kubernetes.io/name` on pod |
