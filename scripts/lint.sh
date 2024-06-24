@@ -28,7 +28,7 @@ export POP_HOME=`cd $BINDIR/..;pwd`
 
 if [ ! -f ${POP_HOME}/bin/golangci-lint ]; then
     cd ${POP_HOME}
-    wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s v1.43.0
+    wget -O - -q https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s v1.55.2
     cd -
 fi
 ${POP_HOME}/bin/golangci-lint --version

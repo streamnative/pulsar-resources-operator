@@ -1,11 +1,13 @@
 module github.com/streamnative/pulsar-resources-operator/tests
 
-go 1.18
+go 1.21
+
+toolchain go1.22.3
 
 require (
 	// pulsar-client-go latest version is v0.9.0,
 	// it removed the go.mod from oauth2, this will cause the issue of ambiguous import
-	github.com/apache/pulsar-client-go v0.9.1-0.20230925013839-ac9c1a639933
+	github.com/apache/pulsar-client-go v0.12.1
 	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.19.0
 	github.com/sirupsen/logrus v1.8.1
@@ -28,7 +30,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/dvsekhvalnov/jose2go v1.5.0 // indirect
+	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
 	github.com/evanphx/json-patch v4.12.0+incompatible // indirect
 	github.com/go-logr/logr v1.2.1 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
