@@ -29,9 +29,9 @@ image:
   # resource controller container
   manager:
     # -- Specififies the registry of images, especially when user want to use a different image hub
-    registry: docker.cloudsmith.io
+    registry: docker.io
     # -- The full repo name for image.
-    repository: streamnative/operators/pulsar-resources-operator
+    repository: streamnative/pulsar-resources-operator
     # -- Image tag, it can override the image tag whose default is the chart appVersion.
     tag: ""
 
