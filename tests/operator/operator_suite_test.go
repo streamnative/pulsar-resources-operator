@@ -37,8 +37,7 @@ var (
 	namespaceName string = "default"
 	k8sClient     client.Client
 	k8sConfig     *rest.Config
-	brokerName    string = "test-sn-platform"
-	proxyName     string = "test-sn-platform"
+	brokerName    string = "test-pulsar"
 	proxyURL      string = fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:6650", brokerName, namespaceName)
 	pulsarClient  pulsar.Client
 )

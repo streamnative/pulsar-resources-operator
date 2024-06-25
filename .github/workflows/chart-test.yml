@@ -42,6 +42,10 @@ jobs:
             diff config/crd/bases/resource.streamnative.io_pulsarnamespaces.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnamespaces.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsarpermissions.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpermissions.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsartenants.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartenants.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarfunctions.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarfunctions.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarsinks.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsinks.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarsources.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsources.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarpackages.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpackages.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsartopics.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartopics.yaml
 
       - name: Set up Helm

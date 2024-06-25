@@ -95,3 +95,52 @@ func IsPulsarResourceReady(instance reconciler.Object) bool {
 		instance.GetGeneration() == observedGeneration &&
 		meta.IsStatusConditionTrue(conditions, ConditionReady)
 }
+
+// PackageContentRef indicates the package content reference
+type PackageContentRef struct {
+	// +optional
+	// persistentVolumeTemplate *corev1.PersistentVolumeClaim `json:"persistentVolumeTemplate,omitempty"`
+
+	// +optional
+	URL string `json:"url,omitempty"`
+}
+
+// Resources indicates the resources for the pulsar functions and connectors
+type Resources struct {
+	CPU  string `json:"cpu"`
+	Disk int64  `json:"disk"`
+	RAM  int64  `json:"ram"`
+}
+
+// ProducerConfig represents the configuration for the producer of the pulsar functions and connectors
+type ProducerConfig struct {
+	MaxPendingMessages                 int `json:"maxPendingMessages" yaml:"maxPendingMessages"`
+	MaxPendingMessagesAcrossPartitions int `json:"maxPendingMessagesAcrossPartitions" yaml:"maxPendingMessagesAcrossPartitions"`
+
+	UseThreadLocalProducers bool          `json:"useThreadLocalProducers" yaml:"useThreadLocalProducers"`
+	CryptoConfig            *CryptoConfig `json:"cryptoConfig" yaml:"cryptoConfig"`
+	BatchBuilder            string        `json:"batchBuilder" yaml:"batchBuilder"`
+	CompressionType         string        `json:"compressionType" yaml:"compressionType"`
+}
+
+// ConsumerConfig represents the configuration for the consumer of the pulsar functions and connectors
+type ConsumerConfig struct {
+	SchemaType         string            `json:"schemaType,omitempty" yaml:"schemaType"`
+	SerdeClassName     string            `json:"serdeClassName,omitempty" yaml:"serdeClassName"`
+	RegexPattern       bool              `json:"regexPattern,omitempty" yaml:"regexPattern"`
+	ReceiverQueueSize  int               `json:"receiverQueueSize,omitempty" yaml:"receiverQueueSize"`
+	SchemaProperties   map[string]string `json:"schemaProperties,omitempty" yaml:"schemaProperties"`
+	ConsumerProperties map[string]string `json:"consumerProperties,omitempty" yaml:"consumerProperties"`
+	CryptoConfig       *CryptoConfig     `json:"cryptoConfig,omitempty" yaml:"cryptoConfig"`
+	PoolMessages       bool              `json:"poolMessages,omitempty" yaml:"poolMessages"`
+}
+
+// CryptoConfig represents the configuration for the crypto of the pulsar functions and connectors
+type CryptoConfig struct {
+	CryptoKeyReaderClassName string            `json:"cryptoKeyReaderClassName" yaml:"cryptoKeyReaderClassName"`
+	CryptoKeyReaderConfig    map[string]string `json:"cryptoKeyReaderConfig" yaml:"cryptoKeyReaderConfig"`
+
+	EncryptionKeys              []string `json:"encryptionKeys" yaml:"encryptionKeys"`
+	ProducerCryptoFailureAction string   `json:"producerCryptoFailureAction" yaml:"producerCryptoFailureAction"`
+	ConsumerCryptoFailureAction string   `json:"consumerCryptoFailureAction" yaml:"consumerCryptoFailureAction"`
+}
