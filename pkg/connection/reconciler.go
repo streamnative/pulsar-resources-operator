@@ -18,6 +18,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
+
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
@@ -44,10 +46,15 @@ type PulsarConnectionReconciler struct {
 	topics           []resourcev1alpha1.PulsarTopic
 	permissions      []resourcev1alpha1.PulsarPermission
 	geoReplications  []resourcev1alpha1.PulsarGeoReplication
+	packages         []resourcev1alpha1.PulsarPackage
+	sinks            []resourcev1alpha1.PulsarSink
+	sources          []resourcev1alpha1.PulsarSource
+	functions        []resourcev1alpha1.PulsarFunction
 	unreadyResources []string
 
-	pulsarAdmin admin.PulsarAdmin
-	reconcilers []reconciler.Interface
+	pulsarAdmin   admin.PulsarAdmin
+	pulsarAdminV3 admin.PulsarAdmin
+	reconcilers   []reconciler.Interface
 }
 
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
@@ -67,6 +74,10 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		makeNamespacesReconciler(r),
 		makeTopicsReconciler(r),
 		makePermissionsReconciler(r),
+		makeFunctionsReconciler(r),
+		makeSinksReconciler(r),
+		makeSourcesReconciler(r),
+		makePackagesReconciler(r),
 	}
 	return r
 }
@@ -78,6 +89,7 @@ func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger 
 
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
+	r.log.Info("Start PulsarConnectionReconciler Observe")
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.Observe(ctx); err != nil {
 			return err
@@ -143,6 +155,22 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			log.Error(err, "close pulsar admin")
 		}
 		r.pulsarAdmin = nil
+	}()
+
+	pulsarConfig, err = r.MakePulsarAdminConfigWithAPIVersion(ctx, config.V3)
+	if err != nil {
+		return err
+	}
+	r.pulsarAdminV3, err = r.creator(*pulsarConfig)
+	if err != nil {
+		log.Error(err, "create pulsar admin v3")
+		return err
+	}
+	defer func() {
+		if err := r.pulsarAdminV3.Close(); err != nil {
+			log.Error(err, "close pulsar admin v3")
+		}
+		r.pulsarAdminV3 = nil
 	}()
 
 	if r.connection.DeletionTimestamp.IsZero() {
@@ -232,6 +260,16 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 // MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
 	return MakePulsarAdminConfig(ctx, r.connection, r.client)
+}
+
+// MakePulsarAdminConfigWithAPIVersion create pulsar admin configuration with api version
+func (r *PulsarConnectionReconciler) MakePulsarAdminConfigWithAPIVersion(ctx context.Context, ver config.APIVersion) (*admin.PulsarAdminConfig, error) {
+	c, e := MakePulsarAdminConfig(ctx, r.connection, r.client)
+	if e != nil {
+		return nil, e
+	}
+	c.PulsarAPIVersion = &ver
+	return c, nil
 }
 
 // MakePulsarAdminConfig create pulsar admin configuration

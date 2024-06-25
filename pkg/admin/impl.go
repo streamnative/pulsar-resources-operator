@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
@@ -26,6 +27,7 @@ import (
 	"k8s.io/utils/pointer"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // PulsarAdminClient define the client to call pulsar
@@ -653,4 +655,442 @@ func (p *PulsarAdminClient) CheckClusterExist(name string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// DeletePulsarPackage deletes a pulsar package
+func (p *PulsarAdminClient) DeletePulsarPackage(packageURL string) error {
+	return p.adminClient.Packages().Delete(packageURL)
+}
+
+// ApplyPulsarPackage creates or updates a pulsar package
+func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error {
+	packageName, err := utils.GetPackageName(packageURL)
+	if err != nil {
+		return err
+	}
+	if changed {
+		err = p.adminClient.Packages().UpdateMetadata(packageName.String(), description, contact, properties)
+	} else {
+		err = p.adminClient.Packages().Upload(packageName.String(), filePath, description, contact, properties)
+	}
+	if err != nil {
+		if !IsAlreadyExist(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DeletePulsarFunction deletes a pulsar function
+func (p *PulsarAdminClient) DeletePulsarFunction(tenant, namespace, name string) error {
+	return p.adminClient.Functions().DeleteFunction(tenant, namespace, name)
+}
+
+// ApplyPulsarFunction creates or updates a pulsar function
+func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error {
+	functionConfig := utils.FunctionConfig{
+		Tenant:                         tenant,
+		Namespace:                      namespace,
+		Name:                           name,
+		ClassName:                      param.ClassName,
+		Inputs:                         param.Inputs,
+		Parallelism:                    param.Parallelism,
+		TimeoutMs:                      param.TimeoutMs,
+		TopicsPattern:                  param.TopicsPattern,
+		CleanupSubscription:            param.CleanupSubscription,
+		RetainOrdering:                 param.RetainOrdering,
+		RetainKeyOrdering:              param.RetainKeyOrdering,
+		ForwardSourceMessageProperty:   param.ForwardSourceMessageProperty,
+		AutoAck:                        param.AutoAck,
+		MaxMessageRetries:              param.MaxMessageRetries,
+		CustomSerdeInputs:              param.CustomSerdeInputs,
+		CustomSchemaInputs:             param.CustomSchemaInputs,
+		InputTypeClassName:             param.InputTypeClassName,
+		Output:                         param.Output,
+		OutputSerdeClassName:           param.OutputSerdeClassName,
+		OutputSchemaType:               param.OutputSchemaType,
+		OutputTypeClassName:            param.OutputTypeClassName,
+		CustomSchemaOutputs:            param.CustomSchemaOutputs,
+		LogTopic:                       param.LogTopic,
+		ProcessingGuarantees:           param.ProcessingGuarantees,
+		DeadLetterTopic:                param.DeadLetterTopic,
+		SubName:                        param.SubName,
+		RuntimeFlags:                   param.RuntimeFlags,
+		MaxPendingAsyncRequests:        param.MaxPendingAsyncRequests,
+		ExposePulsarAdminClientEnabled: param.ExposePulsarAdminClientEnabled,
+		SkipToLatest:                   param.SkipToLatest,
+		SubscriptionPosition:           param.SubscriptionPosition,
+	}
+
+	if param.BatchBuilder != nil {
+		functionConfig.BatchBuilder = *param.BatchBuilder
+	}
+
+	if param.ProducerConfig != nil {
+		functionConfig.ProducerConfig = &utils.ProducerConfig{
+			MaxPendingMessages:                 param.ProducerConfig.MaxPendingMessages,
+			MaxPendingMessagesAcrossPartitions: param.ProducerConfig.MaxPendingMessagesAcrossPartitions,
+			UseThreadLocalProducers:            param.ProducerConfig.UseThreadLocalProducers,
+			BatchBuilder:                       param.ProducerConfig.BatchBuilder,
+			CompressionType:                    param.ProducerConfig.CompressionType,
+		}
+		if param.ProducerConfig.CryptoConfig != nil {
+			functionConfig.ProducerConfig.CryptoConfig = &utils.CryptoConfig{
+				CryptoKeyReaderClassName:    param.ProducerConfig.CryptoConfig.CryptoKeyReaderClassName,
+				CryptoKeyReaderConfig:       rutils.ConvertMap(param.ProducerConfig.CryptoConfig.CryptoKeyReaderConfig),
+				EncryptionKeys:              param.ProducerConfig.CryptoConfig.EncryptionKeys,
+				ProducerCryptoFailureAction: param.ProducerConfig.CryptoConfig.ProducerCryptoFailureAction,
+				ConsumerCryptoFailureAction: param.ProducerConfig.CryptoConfig.ConsumerCryptoFailureAction,
+			}
+		}
+	}
+
+	if param.InputSpecs != nil && len(param.InputSpecs) > 0 {
+		inputSpecs := make(map[string]utils.ConsumerConfig)
+		for k, v := range param.InputSpecs {
+			iSpec := utils.ConsumerConfig{
+				SchemaType:         v.SchemaType,
+				SerdeClassName:     v.SerdeClassName,
+				RegexPattern:       v.RegexPattern,
+				ReceiverQueueSize:  v.ReceiverQueueSize,
+				SchemaProperties:   v.SchemaProperties,
+				ConsumerProperties: v.ConsumerProperties,
+				PoolMessages:       v.PoolMessages,
+			}
+			if v.CryptoConfig != nil {
+				iSpec.CryptoConfig = &utils.CryptoConfig{
+					CryptoKeyReaderClassName:    v.CryptoConfig.CryptoKeyReaderClassName,
+					CryptoKeyReaderConfig:       rutils.ConvertMap(v.CryptoConfig.CryptoKeyReaderConfig),
+					EncryptionKeys:              v.CryptoConfig.EncryptionKeys,
+					ProducerCryptoFailureAction: v.CryptoConfig.ProducerCryptoFailureAction,
+					ConsumerCryptoFailureAction: v.CryptoConfig.ConsumerCryptoFailureAction,
+				}
+			}
+			inputSpecs[k] = iSpec
+		}
+		functionConfig.InputSpecs = inputSpecs
+	}
+
+	if param.Resources != nil {
+		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
+		if err != nil {
+			return err
+		}
+		functionConfig.Resources = &utils.Resources{
+			CPU:  s,
+			RAM:  param.Resources.RAM,
+			Disk: param.Resources.Disk,
+		}
+	}
+
+	if param.WindowConfig != nil {
+		functionConfig.WindowConfig = &utils.WindowConfig{
+			WindowLengthCount:             param.WindowConfig.WindowLengthCount,
+			WindowLengthDurationMs:        param.WindowConfig.WindowLengthDurationMs,
+			SlidingIntervalCount:          param.WindowConfig.SlidingIntervalCount,
+			SlidingIntervalDurationMs:     param.WindowConfig.SlidingIntervalDurationMs,
+			LateDataTopic:                 param.WindowConfig.LateDataTopic,
+			MaxLagMs:                      param.WindowConfig.MaxLagMs,
+			WatermarkEmitIntervalMs:       param.WindowConfig.WatermarkEmitIntervalMs,
+			TimestampExtractorClassName:   param.WindowConfig.TimestampExtractorClassName,
+			ActualWindowFunctionClassName: param.WindowConfig.ActualWindowFunctionClassName,
+			ProcessingGuarantees:          param.WindowConfig.ProcessingGuarantees,
+		}
+	}
+
+	if param.UserConfig != nil {
+		var err error
+		functionConfig.UserConfig, err = rutils.ConvertJSONToMapStringInterface(param.UserConfig)
+		if err != nil {
+			return err
+		}
+	}
+
+	if param.CustomRuntimeOptions != nil {
+		jByte, err := param.CustomRuntimeOptions.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		functionConfig.CustomRuntimeOptions = string(jByte)
+	}
+
+	if param.Secrets != nil && len(param.Secrets) > 0 {
+		secrets := make(map[string]interface{})
+		for k, v := range param.Secrets {
+			secrets[k] = v
+		}
+		functionConfig.Secrets = secrets
+	}
+
+	if param.Jar != nil {
+		functionConfig.Jar = &packageURL
+	} else if param.Py != nil {
+		functionConfig.Py = &packageURL
+	} else if param.Go != nil {
+		functionConfig.Go = &packageURL
+	} else {
+		return errors.New("FunctionConfig need to specify Jar, Py, or Go package URL")
+	}
+
+	var err error
+	if changed {
+		err = p.adminClient.Functions().UpdateFunctionWithURL(&functionConfig, packageURL, nil)
+	} else {
+		err = p.adminClient.Functions().CreateFuncWithURL(&functionConfig, packageURL)
+	}
+	if err != nil {
+		if !IsAlreadyExist(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DeletePulsarSink deletes a pulsar sink
+func (p *PulsarAdminClient) DeletePulsarSink(tenant, namespace, name string) error {
+	return p.adminClient.Sinks().DeleteSink(tenant, namespace, name)
+}
+
+// ApplyPulsarSink creates or updates a pulsar sink
+func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error {
+	sinkConfig := utils.SinkConfig{
+		Tenant:    tenant,
+		Namespace: namespace,
+		Name:      name,
+		ClassName: param.ClassName,
+
+		TopicsPattern: param.TopicsPattern,
+		TimeoutMs:     param.TimeoutMs,
+
+		CleanupSubscription: param.CleanupSubscription,
+		RetainOrdering:      param.RetainOrdering,
+		RetainKeyOrdering:   param.RetainKeyOrdering,
+		AutoAck:             param.AutoAck,
+		Parallelism:         param.Parallelism,
+
+		SinkType: param.SinkType,
+		Archive:  packageURL,
+
+		ProcessingGuarantees:       param.ProcessingGuarantees,
+		SourceSubscriptionName:     param.SourceSubscriptionName,
+		SourceSubscriptionPosition: param.SourceSubscriptionPosition,
+		RuntimeFlags:               param.RuntimeFlags,
+
+		Inputs:                  param.Inputs,
+		TopicToSerdeClassName:   param.TopicToSerdeClassName,
+		TopicToSchemaType:       param.TopicToSchemaType,
+		TopicToSchemaProperties: param.TopicToSchemaProperties,
+
+		MaxMessageRetries:            param.MaxMessageRetries,
+		DeadLetterTopic:              param.DeadLetterTopic,
+		NegativeAckRedeliveryDelayMs: param.NegativeAckRedeliveryDelayMs,
+		TransformFunction:            param.TransformFunction,
+		TransformFunctionClassName:   param.TransformFunctionClassName,
+		TransformFunctionConfig:      param.TransformFunctionConfig,
+	}
+
+	if param.Resources != nil {
+		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
+		if err != nil {
+			return err
+		}
+		sinkConfig.Resources = &utils.Resources{
+			CPU:  s,
+			RAM:  param.Resources.RAM,
+			Disk: param.Resources.Disk,
+		}
+	}
+
+	if param.InputSpecs != nil && len(param.InputSpecs) > 0 {
+		inputSpecs := make(map[string]utils.ConsumerConfig)
+		for k, v := range param.InputSpecs {
+			iSpec := utils.ConsumerConfig{
+				SchemaType:         v.SchemaType,
+				SerdeClassName:     v.SerdeClassName,
+				RegexPattern:       v.RegexPattern,
+				ReceiverQueueSize:  v.ReceiverQueueSize,
+				SchemaProperties:   v.SchemaProperties,
+				ConsumerProperties: v.ConsumerProperties,
+				PoolMessages:       v.PoolMessages,
+			}
+			if v.CryptoConfig != nil {
+				iSpec.CryptoConfig = &utils.CryptoConfig{
+					CryptoKeyReaderClassName:    v.CryptoConfig.CryptoKeyReaderClassName,
+					CryptoKeyReaderConfig:       rutils.ConvertMap(v.CryptoConfig.CryptoKeyReaderConfig),
+					EncryptionKeys:              v.CryptoConfig.EncryptionKeys,
+					ProducerCryptoFailureAction: v.CryptoConfig.ProducerCryptoFailureAction,
+					ConsumerCryptoFailureAction: v.CryptoConfig.ConsumerCryptoFailureAction,
+				}
+			}
+			inputSpecs[k] = iSpec
+		}
+		sinkConfig.InputSpecs = inputSpecs
+	}
+
+	if param.Configs != nil {
+		var err error
+		sinkConfig.Configs, err = rutils.ConvertJSONToMapStringInterface(param.Configs)
+		if err != nil {
+			return err
+		}
+	}
+
+	if param.CustomRuntimeOptions != nil {
+		jByte, err := param.CustomRuntimeOptions.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		sinkConfig.CustomRuntimeOptions = string(jByte)
+	}
+
+	if param.Secrets != nil && len(param.Secrets) > 0 {
+		secrets := make(map[string]interface{})
+		for k, v := range param.Secrets {
+			secrets[k] = v
+		}
+		sinkConfig.Secrets = secrets
+	}
+
+	var err error
+	if changed {
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sinks().UpdateSink(&sinkConfig, packageURL, nil)
+		} else {
+			err = p.adminClient.Sinks().UpdateSinkWithURL(&sinkConfig, packageURL, nil)
+		}
+	} else {
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sinks().CreateSink(&sinkConfig, packageURL)
+		} else {
+			err = p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
+		}
+	}
+	if err != nil {
+		if !IsAlreadyExist(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// DeletePulsarSource deletes a pulsar source
+func (p *PulsarAdminClient) DeletePulsarSource(tenant, namespace, name string) error {
+	return p.adminClient.Sources().DeleteSource(tenant, namespace, name)
+}
+
+// ApplyPulsarSource creates or updates a pulsar source
+func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error {
+	sourceConfig := utils.SourceConfig{
+		Tenant:    tenant,
+		Namespace: namespace,
+		Name:      name,
+		ClassName: param.ClassName,
+
+		TopicName:      param.TopicName,
+		SerdeClassName: param.SerdeClassName,
+		SchemaType:     param.SchemaType,
+
+		Parallelism:          param.Parallelism,
+		ProcessingGuarantees: param.ProcessingGuarantees,
+
+		Archive: packageURL,
+
+		RuntimeFlags: param.RuntimeFlags,
+
+		BatchBuilder: param.BatchBuilder,
+	}
+
+	if param.Resources != nil {
+		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
+		if err != nil {
+			return err
+		}
+		sourceConfig.Resources = &utils.Resources{
+			CPU:  s,
+			RAM:  param.Resources.RAM,
+			Disk: param.Resources.Disk,
+		}
+	}
+
+	if param.ProducerConfig != nil {
+		sourceConfig.ProducerConfig = &utils.ProducerConfig{
+			MaxPendingMessages:                 param.ProducerConfig.MaxPendingMessages,
+			MaxPendingMessagesAcrossPartitions: param.ProducerConfig.MaxPendingMessagesAcrossPartitions,
+			UseThreadLocalProducers:            param.ProducerConfig.UseThreadLocalProducers,
+			BatchBuilder:                       param.ProducerConfig.BatchBuilder,
+			CompressionType:                    param.ProducerConfig.CompressionType,
+		}
+		if param.ProducerConfig.CryptoConfig != nil {
+			sourceConfig.ProducerConfig.CryptoConfig = &utils.CryptoConfig{
+				CryptoKeyReaderClassName:    param.ProducerConfig.CryptoConfig.CryptoKeyReaderClassName,
+				CryptoKeyReaderConfig:       rutils.ConvertMap(param.ProducerConfig.CryptoConfig.CryptoKeyReaderConfig),
+				EncryptionKeys:              param.ProducerConfig.CryptoConfig.EncryptionKeys,
+				ProducerCryptoFailureAction: param.ProducerConfig.CryptoConfig.ProducerCryptoFailureAction,
+				ConsumerCryptoFailureAction: param.ProducerConfig.CryptoConfig.ConsumerCryptoFailureAction,
+			}
+		}
+	}
+
+	if param.BatchSourceConfig != nil {
+		sourceConfig.BatchSourceConfig = &utils.BatchSourceConfig{
+			DiscoveryTriggererClassName: param.BatchSourceConfig.DiscoveryTriggererClassName,
+		}
+		if param.BatchSourceConfig.DiscoveryTriggererConfig != nil {
+			var err error
+			sourceConfig.BatchSourceConfig.DiscoveryTriggererConfig, err = rutils.ConvertJSONToMapStringInterface(param.BatchSourceConfig.DiscoveryTriggererConfig)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if param.Configs != nil {
+		var err error
+		sourceConfig.Configs, err = rutils.ConvertJSONToMapStringInterface(param.Configs)
+		if err != nil {
+			return err
+		}
+	}
+
+	if param.Secrets != nil && len(param.Secrets) > 0 {
+		secrets := make(map[string]interface{})
+		for k, v := range param.Secrets {
+			secrets[k] = v
+		}
+		sourceConfig.Secrets = secrets
+	}
+
+	if param.CustomRuntimeOptions != nil {
+		jByte, err := param.CustomRuntimeOptions.MarshalJSON()
+		if err != nil {
+			return err
+		}
+		sourceConfig.CustomRuntimeOptions = string(jByte)
+	}
+
+	var err error
+
+	if changed {
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sources().UpdateSource(&sourceConfig, packageURL, nil)
+		} else {
+			err = p.adminClient.Sources().UpdateSourceWithURL(&sourceConfig, packageURL, nil)
+		}
+	} else {
+		if strings.HasPrefix(packageURL, "builtin://") {
+			err = p.adminClient.Sources().CreateSource(&sourceConfig, packageURL)
+		} else {
+			err = p.adminClient.Sources().CreateSourceWithURL(&sourceConfig, packageURL)
+		}
+	}
+	if err != nil {
+		if !IsAlreadyExist(err) {
+			return err
+		}
+	}
+
+	return nil
 }

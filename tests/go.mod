@@ -20,6 +20,8 @@ require (
 
 require k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 
+require k8s.io/apiextensions-apiserver v0.23.0
+
 require (
 	cloud.google.com/go v0.81.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect

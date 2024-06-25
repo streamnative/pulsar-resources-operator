@@ -20,4 +20,5 @@ resources:
 - resource_v1alpha1_pulsartopic.yaml
 - resource_v1alpha1_pulsarpermission.yaml
 - resource_v1alpha1_pulsargeoreplication.yaml
+- resource_v1alpha1_pulsarpackage.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

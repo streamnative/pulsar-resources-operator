@@ -151,6 +151,30 @@ type PulsarAdmin interface {
 
 	// CheckClusterExist check wether the cluster is created or not
 	CheckClusterExist(name string) (bool, error)
+
+	// DeletePulsarPackage delete pulsar package
+	DeletePulsarPackage(packageURL string) error
+
+	// ApplyPulsarPackage apply pulsar package
+	ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error
+
+	// DeletePulsarFunction delete pulsar function
+	DeletePulsarFunction(tenant, namespace, name string) error
+
+	// ApplyPulsarFunction apply pulsar function
+	ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error
+
+	// DeletePulsarSink delete pulsar sink
+	DeletePulsarSink(tenant, namespace, name string) error
+
+	// ApplyPulsarSink apply pulsar sink
+	ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error
+
+	// DeletePulsarSource delete pulsar source
+	DeletePulsarSource(tenant, namespace, name string) error
+
+	// ApplyPulsarSource apply pulsar source
+	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config
@@ -179,6 +203,8 @@ type PulsarAdminConfig struct {
 	Audience       string
 	Key            string
 	Scope          string
+
+	PulsarAPIVersion *config.APIVersion
 }
 
 // NewPulsarAdmin initialize a pulsar admin client with configuration
@@ -193,6 +219,10 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		TLSAllowInsecureConnection: true,
 		// V2 admin endpoint contains operations for tenant, namespace and topic.
 		PulsarAPIVersion: config.V2,
+	}
+
+	if conf.PulsarAPIVersion != nil {
+		config.PulsarAPIVersion = *conf.PulsarAPIVersion
 	}
 
 	if conf.Key != "" {

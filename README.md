@@ -8,6 +8,10 @@ Currently, the Pulsar Resources Operator provides full lifecycle management for 
 - Namespaces
 - Topics
 - Permissions
+- Packages
+- Functions
+- Sinks
+- Sources
 
 
 # Installation
@@ -98,6 +102,10 @@ In this tutorial, a Kubernetes namespace called `test` is used for examples, whi
 - [PulsarNamespace](docs/pulsar_namespace.md)
 - [PulsarTopic](docs/pulsar_topic.md)
 - [PulsarPermission](docs/pulsar_permission.md)
+- [PulsarPackage](docs/pulsar_package.md)
+- [PulsarFunction](docs/pulsar_function.md)
+- [PulsarSink](docs/pulsar_sink.md)
+- [PulsarSource](docs/pulsar_source.md)
 
 ## Contributing
 

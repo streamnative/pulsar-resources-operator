@@ -22,6 +22,10 @@ resources:
 - bases/resource.streamnative.io_pulsartopics.yaml
 - bases/resource.streamnative.io_pulsarpermissions.yaml
 - bases/resource.streamnative.io_pulsargeoreplications.yaml
+- bases/resource.streamnative.io_pulsarfunctions.yaml
+- bases/resource.streamnative.io_pulsarpackages.yaml
+- bases/resource.streamnative.io_pulsarsinks.yaml
+- bases/resource.streamnative.io_pulsarsources.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

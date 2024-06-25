@@ -74,6 +74,16 @@ var _ = Describe("Resources", func() {
 				},
 			},
 		}
+		ppackage          *v1alphav1.PulsarPackage
+		ppackageurl       string = "function://public/default/api-examples@v3.2.3.3"
+		pfuncName         string = "test-func"
+		psinkName         string = "test-sink"
+		psourceName       string = "test-source"
+		pfunc             *v1alphav1.PulsarFunction
+		psinkpackageurl   string = "builtin://data-generator"
+		psink             *v1alphav1.PulsarSink
+		psource           *v1alphav1.PulsarSource
+		psourcepackageurl string = "builtin://data-generator"
 	)
 
 	BeforeEach(func() {
@@ -94,7 +104,10 @@ var _ = Describe("Resources", func() {
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
-
+		ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+		psink = utils.MakePulsarSink(namespaceName, psinkName, psinkpackageurl, pconnName, lifecyclePolicy)
+		psource = utils.MakePulsarSource(namespaceName, psourceName, psourcepackageurl, pconnName, lifecyclePolicy)
 	})
 
 	Describe("Basic resource operations", Ordered, func() {
@@ -109,19 +122,6 @@ var _ = Describe("Resources", func() {
 					return statefulset.Status.ReadyReplicas > 0 && statefulset.Status.ReadyReplicas == statefulset.Status.Replicas
 				}, "600s", "100ms").Should(BeTrue())
 			})
-		})
-		Context("Check pulsar proxy", func() {
-			It("should create the pulsar proxy successfully", func() {
-				Eventually(func() bool {
-					statefulset := &v1.StatefulSet{}
-					k8sClient.Get(ctx, types.NamespacedName{
-						Name:      proxyName + "-proxy",
-						Namespace: namespaceName,
-					}, statefulset)
-					return statefulset.Status.ReadyReplicas > 0 && statefulset.Status.ReadyReplicas == statefulset.Status.Replicas
-				}, "600s", "100ms").Should(BeTrue())
-			})
-
 		})
 
 		Context("PulsarConnection operation", func() {
@@ -209,8 +209,8 @@ var _ = Describe("Resources", func() {
 				updateTopicSchema(ctx, ptopicName2, exampleSchemaDef)
 
 				Eventually(func(g Gomega) {
-					podName := fmt.Sprintf("%s-proxy-0", proxyName)
-					containerName := "pulsar-proxy"
+					podName := fmt.Sprintf("%s-broker-0", brokerName)
+					containerName := fmt.Sprintf("%s-broker", brokerName)
 					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
 					g.Expect(err).Should(Succeed())
@@ -228,8 +228,8 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should always update pulsar resource when enable AlwaysUpdatePulsarResource", func() {
-				podName := fmt.Sprintf("%s-proxy-0", proxyName)
-				containerName := "pulsar-proxy"
+				podName := fmt.Sprintf("%s-broker-0", brokerName)
+				containerName := fmt.Sprintf("%s-broker", brokerName)
 
 				By("delete topic2 with pulsarctl")
 				_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
@@ -290,6 +290,68 @@ var _ = Describe("Resources", func() {
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
+			})
+		})
+
+		Context("PulsarFunction & PulsarPackage operation", func() {
+			It("should create the pulsarpackage successfully", func() {
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the package should be ready", func() {
+				Eventually(func() bool {
+					p := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, p)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(p)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("should create the pulsarfunction successfully", func() {
+				err := k8sClient.Create(ctx, pfunc)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the function should be ready", func() {
+				Eventually(func() bool {
+					f := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(f)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+		})
+
+		Context("PulsarSink operation", func() {
+			It("should create the pulsarsink successfully", func() {
+				err := k8sClient.Create(ctx, psink)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the sink should be ready", func() {
+				Eventually(func() bool {
+					s := &v1alphav1.PulsarSink{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psinkName}
+					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(s)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+		})
+
+		Context("PulsarSource operation", func() {
+			It("should create the pulsarsource successfully", func() {
+				err := k8sClient.Create(ctx, psource)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the source should be ready", func() {
+				Eventually(func() bool {
+					s := &v1alphav1.PulsarSource{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psourceName}
+					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(s)
+				}, "40s", "100ms").Should(BeTrue())
 			})
 		})
 
