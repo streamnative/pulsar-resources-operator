@@ -98,6 +98,7 @@ jobs:
 
   operatorhub:
     name: Create PR to the operatorhub
+    needs: build
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
