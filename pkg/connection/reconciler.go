@@ -74,10 +74,10 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		makeNamespacesReconciler(r),
 		makeTopicsReconciler(r),
 		makePermissionsReconciler(r),
+		makePackagesReconciler(r),
 		makeFunctionsReconciler(r),
 		makeSinksReconciler(r),
 		makeSourcesReconciler(r),
-		makePackagesReconciler(r),
 	}
 	return r
 }
