@@ -56,8 +56,8 @@
                     "description": "An explanation about the purpose of this instance.",
                     "examples": [
                         {
-                            "registry": "docker.cloudsmith.io",
-                            "repository": "streamnative/operators/pulsar-resources-operator",
+                            "registry": "dockerio",
+                            "repository": "streamnative/pulsar-resources-operator",
                             "tag": ""
                         }
                     ],
@@ -72,7 +72,7 @@
                             "title": "The registry schema",
                             "description": "An explanation about the purpose of this instance.",
                             "examples": [
-                                "docker.cloudsmith.io"
+                                "docker.io"
                             ]
                         },
                         "repository": {
@@ -81,7 +81,7 @@
                             "title": "The repository schema",
                             "description": "An explanation about the purpose of this instance.",
                             "examples": [
-                                "streamnative/operators/pulsar-resources-operator"
+                                "streamnative/pulsar-resources-operator"
                             ]
                         },
                         "tag": {
