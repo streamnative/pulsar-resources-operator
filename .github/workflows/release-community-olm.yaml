@@ -29,76 +29,8 @@ on:
         default: alpha
 
 jobs:
-  build:
-    name: Build image and bundle
-    runs-on: ubuntu-latest
-    env:
-      GOPRIVATE: github.com/streamnative
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
-      IMAGE_TAG_BASE_QUAY: quay.io/streamnativeio/pulsar-resources-operator
-      REDHAT_API_KEY: ${{ secrets.REDHAT_API_KEY }}
-    outputs:
-      version: ${{ steps.redhat.outputs.version }}
-      channels: ${{ steps.redhat.outputs.channels }}
-      default_channel: ${{ steps.redhat.outputs.default_channel }}
-
-    steps:
-      - name: Set up Go 1.21
-        uses: actions/setup-go@v3
-        with:
-          go-version: '1.21'
-        id: go
-
-      - name: Set up Git token
-        run: |
-          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
-
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v3
-
-      - name: Setup operator-sdk
-        run: |
-          wget https://github.com/operator-framework/operator-sdk/releases/download/v1.31.0/operator-sdk_linux_amd64 -O operator-sdk
-          chmod +x operator-sdk
-          mv operator-sdk /usr/local/bin/
-          operator-sdk version
-
-      - name: Login to Quay
-        uses: docker/login-action@v2
-        with:
-          registry: quay.io
-          username: ${{ secrets.QUAY_DOCKER_USERNAME }}
-          password: ${{ secrets.QUAY_DOCKER_PASSWORD }}
-
-      - name: Build image And Publish to Quay
-        id: redhat
-        run: |
-          export VERSION=${{ inputs.channel-tag }}
-          echo $VERSION
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          export IMG=$IMAGE_TAG_BASE_QUAY:v$VERSION
-          export IMG_LATEST=$IMAGE_TAG_BASE_QUAY:latest
-          make docker-build-redhat
-          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.9.6/preflight-linux-amd64 -O preflight
-          chmod +x preflight
-          mv preflight /usr/local/bin
-          preflight -v
-          make docker-push-redhat
-          make redhat-preflight-check-image
-          make report-preflight-check-result
-
-          export BUNDLE_IMG=$IMAGE_TAG_BASE_QUAY-bundle:v$VERSION
-          export CHANNELS=alpha,beta,stable
-          export DEFAULT_CHANNEL=alpha
-          echo "channels=$CHANNELS" >> $GITHUB_OUTPUT
-          echo "default_channel=$DEFAULT_CHANNEL" >> $GITHUB_OUTPUT
-          make bundle-redhat
-          make bundle-build
-          make bundle-push
-
   operatorhub:
     name: Create PR to the operatorhub
-    needs: build
     runs-on: ubuntu-latest
     env:
       GITHUB_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
