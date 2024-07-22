@@ -355,6 +355,52 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
+		Context("PulsarFunction & PulsarPackage operation with failure", func() {
+			It("should create the pulsarpackage successfully", func() {
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the package should be ready", func() {
+				Eventually(func() bool {
+					p := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, p)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(p)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("should create the pulsarfunction successfully with error config", func() {
+				pfunc.Spec.Jar.URL = "function://not/exists/package@latest"
+				err := k8sClient.Create(ctx, pfunc)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the function should be not ready", func() {
+				Eventually(func() bool {
+					f := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+					return !v1alphav1.IsPulsarResourceReady(f)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("should update the pulsarfunction successfully with correct config", func() {
+				pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+				err := k8sClient.Update(ctx, pfunc)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the function should be ready after update", func() {
+				Eventually(func() bool {
+					f := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(f)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+		})
+
 		AfterAll(func() {
 			Eventually(func(g Gomega) {
 				t := &v1alphav1.PulsarTopic{}

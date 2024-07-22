@@ -1094,3 +1094,59 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 
 	return nil
 }
+
+// CheckPulsarFunctionExist check whether the function is created or not
+func (p *PulsarAdminClient) CheckPulsarFunctionExist(tenant, namespace, name string) (bool, error) {
+	_, err := p.adminClient.Functions().GetFunction(tenant, namespace, name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckPulsarSinkExist check whether the sink is created or not
+func (p *PulsarAdminClient) CheckPulsarSinkExist(tenant, namespace, name string) (bool, error) {
+	_, err := p.adminClient.Sinks().GetSink(tenant, namespace, name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckPulsarSourceExist check whether the source is created or not
+func (p *PulsarAdminClient) CheckPulsarSourceExist(tenant, namespace, name string) (bool, error) {
+	_, err := p.adminClient.Sources().GetSource(tenant, namespace, name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckPulsarPackageExist check whether the package is created or not
+func (p *PulsarAdminClient) CheckPulsarPackageExist(packageURL string) (bool, error) {
+	_, err := p.adminClient.Packages().GetMetadata(packageURL)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}

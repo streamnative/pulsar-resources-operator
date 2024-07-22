@@ -129,7 +129,15 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	}
 	defer os.Remove(filePath)
 
-	if err := pulsarAdmin.ApplyPulsarPackage(pkg.Spec.PackageURL, filePath, pkg.Spec.Description, pkg.Spec.Contact, pkg.Spec.Properties, pkg.Status.ObservedGeneration > 1); err != nil {
+	updated := false
+	if exist, err := pulsarAdmin.CheckPulsarPackageExist(pkg.Spec.PackageURL); err != nil {
+		log.Error(err, "Failed to check pulsar package existence")
+		return err
+	} else if exist {
+		updated = true
+	}
+
+	if err := pulsarAdmin.ApplyPulsarPackage(pkg.Spec.PackageURL, filePath, pkg.Spec.Description, pkg.Spec.Contact, pkg.Spec.Properties, updated); err != nil {
 		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, err.Error()))
 		log.Error(err, "Failed to apply package")
 		if err := r.conn.client.Status().Update(ctx, pkg); err != nil {

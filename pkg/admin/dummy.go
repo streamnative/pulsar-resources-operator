@@ -168,3 +168,23 @@ func (d *DummyPulsarAdmin) DeletePulsarSource(_, _, _ string) error {
 func (d *DummyPulsarAdmin) ApplyPulsarSource(_, _, _, _ string, _ *v1alpha1.PulsarSourceSpec, _ bool) error {
 	return nil
 }
+
+// CheckPulsarFunctionExist is a fake implements of CheckPulsarFunctionExist
+func (d *DummyPulsarAdmin) CheckPulsarFunctionExist(_, _, _ string) (bool, error) {
+	return true, nil
+}
+
+// CheckPulsarSinkExist is a fake implements of CheckPulsarSinkExist
+func (d *DummyPulsarAdmin) CheckPulsarSinkExist(_, _, _ string) (bool, error) {
+	return true, nil
+}
+
+// CheckPulsarSourceExist is a fake implements of CheckPulsarSourceExist
+func (d *DummyPulsarAdmin) CheckPulsarSourceExist(_, _, _ string) (bool, error) {
+	return true, nil
+}
+
+// CheckPulsarPackageExist is a fake implements of CheckPulsarPackageExist
+func (d *DummyPulsarAdmin) CheckPulsarPackageExist(_ string) (bool, error) {
+	return true, nil
+}
