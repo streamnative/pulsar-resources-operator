@@ -150,11 +150,14 @@ type PulsarAdmin interface {
 	// DeleteCluster delete cluster info
 	DeleteCluster(name string) error
 
-	// CheckClusterExist check wether the cluster is created or not
+	// CheckClusterExist check whether the cluster is created or not
 	CheckClusterExist(name string) (bool, error)
 
 	// DeletePulsarPackage delete pulsar package
 	DeletePulsarPackage(packageURL string) error
+
+	// CheckPulsarPackageExist check whether the package is created or not
+	CheckPulsarPackageExist(packageURL string) (bool, error)
 
 	// ApplyPulsarPackage apply pulsar package
 	ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error
@@ -162,17 +165,26 @@ type PulsarAdmin interface {
 	// DeletePulsarFunction delete pulsar function
 	DeletePulsarFunction(tenant, namespace, name string) error
 
+	// CheckPulsarFunctionExist check whether the function is created or not
+	CheckPulsarFunctionExist(tenant, namespace, name string) (bool, error)
+
 	// ApplyPulsarFunction apply pulsar function
 	ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error
 
 	// DeletePulsarSink delete pulsar sink
 	DeletePulsarSink(tenant, namespace, name string) error
 
+	// CheckPulsarSinkExist check whether the sink is created or not
+	CheckPulsarSinkExist(tenant, namespace, name string) (bool, error)
+
 	// ApplyPulsarSink apply pulsar sink
 	ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error
 
 	// DeletePulsarSource delete pulsar source
 	DeletePulsarSource(tenant, namespace, name string) error
+
+	// CheckPulsarSourceExist check whether the source is created or not
+	CheckPulsarSourceExist(tenant, namespace, name string) (bool, error)
 
 	// ApplyPulsarSource apply pulsar source
 	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error

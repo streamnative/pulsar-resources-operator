@@ -666,16 +666,21 @@ func (p *PulsarAdminClient) DeletePulsarPackage(packageURL string) error {
 func (p *PulsarAdminClient) ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error {
 	packageName, err := utils.GetPackageName(packageURL)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get package name: %w", err)
 	}
 	if changed {
 		err = p.adminClient.Packages().UpdateMetadata(packageName.String(), description, contact, properties)
+		if err != nil {
+			if !IsAlreadyExist(err) {
+				return fmt.Errorf("failed to update package metadata: %w", err)
+			}
+		}
 	} else {
 		err = p.adminClient.Packages().Upload(packageName.String(), filePath, description, contact, properties)
-	}
-	if err != nil {
-		if !IsAlreadyExist(err) {
-			return err
+		if err != nil {
+			if !IsAlreadyExist(err) {
+				return fmt.Errorf("failed to upload package: %w", err)
+			}
 		}
 	}
 
@@ -775,7 +780,7 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 	if param.Resources != nil {
 		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to parse cpu: %w", err)
 		}
 		functionConfig.Resources = &utils.Resources{
 			CPU:  s,
@@ -803,7 +808,7 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 		var err error
 		functionConfig.UserConfig, err = rutils.ConvertJSONToMapStringInterface(param.UserConfig)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to convert user config: %w", err)
 		}
 	}
 
@@ -836,12 +841,17 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 	var err error
 	if changed {
 		err = p.adminClient.Functions().UpdateFunctionWithURL(&functionConfig, packageURL, nil)
+		if err != nil {
+			if !IsAlreadyExist(err) {
+				return fmt.Errorf("failed to update function: %w", err)
+			}
+		}
 	} else {
 		err = p.adminClient.Functions().CreateFuncWithURL(&functionConfig, packageURL)
-	}
-	if err != nil {
-		if !IsAlreadyExist(err) {
-			return err
+		if err != nil {
+			if !IsAlreadyExist(err) {
+				return fmt.Errorf("failed to create function: %w", err)
+			}
 		}
 	}
 
@@ -894,7 +904,7 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 	if param.Resources != nil {
 		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("apply pulsar sink failed on parse resources: %s", err.Error())
 		}
 		sinkConfig.Resources = &utils.Resources{
 			CPU:  s,
@@ -933,7 +943,7 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		var err error
 		sinkConfig.Configs, err = rutils.ConvertJSONToMapStringInterface(param.Configs)
 		if err != nil {
-			return err
+			return fmt.Errorf("apply pulsar sink failed on convert configs: %s", err.Error())
 		}
 	}
 
@@ -957,19 +967,34 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 	if changed {
 		if strings.HasPrefix(packageURL, "builtin://") {
 			err = p.adminClient.Sinks().UpdateSink(&sinkConfig, packageURL, nil)
+			if err != nil {
+				if !IsAlreadyExist(err) {
+					return fmt.Errorf("apply pulsar sink failed on update sink: %s", err.Error())
+				}
+			}
 		} else {
 			err = p.adminClient.Sinks().UpdateSinkWithURL(&sinkConfig, packageURL, nil)
+			if err != nil {
+				if !IsAlreadyExist(err) {
+					return fmt.Errorf("apply pulsar sink failed on update sink with url: %s", err.Error())
+				}
+			}
 		}
 	} else {
 		if strings.HasPrefix(packageURL, "builtin://") {
 			err = p.adminClient.Sinks().CreateSink(&sinkConfig, packageURL)
+			if err != nil {
+				if !IsAlreadyExist(err) {
+					return fmt.Errorf("apply pulsar sink failed on create sink: %s", err.Error())
+				}
+			}
 		} else {
 			err = p.adminClient.Sinks().CreateSinkWithURL(&sinkConfig, packageURL)
-		}
-	}
-	if err != nil {
-		if !IsAlreadyExist(err) {
-			return err
+			if err != nil {
+				if !IsAlreadyExist(err) {
+					return fmt.Errorf("apply pulsar sink failed on create sink with url: %s", err.Error())
+				}
+			}
 		}
 	}
 
@@ -1006,7 +1031,7 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 	if param.Resources != nil {
 		s, err := strconv.ParseFloat(param.Resources.CPU, 64)
 		if err != nil {
-			return err
+			return fmt.Errorf("apply pulsar source failed on parse resources: %s", err.Error())
 		}
 		sourceConfig.Resources = &utils.Resources{
 			CPU:  s,
@@ -1042,7 +1067,7 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 			var err error
 			sourceConfig.BatchSourceConfig.DiscoveryTriggererConfig, err = rutils.ConvertJSONToMapStringInterface(param.BatchSourceConfig.DiscoveryTriggererConfig)
 			if err != nil {
-				return err
+				return fmt.Errorf("apply pulsar source failed on convert discovery triggerer config: %s", err.Error())
 			}
 		}
 	}
@@ -1051,7 +1076,7 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 		var err error
 		sourceConfig.Configs, err = rutils.ConvertJSONToMapStringInterface(param.Configs)
 		if err != nil {
-			return err
+			return fmt.Errorf("apply pulsar source failed on convert configs: %s", err.Error())
 		}
 	}
 
@@ -1076,21 +1101,84 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 	if changed {
 		if strings.HasPrefix(packageURL, "builtin://") {
 			err = p.adminClient.Sources().UpdateSource(&sourceConfig, packageURL, nil)
+			if err != nil && !IsAlreadyExist(err) {
+				return fmt.Errorf("apply pulsar source failed on update source: %s", err.Error())
+			}
 		} else {
 			err = p.adminClient.Sources().UpdateSourceWithURL(&sourceConfig, packageURL, nil)
+			if err != nil && !IsAlreadyExist(err) {
+				return fmt.Errorf("apply pulsar source failed on update source with url: %s", err.Error())
+			}
 		}
 	} else {
 		if strings.HasPrefix(packageURL, "builtin://") {
 			err = p.adminClient.Sources().CreateSource(&sourceConfig, packageURL)
+			if err != nil && !IsAlreadyExist(err) {
+				return fmt.Errorf("apply pulsar source failed on create source: %s", err.Error())
+			}
 		} else {
 			err = p.adminClient.Sources().CreateSourceWithURL(&sourceConfig, packageURL)
-		}
-	}
-	if err != nil {
-		if !IsAlreadyExist(err) {
-			return err
+			if err != nil && !IsAlreadyExist(err) {
+				return fmt.Errorf("apply pulsar source failed on create source with url: %s", err.Error())
+			}
 		}
 	}
 
 	return nil
+}
+
+// CheckPulsarFunctionExist check whether the function is created or not
+func (p *PulsarAdminClient) CheckPulsarFunctionExist(tenant, namespace, name string) (bool, error) {
+	_, err := p.adminClient.Functions().GetFunction(tenant, namespace, name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckPulsarSinkExist check whether the sink is created or not
+func (p *PulsarAdminClient) CheckPulsarSinkExist(tenant, namespace, name string) (bool, error) {
+	_, err := p.adminClient.Sinks().GetSink(tenant, namespace, name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckPulsarSourceExist check whether the source is created or not
+func (p *PulsarAdminClient) CheckPulsarSourceExist(tenant, namespace, name string) (bool, error) {
+	_, err := p.adminClient.Sources().GetSource(tenant, namespace, name)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
+}
+
+// CheckPulsarPackageExist check whether the package is created or not
+func (p *PulsarAdminClient) CheckPulsarPackageExist(packageURL string) (bool, error) {
+	_, err := p.adminClient.Packages().GetMetadata(packageURL)
+
+	if err != nil {
+		if IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return true, nil
 }
