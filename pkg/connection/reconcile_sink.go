@@ -121,6 +121,7 @@ func (r *PulsarSinkReconciler) ReconcileSink(ctx context.Context, pulsarAdmin ad
 
 	if sink.Spec.Archive == nil && sink.Spec.SinkType == "" {
 		err := errors.New("no package URL or sink type provided")
+		meta.SetStatusCondition(&sink.Status.Conditions, *NewErrorCondition(sink.Generation, "no package URL or sink type provided"))
 		return err
 	}
 
@@ -130,11 +131,21 @@ func (r *PulsarSinkReconciler) ReconcileSink(ctx context.Context, pulsarAdmin ad
 		packageURL = validateURL(sink.Spec.Archive.URL)
 		if packageURL == "" {
 			err := errors.New("invalid package URL")
+			meta.SetStatusCondition(&sink.Status.Conditions, *NewErrorCondition(sink.Generation, "invalid package URL"))
 			return err
 		}
 	}
 
-	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageURL, &sink.Spec, sink.Status.ObservedGeneration > 1); err != nil {
+	updated := false
+	if exist, err := pulsarAdmin.CheckPulsarSinkExist(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name); err != nil {
+		log.Error(err, "Failed to check sink existence")
+		meta.SetStatusCondition(&sink.Status.Conditions, *NewErrorCondition(sink.Generation, fmt.Sprintf("failed to check sink existence: %s", err.Error())))
+		return err
+	} else if exist {
+		updated = true
+	}
+
+	if err := pulsarAdmin.ApplyPulsarSink(sink.Spec.Tenant, sink.Spec.Namespace, sink.Spec.Name, packageURL, &sink.Spec, updated); err != nil {
 		meta.SetStatusCondition(&sink.Status.Conditions, *NewErrorCondition(sink.Generation, err.Error()))
 		log.Error(err, "Failed to apply sink")
 		if err := r.conn.client.Status().Update(ctx, sink); err != nil {
