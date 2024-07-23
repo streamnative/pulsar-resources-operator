@@ -424,8 +424,11 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should update the pulsarfunction successfully with correct config", func() {
-				pfuncfailure = utils.MakePulsarFunction(namespaceName, pfuncFailureName, ppackageurl, pconnName, lifecyclePolicy)
-				err := k8sClient.Update(ctx, pfuncfailure)
+				f := &v1alphav1.PulsarFunction{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+				Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+				f.Spec.Jar.URL = ppackageurl
+				err := k8sClient.Update(ctx, f)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
