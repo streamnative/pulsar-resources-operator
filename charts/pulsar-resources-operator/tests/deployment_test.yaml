@@ -57,7 +57,7 @@ tests:
 
   - it: should update the image version successfully
     set:
-      image.manager.tag: v0.4.12
+      image.manager.tag: v0.5.1
     asserts:
       - equal:
           path: spec.template.spec.containers[1].image
