@@ -132,7 +132,7 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	updated := false
 	if exist, err := pulsarAdmin.CheckPulsarPackageExist(pkg.Spec.PackageURL); err != nil {
 		log.Error(err, "Failed to check pulsar package existence")
-		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, fmt.Sprintf("failed to check pulsar package existence: %w", err)))
+		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, fmt.Sprintf("failed to check pulsar package existence: %s", err.Error())))
 		return err
 	} else if exist {
 		updated = true
