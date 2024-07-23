@@ -123,6 +123,7 @@ func (r *PulsarSourceReconciler) ReconcileSource(ctx context.Context, pulsarAdmi
 
 	if source.Spec.Archive == nil {
 		err := errors.New("invalid package URL")
+		meta.SetStatusCondition(&source.Status.Conditions, *NewErrorCondition(source.Generation, "invalid package URL"))
 		return err
 	}
 
@@ -130,12 +131,14 @@ func (r *PulsarSourceReconciler) ReconcileSource(ctx context.Context, pulsarAdmi
 
 	if packageURL == "" {
 		err := errors.New("invalid package URL")
+		meta.SetStatusCondition(&source.Status.Conditions, *NewErrorCondition(source.Generation, "invalid package URL"))
 		return err
 	}
 
 	updated := false
 	if exist, err := pulsarAdmin.CheckPulsarSourceExist(source.Spec.Tenant, source.Spec.Namespace, source.Spec.Name); err != nil {
 		log.Error(err, "Failed to check source existence")
+		meta.SetStatusCondition(&source.Status.Conditions, *NewErrorCondition(source.Generation, fmt.Sprintf("failed to check source existence: %s", err.Error())))
 		return err
 	} else if exist {
 		updated = true

@@ -129,17 +129,20 @@ func (r *PulsarFunctionReconciler) ReconcileFunction(ctx context.Context, pulsar
 		packageURL = validateURL(instance.Spec.Go.URL)
 	} else {
 		err := errors.New("no package URL found")
+		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, "no package URL found"))
 		return err
 	}
 
 	if packageURL == "" {
 		err := errors.New("invalid package URL")
+		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, "invalid package URL"))
 		return err
 	}
 
 	updated := false
 	if exist, err := pulsarAdmin.CheckPulsarFunctionExist(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name); err != nil {
 		log.Error(err, "Failed to check function existence")
+		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, fmt.Sprintf("failed to check function existence: %s", err.Error())))
 		return err
 	} else if exist {
 		updated = true

@@ -77,9 +77,11 @@ var _ = Describe("Resources", func() {
 		ppackage          *v1alphav1.PulsarPackage
 		ppackageurl       string = "function://public/default/api-examples@v3.2.3.3"
 		pfuncName         string = "test-func"
+		pfuncFailureName  string = "func-test-failure"
 		psinkName         string = "test-sink"
 		psourceName       string = "test-source"
 		pfunc             *v1alphav1.PulsarFunction
+		pfuncfailure      *v1alphav1.PulsarFunction
 		psinkpackageurl   string = "builtin://data-generator"
 		psink             *v1alphav1.PulsarSink
 		psource           *v1alphav1.PulsarSource
@@ -106,6 +108,7 @@ var _ = Describe("Resources", func() {
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
 		ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
 		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+		pfuncfailure = utils.MakePulsarFunction(namespaceName, pfuncFailureName, "function://not/exists/package@latest", pconnName, lifecyclePolicy)
 		psink = utils.MakePulsarSink(namespaceName, psinkName, psinkpackageurl, pconnName, lifecyclePolicy)
 		psource = utils.MakePulsarSource(namespaceName, psourceName, psourcepackageurl, pconnName, lifecyclePolicy)
 	})
@@ -321,6 +324,24 @@ var _ = Describe("Resources", func() {
 					return v1alphav1.IsPulsarResourceReady(f)
 				}, "40s", "100ms").Should(BeTrue())
 			})
+
+			It("cleanup the pulsarfunction successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+
+			It("cleanup the pulsarpackage successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
 		})
 
 		Context("PulsarSink operation", func() {
@@ -337,6 +358,15 @@ var _ = Describe("Resources", func() {
 					return v1alphav1.IsPulsarResourceReady(s)
 				}, "40s", "100ms").Should(BeTrue())
 			})
+
+			It("cleanup the pulsarsink successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarSink{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psinkName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
 		})
 
 		Context("PulsarSource operation", func() {
@@ -352,6 +382,15 @@ var _ = Describe("Resources", func() {
 					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(s)
 				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsarsource successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarSource{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psourceName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
 			})
 		})
 
@@ -371,33 +410,50 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should create the pulsarfunction successfully with error config", func() {
-				pfunc.Spec.Jar.URL = "function://not/exists/package@latest"
-				err := k8sClient.Create(ctx, pfunc)
+				err := k8sClient.Create(ctx, pfuncfailure)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
 			It("the function should be not ready", func() {
 				Eventually(func() bool {
 					f := &v1alphav1.PulsarFunction{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
 					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
 					return !v1alphav1.IsPulsarResourceReady(f)
 				}, "40s", "100ms").Should(BeTrue())
 			})
 
 			It("should update the pulsarfunction successfully with correct config", func() {
-				pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
-				err := k8sClient.Update(ctx, pfunc)
+				pfuncfailure = utils.MakePulsarFunction(namespaceName, pfuncFailureName, ppackageurl, pconnName, lifecyclePolicy)
+				err := k8sClient.Update(ctx, pfuncfailure)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
 			It("the function should be ready after update", func() {
 				Eventually(func() bool {
 					f := &v1alphav1.PulsarFunction{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
 					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(f)
 				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsarfunction successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+
+			It("cleanup the pulsarpackage successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
 			})
 		})
 
