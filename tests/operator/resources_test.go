@@ -453,7 +453,7 @@ var _ = Describe("Resources", func() {
 			It("cleanup the pulsarpackage successfully", func() {
 				Eventually(func(g Gomega) {
 					t := &v1alphav1.PulsarPackage{}
-					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
 					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 				}).Should(Succeed())
