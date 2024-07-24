@@ -107,40 +107,79 @@ type PackageContentRef struct {
 
 // Resources indicates the resources for the pulsar functions and connectors
 type Resources struct {
-	CPU  string `json:"cpu"`
-	Disk int64  `json:"disk"`
-	RAM  int64  `json:"ram"`
+	// +optional
+	CPU string `json:"cpu,omitempty"`
+
+	// +optional
+	Disk int64 `json:"disk,omitempty"`
+
+	// +optional
+	RAM int64 `json:"ram,omitempty"`
 }
 
 // ProducerConfig represents the configuration for the producer of the pulsar functions and connectors
 type ProducerConfig struct {
-	MaxPendingMessages                 int `json:"maxPendingMessages" yaml:"maxPendingMessages"`
-	MaxPendingMessagesAcrossPartitions int `json:"maxPendingMessagesAcrossPartitions" yaml:"maxPendingMessagesAcrossPartitions"`
+	// +optional
+	MaxPendingMessages int `json:"maxPendingMessages,omitempty" yaml:"maxPendingMessages"`
 
-	UseThreadLocalProducers bool          `json:"useThreadLocalProducers" yaml:"useThreadLocalProducers"`
-	CryptoConfig            *CryptoConfig `json:"cryptoConfig" yaml:"cryptoConfig"`
-	BatchBuilder            string        `json:"batchBuilder" yaml:"batchBuilder"`
-	CompressionType         string        `json:"compressionType" yaml:"compressionType"`
+	// +optional
+	MaxPendingMessagesAcrossPartitions int `json:"maxPendingMessagesAcrossPartitions,omitempty" yaml:"maxPendingMessagesAcrossPartitions"`
+
+	// +optional
+	UseThreadLocalProducers bool `json:"useThreadLocalProducers,omitempty" yaml:"useThreadLocalProducers"`
+
+	// +optional
+	CryptoConfig *CryptoConfig `json:"cryptoConfig,omitempty" yaml:"cryptoConfig"`
+
+	// +optional
+	BatchBuilder string `json:"batchBuilder,omitempty" yaml:"batchBuilder"`
+
+	// +optional
+	CompressionType string `json:"compressionType,omitempty" yaml:"compressionType"`
 }
 
 // ConsumerConfig represents the configuration for the consumer of the pulsar functions and connectors
 type ConsumerConfig struct {
-	SchemaType         string            `json:"schemaType,omitempty" yaml:"schemaType"`
-	SerdeClassName     string            `json:"serdeClassName,omitempty" yaml:"serdeClassName"`
-	RegexPattern       bool              `json:"regexPattern,omitempty" yaml:"regexPattern"`
-	ReceiverQueueSize  int               `json:"receiverQueueSize,omitempty" yaml:"receiverQueueSize"`
-	SchemaProperties   map[string]string `json:"schemaProperties,omitempty" yaml:"schemaProperties"`
+	// +optional
+	SchemaType string `json:"schemaType,omitempty" yaml:"schemaType"`
+
+	// +optional
+	SerdeClassName string `json:"serdeClassName,omitempty" yaml:"serdeClassName"`
+
+	// +optional
+	RegexPattern bool `json:"regexPattern,omitempty" yaml:"regexPattern"`
+
+	// +optional
+	ReceiverQueueSize int `json:"receiverQueueSize,omitempty" yaml:"receiverQueueSize"`
+
+	// +optional
+	SchemaProperties map[string]string `json:"schemaProperties,omitempty" yaml:"schemaProperties"`
+
+	// +optional
 	ConsumerProperties map[string]string `json:"consumerProperties,omitempty" yaml:"consumerProperties"`
-	CryptoConfig       *CryptoConfig     `json:"cryptoConfig,omitempty" yaml:"cryptoConfig"`
-	PoolMessages       bool              `json:"poolMessages,omitempty" yaml:"poolMessages"`
+
+	// +optional
+	CryptoConfig *CryptoConfig `json:"cryptoConfig,omitempty" yaml:"cryptoConfig"`
+
+	// +optional
+	PoolMessages bool `json:"poolMessages,omitempty" yaml:"poolMessages"`
 }
 
 // CryptoConfig represents the configuration for the crypto of the pulsar functions and connectors
 type CryptoConfig struct {
-	CryptoKeyReaderClassName string            `json:"cryptoKeyReaderClassName" yaml:"cryptoKeyReaderClassName"`
-	CryptoKeyReaderConfig    map[string]string `json:"cryptoKeyReaderConfig" yaml:"cryptoKeyReaderConfig"`
 
-	EncryptionKeys              []string `json:"encryptionKeys" yaml:"encryptionKeys"`
-	ProducerCryptoFailureAction string   `json:"producerCryptoFailureAction" yaml:"producerCryptoFailureAction"`
-	ConsumerCryptoFailureAction string   `json:"consumerCryptoFailureAction" yaml:"consumerCryptoFailureAction"`
+	// +optional
+	CryptoKeyReaderClassName string `json:"cryptoKeyReaderClassName,omitempty" yaml:"cryptoKeyReaderClassName"`
+
+	// +optional
+	CryptoKeyReaderConfig map[string]string `json:"cryptoKeyReaderConfig,omitempty" yaml:"cryptoKeyReaderConfig"`
+
+	// +optional
+	EncryptionKeys []string `json:"encryptionKeys,omitempty" yaml:"encryptionKeys"`
+
+	// +optional
+	ProducerCryptoFailureAction string `json:"producerCryptoFailureAction,omitempty" yaml:"producerCryptoFailureAction"`
+
+	// +optional
+	ConsumerCryptoFailureAction string `json:"consumerCryptoFailureAction,omitempty" yaml:"consumerCryptoFailureAction"`
 }
