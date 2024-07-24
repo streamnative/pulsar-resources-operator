@@ -206,10 +206,6 @@ spec:
                   ram:
                     format: int64
                     type: integer
-                required:
-                - cpu
-                - disk
-                - ram
                 type: object
               retainKeyOrdering:
                 description: RetainKeyOrdering is the flag to enable or disable the

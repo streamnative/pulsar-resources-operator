@@ -285,13 +285,6 @@ spec:
                     type: integer
                   useThreadLocalProducers:
                     type: boolean
-                required:
-                - batchBuilder
-                - compressionType
-                - cryptoConfig
-                - maxPendingMessages
-                - maxPendingMessagesAcrossPartitions
-                - useThreadLocalProducers
                 type: object
               py:
                 description: Py is the py of the function
@@ -310,10 +303,6 @@ spec:
                   ram:
                     format: int64
                     type: integer
-                required:
-                - cpu
-                - disk
-                - ram
                 type: object
               retainKeyOrdering:
                 description: RetainKeyOrdering is the flag to indicate whether the
