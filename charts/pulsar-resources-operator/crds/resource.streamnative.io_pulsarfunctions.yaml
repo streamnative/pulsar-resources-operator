@@ -162,6 +162,12 @@ spec:
                           type: array
                         producerCryptoFailureAction:
                           type: string
+                      required:
+                      - consumerCryptoFailureAction
+                      - cryptoKeyReaderClassName
+                      - cryptoKeyReaderConfig
+                      - encryptionKeys
+                      - producerCryptoFailureAction
                       type: object
                     poolMessages:
                       type: boolean
@@ -266,6 +272,12 @@ spec:
                         type: array
                       producerCryptoFailureAction:
                         type: string
+                    required:
+                    - consumerCryptoFailureAction
+                    - cryptoKeyReaderClassName
+                    - cryptoKeyReaderConfig
+                    - encryptionKeys
+                    - producerCryptoFailureAction
                     type: object
                   maxPendingMessages:
                     type: integer
@@ -273,6 +285,13 @@ spec:
                     type: integer
                   useThreadLocalProducers:
                     type: boolean
+                required:
+                - batchBuilder
+                - compressionType
+                - cryptoConfig
+                - maxPendingMessages
+                - maxPendingMessagesAcrossPartitions
+                - useThreadLocalProducers
                 type: object
               py:
                 description: Py is the py of the function
@@ -291,6 +310,10 @@ spec:
                   ram:
                     format: int64
                     type: integer
+                required:
+                - cpu
+                - disk
+                - ram
                 type: object
               retainKeyOrdering:
                 description: RetainKeyOrdering is the flag to indicate whether the
@@ -369,6 +392,17 @@ spec:
                   windowLengthDurationMs:
                     format: int64
                     type: integer
+                required:
+                - actualWindowFunctionClassName
+                - lateDataTopic
+                - maxLagMs
+                - processingGuarantees
+                - slidingIntervalCount
+                - slidingIntervalDurationMs
+                - timestampExtractorClassName
+                - watermarkEmitIntervalMs
+                - windowLengthCount
+                - windowLengthDurationMs
                 type: object
             required:
             - connectionRef

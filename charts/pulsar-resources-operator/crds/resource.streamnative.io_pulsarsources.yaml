@@ -87,6 +87,9 @@ spec:
                     type: string
                   discoveryTriggererConfig:
                     x-kubernetes-preserve-unknown-fields: true
+                required:
+                - discoveryTriggererClassName
+                - discoveryTriggererConfig
                 type: object
               className:
                 description: ClassName is the class name of the
@@ -157,6 +160,12 @@ spec:
                         type: array
                       producerCryptoFailureAction:
                         type: string
+                    required:
+                    - consumerCryptoFailureAction
+                    - cryptoKeyReaderClassName
+                    - cryptoKeyReaderConfig
+                    - encryptionKeys
+                    - producerCryptoFailureAction
                     type: object
                   maxPendingMessages:
                     type: integer
@@ -164,6 +173,13 @@ spec:
                     type: integer
                   useThreadLocalProducers:
                     type: boolean
+                required:
+                - batchBuilder
+                - compressionType
+                - cryptoConfig
+                - maxPendingMessages
+                - maxPendingMessagesAcrossPartitions
+                - useThreadLocalProducers
                 type: object
               resources:
                 description: Resources is the resources of the PulsarSource
@@ -176,6 +192,10 @@ spec:
                   ram:
                     format: int64
                     type: integer
+                required:
+                - cpu
+                - disk
+                - ram
                 type: object
               runtimeFlags:
                 description: RuntimeFlags is the runtime flags of the PulsarSource
