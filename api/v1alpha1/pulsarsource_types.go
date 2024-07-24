@@ -110,9 +110,11 @@ type PulsarSourceSpec struct {
 
 // BatchSourceConfig represents the batch source config of the PulsarSource
 type BatchSourceConfig struct {
-	DiscoveryTriggererClassName string `json:"discoveryTriggererClassName" yaml:"discoveryTriggererClassName"`
+	// +optional
+	DiscoveryTriggererClassName string `json:"discoveryTriggererClassName,omitempty" yaml:"discoveryTriggererClassName"`
 
-	DiscoveryTriggererConfig *apiextensionsv1.JSON `json:"discoveryTriggererConfig" yaml:"discoveryTriggererConfig"`
+	// +optional
+	DiscoveryTriggererConfig *apiextensionsv1.JSON `json:"discoveryTriggererConfig,omitempty" yaml:"discoveryTriggererConfig"`
 }
 
 // PulsarSourceStatus defines the observed state of PulsarSource
