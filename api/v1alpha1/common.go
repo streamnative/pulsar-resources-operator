@@ -158,10 +158,19 @@ type ConsumerConfig struct {
 
 // CryptoConfig represents the configuration for the crypto of the pulsar functions and connectors
 type CryptoConfig struct {
-	CryptoKeyReaderClassName string            `json:"cryptoKeyReaderClassName" yaml:"cryptoKeyReaderClassName"`
-	CryptoKeyReaderConfig    map[string]string `json:"cryptoKeyReaderConfig" yaml:"cryptoKeyReaderConfig"`
 
-	EncryptionKeys              []string `json:"encryptionKeys" yaml:"encryptionKeys"`
-	ProducerCryptoFailureAction string   `json:"producerCryptoFailureAction" yaml:"producerCryptoFailureAction"`
-	ConsumerCryptoFailureAction string   `json:"consumerCryptoFailureAction" yaml:"consumerCryptoFailureAction"`
+	// +optional
+	CryptoKeyReaderClassName string `json:"cryptoKeyReaderClassName,omitempty" yaml:"cryptoKeyReaderClassName"`
+
+	// +optional
+	CryptoKeyReaderConfig map[string]string `json:"cryptoKeyReaderConfig,omitempty" yaml:"cryptoKeyReaderConfig"`
+
+	// +optional
+	EncryptionKeys []string `json:"encryptionKeys,omitempty" yaml:"encryptionKeys"`
+
+	// +optional
+	ProducerCryptoFailureAction string `json:"producerCryptoFailureAction,omitempty" yaml:"producerCryptoFailureAction"`
+
+	// +optional
+	ConsumerCryptoFailureAction string `json:"consumerCryptoFailureAction,omitempty" yaml:"consumerCryptoFailureAction"`
 }

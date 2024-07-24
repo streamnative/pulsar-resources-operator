@@ -136,12 +136,6 @@ spec:
                           type: array
                         producerCryptoFailureAction:
                           type: string
-                      required:
-                      - consumerCryptoFailureAction
-                      - cryptoKeyReaderClassName
-                      - cryptoKeyReaderConfig
-                      - encryptionKeys
-                      - producerCryptoFailureAction
                       type: object
                     poolMessages:
                       type: boolean
