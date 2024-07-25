@@ -50,7 +50,3 @@ node_modules/
 .chart-index/
 .chart-packages/
 
-# Generated files while build the operator
-config/crd/bases/
-config/rbac/role.yaml
-config/webhook/manifests.yaml
