@@ -31,7 +31,7 @@ tests:
           value: gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
       - equal:
           path: spec.template.spec.containers[1].image
-          value: docker.io/streamnative/pulsar-resources-operator:v0.5.0
+          value: docker.io/streamnative/pulsar-resources-operator:v0.5.2
       - equal:
           path: spec.template.spec.containers[1].imagePullPolicy
           value: IfNotPresent
@@ -57,11 +57,11 @@ tests:
 
   - it: should update the image version successfully
     set:
-      image.manager.tag: v0.5.0
+      image.manager.tag: v0.5.2
     asserts:
       - equal:
           path: spec.template.spec.containers[1].image
-          value: docker.io/streamnative/pulsar-resources-operator:v0.5.0
+          value: docker.io/streamnative/pulsar-resources-operator:v0.5.2
 
   - it: should update the replicas successfully
     set:
