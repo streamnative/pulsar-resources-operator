@@ -45,7 +45,7 @@ tests:
       image.manager.tag: v0.5.2
     asserts:
       - equal:
-          path: spec.template.spec.containers[1].image
+          path: spec.template.spec.containers[0].image
           value: docker.io/streamnative/pulsar-resources-operator:v0.5.2
 
   - it: should update the replicas successfully
@@ -62,8 +62,8 @@ tests:
       resources.requests.memory: 128Mi
     asserts:
       - equal:
-          path: spec.template.spec.containers[1].resources.requests.cpu
+          path: spec.template.spec.containers[0].resources.requests.cpu
           value: 10m
       - equal:
-          path: spec.template.spec.containers[1].resources.requests.memory
+          path: spec.template.spec.containers[0].resources.requests.memory
           value: 128Mi
