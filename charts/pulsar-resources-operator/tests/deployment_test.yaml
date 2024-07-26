@@ -27,30 +27,18 @@ tests:
           path: metadata.name
           pattern: -pulsar-resources-operator$
       - equal:
-          path: spec.template.spec.containers[1].image
+          path: spec.template.spec.containers[0].image
           value: docker.io/streamnative/pulsar-resources-operator:v0.5.2
       - equal:
-          path: spec.template.spec.containers[1].imagePullPolicy
+          path: spec.template.spec.containers[0].imagePullPolicy
           value: IfNotPresent
       - equal:
           path: spec.replicas
           value: 1
-      - equal:
-          path: spec.template.spec.containers[0].resources.requests.cpu
-          value: 5m
-      - equal:
-          path: spec.template.spec.containers[0].resources.requests.memory
-          value: 64Mi
-      - equal:
-          path: spec.template.spec.containers[0].resources.limits.cpu
-          value: 500m
-      - equal:
-          path: spec.template.spec.containers[0].resources.limits.memory
-          value: 128Mi
       - isNull:
-          path: spec.template.spec.containers[1].resources.requests
+          path: spec.template.spec.containers[0].resources.requests
       - isNull:
-          path: spec.template.spec.containers[1].resources.limits
+          path: spec.template.spec.containers[0].resources.limits
 
   - it: should update the image version successfully
     set:
