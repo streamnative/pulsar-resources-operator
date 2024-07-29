@@ -199,9 +199,18 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		return creationErr
 	}
 
+	if err := applySchema(pulsarAdmin, topic, log); err != nil {
+		policyErrs = append(policyErrs, err)
+	}
+
+	topic.Status.ObservedGeneration = topic.Generation
+	return nil
+}
+
+func applySchema(pulsarAdmin admin.PulsarAdmin, topic *resourcev1alpha1.PulsarTopic, log logr.Logger) error {
 	schema, serr := pulsarAdmin.GetSchema(topic.Spec.Name)
 	if serr != nil && !admin.IsNotFound(serr) {
-		policyErrs = append(policyErrs, serr)
+		return serr
 	}
 	if topic.Spec.SchemaInfo != nil {
 		// Only upload the schema when schema doesn't exist or the schema has been updated
@@ -214,19 +223,16 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			}
 			log.Info("Upload schema for the topic", "name", topic.Spec.Name, "type", info.Type, "schema", info.Schema, "properties", info.Properties)
 			if err := pulsarAdmin.UploadSchema(topic.Spec.Name, param); err != nil {
-				policyErrs = append(policyErrs, err)
+				return err
 			}
 		}
 	} else if schema != nil {
 		// Delete the schema when the schema exists and schema info is empty
 		log.Info("Deleting topic schema", "name", topic.Spec.Name)
-		err := pulsarAdmin.DeleteSchema(topic.Spec.Name)
-		if err != nil {
-			policyErrs = append(policyErrs, err)
+		if err := pulsarAdmin.DeleteSchema(topic.Spec.Name); err != nil {
+			return err
 		}
 	}
-
-	topic.Status.ObservedGeneration = topic.Generation
 	return nil
 }
 
@@ -301,7 +307,7 @@ func NewTopicReadyCondition(generation int64, conditionType string) metav1.Condi
 // NewTopicErrorCondition make condition with ready info
 func NewTopicErrorCondition(generation int64, conditionType, msg string) metav1.Condition {
 	return metav1.Condition{
-		Type:               resourcev1alpha1.ConditionReady,
+		Type:               conditionType,
 		Status:             metav1.ConditionFalse,
 		ObservedGeneration: generation,
 		Reason:             "ReconcileError",
