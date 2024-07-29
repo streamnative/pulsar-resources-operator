@@ -153,7 +153,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			meta.SetStatusCondition(&topic.Status.Conditions,
 				NewTopicReadyCondition(topic.Generation, resourcev1alpha1.ConditionReady))
 		}
-		if len(policyErrs) != 0 {
+		if len(policyErrs) != 0 || creationErr != nil {
 			msg := ""
 			for _, err := range policyErrs {
 				msg += err.Error() + ";\n"
