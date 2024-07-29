@@ -62,7 +62,7 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 
 	r.conn.topics = topicsList.Items
 	for i := range r.conn.topics {
-		if !IsPulsarTopicResourceReady(&r.conn.topics[i]) {
+		if !isPulsarTopicResourceReady(&r.conn.topics[i]) {
 			r.conn.addUnreadyResource(&r.conn.topics[i])
 		}
 	}
@@ -137,7 +137,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		}
 	}
 
-	if IsPulsarTopicResourceReady(topic) &&
+	if isPulsarTopicResourceReady(topic) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		log.Info("Skip reconcile, topic resource is ready")
 		return nil
@@ -288,7 +288,7 @@ func (r *PulsarTopicReconciler) applyGeo(ctx context.Context, params *admin.Topi
 	return nil
 }
 
-func IsPulsarTopicResourceReady(topic *resourcev1alpha1.PulsarTopic) bool {
+func isPulsarTopicResourceReady(topic *resourcev1alpha1.PulsarTopic) bool {
 	condition := meta.FindStatusCondition(topic.Status.Conditions, resourcev1alpha1.ConditionTopicPolicyReady)
 	return resourcev1alpha1.IsPulsarResourceReady(topic) && condition != nil && condition.Status == metav1.ConditionTrue
 }
