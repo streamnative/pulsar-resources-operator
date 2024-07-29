@@ -206,16 +206,35 @@ type PulsarFunctionSpec struct {
 
 // WindowConfig defines the window config of the function
 type WindowConfig struct {
-	WindowLengthCount             *int    `json:"windowLengthCount" yaml:"windowLengthCount"`
-	WindowLengthDurationMs        *int64  `json:"windowLengthDurationMs" yaml:"windowLengthDurationMs"`
-	SlidingIntervalCount          *int    `json:"slidingIntervalCount" yaml:"slidingIntervalCount"`
-	SlidingIntervalDurationMs     *int64  `json:"slidingIntervalDurationMs" yaml:"slidingIntervalDurationMs"`
-	LateDataTopic                 *string `json:"lateDataTopic" yaml:"lateDataTopic"`
-	MaxLagMs                      *int64  `json:"maxLagMs" yaml:"maxLagMs"`
-	WatermarkEmitIntervalMs       *int64  `json:"watermarkEmitIntervalMs" yaml:"watermarkEmitIntervalMs"`
-	TimestampExtractorClassName   *string `json:"timestampExtractorClassName" yaml:"timestampExtractorClassName"`
-	ActualWindowFunctionClassName *string `json:"actualWindowFunctionClassName" yaml:"actualWindowFunctionClassName"`
-	ProcessingGuarantees          *string `json:"processingGuarantees" yaml:"processingGuarantees"`
+	// +optional
+	WindowLengthCount *int `json:"windowLengthCount,omitempty" yaml:"windowLengthCount"`
+
+	// +optional
+	WindowLengthDurationMs *int64 `json:"windowLengthDurationMs,omitempty" yaml:"windowLengthDurationMs"`
+
+	// +optional
+	SlidingIntervalCount *int `json:"slidingIntervalCount,omitempty" yaml:"slidingIntervalCount"`
+
+	// +optional
+	SlidingIntervalDurationMs *int64 `json:"slidingIntervalDurationMs,omitempty" yaml:"slidingIntervalDurationMs"`
+
+	// +optional
+	LateDataTopic *string `json:"lateDataTopic,omitempty" yaml:"lateDataTopic"`
+
+	// +optional
+	MaxLagMs *int64 `json:"maxLagMs,omitempty" yaml:"maxLagMs"`
+
+	// +optional
+	WatermarkEmitIntervalMs *int64 `json:"watermarkEmitIntervalMs,omitempty" yaml:"watermarkEmitIntervalMs"`
+
+	// +optional
+	TimestampExtractorClassName *string `json:"timestampExtractorClassName,omitempty" yaml:"timestampExtractorClassName"`
+
+	// +optional
+	ActualWindowFunctionClassName *string `json:"actualWindowFunctionClassName,omitempty" yaml:"actualWindowFunctionClassName"`
+
+	// +optional
+	ProcessingGuarantees *string `json:"processingGuarantees,omitempty" yaml:"processingGuarantees"`
 }
 
 // PulsarFunctionStatus defines the observed state of PulsarFunction

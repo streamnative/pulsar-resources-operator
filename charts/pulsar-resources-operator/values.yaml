@@ -35,15 +35,6 @@ image:
     # -- Image tag, it can override the image tag whose default is the chart appVersion.
     tag: ""
 
-  # kube-rbac-proxy container
-  kubeRbacProxy:
-    # -- Specififies the registry of images, especially when user want to use a different image hub
-    registry: gcr.io
-    # -- The full repo name for image.
-    repository: kubebuilder/kube-rbac-proxy
-    # -- Image tag, it can override the image tag whose default is the chart appVersion.
-    tag: "v0.14.4"
-
 # -- Specifies image pull secrets for private registry, the format is `- name: gcr`
 imagePullSecrets: []
 # If you want to specify secrets, follow this format
@@ -58,7 +49,6 @@ nameOverride: ""
 
 # -- It will override the name of deployment
 fullnameOverride: ""
-
 
 serviceAccount:
   # -- Specifies whether a service account should be created
@@ -106,7 +96,6 @@ resources: {}
 
 # -- Add NodeSelector for pod schedule
 nodeSelector: {}
-
 
 # -- Add tolerations
 tolerations: []

@@ -129,15 +129,26 @@ func (r *PulsarFunctionReconciler) ReconcileFunction(ctx context.Context, pulsar
 		packageURL = validateURL(instance.Spec.Go.URL)
 	} else {
 		err := errors.New("no package URL found")
+		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, "no package URL found"))
 		return err
 	}
 
 	if packageURL == "" {
 		err := errors.New("invalid package URL")
+		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, "invalid package URL"))
 		return err
 	}
 
-	if err := pulsarAdmin.ApplyPulsarFunction(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name, packageURL, &instance.Spec, instance.Status.ObservedGeneration > 1); err != nil {
+	updated := false
+	if exist, err := pulsarAdmin.CheckPulsarFunctionExist(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name); err != nil {
+		log.Error(err, "Failed to check function existence")
+		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, fmt.Sprintf("failed to check function existence: %s", err.Error())))
+		return err
+	} else if exist {
+		updated = true
+	}
+
+	if err := pulsarAdmin.ApplyPulsarFunction(instance.Spec.Tenant, instance.Spec.Namespace, instance.Spec.Name, packageURL, &instance.Spec, updated); err != nil {
 		meta.SetStatusCondition(&instance.Status.Conditions, *NewErrorCondition(instance.Generation, err.Error()))
 		log.Error(err, "Failed to apply function")
 		if err := r.conn.client.Status().Update(ctx, instance); err != nil {
