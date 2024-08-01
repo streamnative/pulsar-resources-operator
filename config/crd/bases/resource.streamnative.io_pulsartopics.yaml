@@ -46,6 +46,9 @@ spec:
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: READY
       type: string
+    - jsonPath: .status.conditions[?(@.type=="PolicyReady")].status
+      name: POLICY_READY
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:

@@ -137,6 +137,7 @@ type PulsarTopicStatus struct {
 //+kubebuilder:printcolumn:name="GENERATION",type=string,JSONPath=`.metadata.generation`
 //+kubebuilder:printcolumn:name="OBSERVED_GENERATION",type=string,JSONPath=`.status.observedGeneration`
 //+kubebuilder:printcolumn:name="READY",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
+//+kubebuilder:printcolumn:name="POLICY_READY",type=string,JSONPath=`.status.conditions[?(@.type=="PolicyReady")].status`
 
 // PulsarTopic is the Schema for the pulsartopics API
 type PulsarTopic struct {

@@ -23,6 +23,7 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -61,7 +62,7 @@ func (r *PulsarTopicReconciler) Observe(ctx context.Context) error {
 
 	r.conn.topics = topicsList.Items
 	for i := range r.conn.topics {
-		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.topics[i]) {
+		if !isPulsarTopicResourceReady(&r.conn.topics[i]) {
 			r.conn.addUnreadyResource(&r.conn.topics[i])
 		}
 	}
@@ -75,7 +76,9 @@ func (r *PulsarTopicReconciler) Reconcile(ctx context.Context) error {
 	for i := range r.conn.topics {
 		topic := &r.conn.topics[i]
 		if err := r.ReconcileTopic(ctx, r.conn.pulsarAdmin, topic); err != nil {
-			return fmt.Errorf("reconcile topic [%w]", err)
+			// return error will stop the other reconcile process
+			r.log.Error(err, "Failed to reconcile topic", "topicName", topic.Spec.Name)
+			continue
 		}
 	}
 	return nil
@@ -134,11 +137,38 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		}
 	}
 
-	if resourcev1alpha1.IsPulsarResourceReady(topic) &&
+	if isPulsarTopicResourceReady(topic) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		log.Info("Skip reconcile, topic resource is ready")
 		return nil
 	}
+
+	var policyErrs []error
+	var creationErr error
+	defer func() {
+		if creationErr != nil {
+			meta.SetStatusCondition(&topic.Status.Conditions,
+				NewTopicErrorCondition(topic.Generation, resourcev1alpha1.ConditionReady, creationErr.Error()))
+		} else {
+			meta.SetStatusCondition(&topic.Status.Conditions,
+				NewTopicReadyCondition(topic.Generation, resourcev1alpha1.ConditionReady))
+		}
+		if len(policyErrs) != 0 || creationErr != nil {
+			msg := ""
+			for _, err := range policyErrs {
+				msg += err.Error() + ";\n"
+			}
+			meta.SetStatusCondition(&topic.Status.Conditions,
+				NewTopicErrorCondition(topic.Generation, resourcev1alpha1.ConditionTopicPolicyReady, msg))
+		} else {
+			meta.SetStatusCondition(&topic.Status.Conditions,
+				NewTopicReadyCondition(topic.Generation, resourcev1alpha1.ConditionTopicPolicyReady))
+		}
+
+		if err := r.conn.client.Status().Update(ctx, topic); err != nil {
+			log.Error(err, "Failed to update status")
+		}
+	}()
 
 	params := createTopicParams(topic)
 
@@ -147,8 +177,8 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
 		for _, ref := range refs {
 			if err := r.applyGeo(ctx, params, ref, topic); err != nil {
-				log.Error(err, "Failed to get destination connection for geo replication")
-				return err
+				log.Error(err, "Failed to get destination connection for geo replication "+ref.Name)
+				policyErrs = append(policyErrs, err)
 			}
 		}
 
@@ -161,16 +191,23 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		topic.Status.GeoReplicationEnabled = false
 	}
 
-	if err := pulsarAdmin.ApplyTopic(topic.Spec.Name, params); err != nil {
-		meta.SetStatusCondition(&topic.Status.Conditions, *NewErrorCondition(topic.Generation, err.Error()))
-		log.Error(err, "Failed to apply topic")
-		if err := r.conn.client.Status().Update(ctx, topic); err != nil {
-			log.Error(err, "Failed to update the topic status")
-			return nil
-		}
-		return err
+	creationErr, policyErr := pulsarAdmin.ApplyTopic(topic.Spec.Name, params)
+	if policyErr != nil {
+		policyErrs = append(policyErrs, policyErr)
+	}
+	if creationErr != nil {
+		return creationErr
 	}
 
+	if err := applySchema(pulsarAdmin, topic, log); err != nil {
+		policyErrs = append(policyErrs, err)
+	}
+
+	topic.Status.ObservedGeneration = topic.Generation
+	return nil
+}
+
+func applySchema(pulsarAdmin admin.PulsarAdmin, topic *resourcev1alpha1.PulsarTopic, log logr.Logger) error {
 	schema, serr := pulsarAdmin.GetSchema(topic.Spec.Name)
 	if serr != nil && !admin.IsNotFound(serr) {
 		return serr
@@ -186,28 +223,15 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			}
 			log.Info("Upload schema for the topic", "name", topic.Spec.Name, "type", info.Type, "schema", info.Schema, "properties", info.Properties)
 			if err := pulsarAdmin.UploadSchema(topic.Spec.Name, param); err != nil {
-				log.Error(err, "Failed to upload schema")
-				if err := r.conn.client.Status().Update(ctx, topic); err != nil {
-					log.Error(err, "Failed to upload schema for the topic")
-					return nil
-				}
 				return err
 			}
 		}
 	} else if schema != nil {
 		// Delete the schema when the schema exists and schema info is empty
 		log.Info("Deleting topic schema", "name", topic.Spec.Name)
-		err := pulsarAdmin.DeleteSchema(topic.Spec.Name)
-		if err != nil {
+		if err := pulsarAdmin.DeleteSchema(topic.Spec.Name); err != nil {
 			return err
 		}
-	}
-
-	topic.Status.ObservedGeneration = topic.Generation
-	meta.SetStatusCondition(&topic.Status.Conditions, *NewReadyCondition(topic.Generation))
-	if err := r.conn.client.Status().Update(ctx, topic); err != nil {
-		log.Error(err, "Failed to update the topic status")
-		return err
 	}
 	return nil
 }
@@ -262,4 +286,31 @@ func (r *PulsarTopicReconciler) applyGeo(ctx context.Context, params *admin.Topi
 	params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
 	params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
 	return nil
+}
+
+func isPulsarTopicResourceReady(topic *resourcev1alpha1.PulsarTopic) bool {
+	condition := meta.FindStatusCondition(topic.Status.Conditions, resourcev1alpha1.ConditionTopicPolicyReady)
+	return resourcev1alpha1.IsPulsarResourceReady(topic) && condition != nil && condition.Status == metav1.ConditionTrue
+}
+
+// NewTopicReadyCondition make condition with ready info
+func NewTopicReadyCondition(generation int64, conditionType string) metav1.Condition {
+	return metav1.Condition{
+		Type:               conditionType,
+		Status:             metav1.ConditionTrue,
+		ObservedGeneration: generation,
+		Reason:             "Reconciled",
+		Message:            "",
+	}
+}
+
+// NewTopicErrorCondition make condition with ready info
+func NewTopicErrorCondition(generation int64, conditionType, msg string) metav1.Condition {
+	return metav1.Condition{
+		Type:               conditionType,
+		Status:             metav1.ConditionFalse,
+		ObservedGeneration: generation,
+		Reason:             "ReconcileError",
+		Message:            msg,
+	}
 }
