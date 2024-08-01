@@ -111,7 +111,7 @@ type PulsarAdmin interface {
 	SetNamespaceClusters(name string, clusters []string) error
 
 	// ApplyTopic creates a topic with parameters
-	ApplyTopic(name string, params *TopicParams) error
+	ApplyTopic(name string, params *TopicParams) (error, error)
 
 	// DeleteTopic delete a specific topic
 	DeleteTopic(name string) error

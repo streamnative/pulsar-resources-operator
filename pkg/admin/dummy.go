@@ -60,8 +60,8 @@ func (d *DummyPulsarAdmin) SetNamespaceClusters(string, []string) error {
 }
 
 // ApplyTopic is a fake implements of ApplyTopic
-func (d *DummyPulsarAdmin) ApplyTopic(string, *TopicParams) error {
-	return nil
+func (d *DummyPulsarAdmin) ApplyTopic(string, *TopicParams) (error, error) {
+	return nil, nil
 }
 
 // DeleteTopic is a fake implements of DeleteTopic
