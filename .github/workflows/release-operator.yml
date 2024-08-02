@@ -56,13 +56,6 @@ jobs:
           mv operator-sdk /usr/local/bin/
           operator-sdk version
 
-      - name: Login to CloudSmith
-        uses: docker/login-action@v2
-        with:
-          registry: docker.cloudsmith.io
-          username: ${{ secrets.CLOUDSMITH_USERNAME }}
-          password: ${{ secrets.CLOUDSMITH_PASSWORD }}
-
       - name: Login to Quay
         uses: docker/login-action@v2
         with:
@@ -76,16 +69,6 @@ jobs:
           registry: docker.io
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
-      # CloudSmith: To be removed after we fully migrate to DockerHub
-      - name: Build image and Publish to CloudSmith
-        run: |
-          _tag_version=${GITHUB_REF##*/}
-          export VERSION=${_tag_version/v/}
-          echo $_tag_version, $VERSION
-          export IMG=$IMAGE_TAG_BASE:v$VERSION
-          make docker-build
-          make docker-push
       
       - name: Build image and Publish to DockerHub
         id: dockerhub
@@ -108,7 +91,7 @@ jobs:
           export IMG=$IMAGE_TAG_BASE_QUAY:v$VERSION
           export IMG_LATEST=$IMAGE_TAG_BASE_QUAY:latest
           make docker-build-redhat
-          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.9.6/preflight-linux-amd64 -O preflight
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.10.0/preflight-linux-amd64 -O preflight
           chmod +x preflight
           mv preflight /usr/local/bin
           preflight -v
@@ -121,6 +104,7 @@ jobs:
           export DEFAULT_CHANNEL=alpha
           echo "channels=$CHANNELS" >> $GITHUB_OUTPUT
           echo "default_channel=$DEFAULT_CHANNEL" >> $GITHUB_OUTPUT
+          rm -rf bundle
           make bundle-redhat
           make bundle-build
           make bundle-push
