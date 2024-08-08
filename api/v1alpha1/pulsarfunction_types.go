@@ -178,7 +178,7 @@ type PulsarFunctionSpec struct {
 
 	// Secrets is the secrets of the function
 	// +optional
-	Secrets map[string]SecretKeyRef `json:"secrets,omitempty"`
+	Secrets map[string]FunctionSecretKeyRef `json:"secrets,omitempty"`
 
 	// MaxPendingAsyncRequests is the max pending async requests of the function
 	// +optional

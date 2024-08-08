@@ -130,7 +130,7 @@ type PulsarSinkSpec struct {
 
 	// Secrets is the map of secrets of the PulsarSink
 	// +optional
-	Secrets map[string]SecretKeyRef `json:"secrets,omitempty"`
+	Secrets map[string]FunctionSecretKeyRef `json:"secrets,omitempty"`
 
 	// MaxMessageRetries is the max message retries of the PulsarSink
 	// +optional
