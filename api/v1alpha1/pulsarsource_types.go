@@ -66,7 +66,7 @@ type PulsarSourceSpec struct {
 
 	// Secrets is the map of secrets of the PulsarSource
 	// +optional
-	Secrets map[string]SecretKeyRef `json:"secrets,omitempty"`
+	Secrets map[string]FunctionSecretKeyRef `json:"secrets,omitempty"`
 
 	// Parallelism is the parallelism of the PulsarSource
 	// +optional

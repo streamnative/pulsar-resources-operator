@@ -135,3 +135,9 @@ type CryptoConfig struct {
 	ProducerCryptoFailureAction string   `json:"producerCryptoFailureAction" yaml:"producerCryptoFailureAction"`
 	ConsumerCryptoFailureAction string   `json:"consumerCryptoFailureAction" yaml:"consumerCryptoFailureAction"`
 }
+
+// FunctionSecretKeyRef indicates a secret name and key
+type FunctionSecretKeyRef struct {
+	Path string `json:"path"`
+	Key  string `json:"key"`
+}
