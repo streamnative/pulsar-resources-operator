@@ -18,6 +18,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
+  creationTimestamp: null
   name: pulsartopics.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -45,6 +46,9 @@ spec:
       type: string
     - jsonPath: .status.conditions[?(@.type=="Ready")].status
       name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=="PolicyReady")].status
+      name: POLICY_READY
       type: string
     name: v1alpha1
     schema:
@@ -281,3 +285,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
