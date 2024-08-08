@@ -29,7 +29,7 @@ spec:
   secrets:
     SECRET1:
       key: hello
-      name: sectest
+      path: sectest
   sourceSubscriptionPosition: Latest
   tenant: public
 ```
@@ -119,7 +119,7 @@ spec:
   secrets:
     SECRET1:
       key: hello
-      name: sectest
+      path: sectest
   sourceSubscriptionPosition: Latest
   tenant: public
 ```

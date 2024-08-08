@@ -174,3 +174,9 @@ type CryptoConfig struct {
 	// +optional
 	ConsumerCryptoFailureAction string `json:"consumerCryptoFailureAction,omitempty" yaml:"consumerCryptoFailureAction"`
 }
+
+// FunctionSecretKeyRef indicates a secret name and key
+type FunctionSecretKeyRef struct {
+	Path string `json:"path"`
+	Key  string `json:"key"`
+}

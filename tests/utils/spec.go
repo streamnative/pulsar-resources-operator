@@ -171,7 +171,7 @@ func MakePulsarFunction(namespace, name, functionPackageUrl, connectionName stri
 			DeadLetterTopic:              "dl-topic",
 			LogTopic:                     "func-log",
 			TimeoutMs:                    pointer.Int64(6666),
-			Secrets: map[string]v1alpha1.SecretKeyRef{
+			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
 					"sectest", "hello",
 				},
@@ -213,7 +213,7 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 				RAM:  2048,
 				Disk: 102400,
 			},
-			Secrets: map[string]v1alpha1.SecretKeyRef{
+			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
 					"sectest", "hello",
 				},
@@ -272,7 +272,7 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 				RAM:  512,
 				Disk: 102400,
 			},
-			Secrets: map[string]v1alpha1.SecretKeyRef{
+			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
 					"sectest", "hello",
 				},
