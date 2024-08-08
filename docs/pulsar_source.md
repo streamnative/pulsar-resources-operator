@@ -29,7 +29,7 @@ spec:
   secrets:
     SECRET1:
       key: hello
-      name: sectest
+      path: sectest
   tenant: public
 ```
 
@@ -104,7 +104,7 @@ spec:
   secrets:
     SECRET1:
       key: hello
-      name: sectest
+      path: sectest
   tenant: public
 ```
 

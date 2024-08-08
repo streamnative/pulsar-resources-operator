@@ -37,7 +37,7 @@ spec:
   secrets:
     SECRET1:
       key: hello
-      name: sectest
+      path: sectest
   skipToLatest: true
   subName: test-sub
   subscriptionPosition: Latest
@@ -152,7 +152,7 @@ spec:
   secrets:
     SECRET1:
       key: hello
-      name: sectest
+      path: sectest
   skipToLatest: true
   subName: test-sub
   subscriptionPosition: Latest
