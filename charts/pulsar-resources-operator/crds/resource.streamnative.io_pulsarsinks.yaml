@@ -18,7 +18,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  creationTimestamp: null
   name: pulsarsinks.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -215,15 +214,15 @@ spec:
                 type: string
               secrets:
                 additionalProperties:
-                  description: SecretKeyRef indicates a secret name and key
+                  description: FunctionSecretKeyRef indicates a secret name and key
                   properties:
                     key:
                       type: string
-                    name:
+                    path:
                       type: string
                   required:
                   - key
-                  - name
+                  - path
                   type: object
                 description: Secrets is the map of secrets of the PulsarSink
                 type: object
@@ -376,9 +375,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: null
-  storedVersions: null
