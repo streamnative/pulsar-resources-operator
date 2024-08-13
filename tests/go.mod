@@ -1,8 +1,6 @@
 module github.com/streamnative/pulsar-resources-operator/tests
 
-go 1.21
-
-toolchain go1.22.3
+go 1.22.6
 
 require (
 	// pulsar-client-go latest version is v0.9.0,
