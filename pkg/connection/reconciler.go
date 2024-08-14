@@ -55,18 +55,21 @@ type PulsarConnectionReconciler struct {
 	pulsarAdmin   admin.PulsarAdmin
 	pulsarAdminV3 admin.PulsarAdmin
 	reconcilers   []reconciler.Interface
+
+	retryer *utils.ReconcileRetryer
 }
 
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
-	connection *resourcev1alpha1.PulsarConnection) reconciler.Interface {
+	connection *resourcev1alpha1.PulsarConnection, retryer *utils.ReconcileRetryer) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:        log,
 		connection: connection,
 		creator:    creator,
 		client:     k8sClient,
+		retryer:    retryer,
 	}
 	r.reconcilers = []reconciler.Interface{
 		makeGeoReplicationReconciler(r),
@@ -85,6 +88,10 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger {
 	return r.log.WithName(name).WithValues("connectionRef",
 		fmt.Sprintf("%s/%s", r.connection.Namespace, r.connection.Name))
+}
+
+func (r *PulsarConnectionReconciler) retry() {
+	r.retryer.CreateIfAbsent(r.connection)
 }
 
 // Observe checks the updates of object

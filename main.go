@@ -20,6 +20,7 @@ import (
 	"os"
 
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -105,6 +106,7 @@ func main() {
 		Log:                ctrl.Log.WithName("controllers").WithName("PulsarConnection"),
 		Recorder:           mgr.GetEventRecorderFor("pulsarconnection-controller"),
 		PulsarAdminCreator: admin.NewPulsarAdmin,
+		Retryer:            utils.NewReconcileRetryer(5, utils.NewEventSource(ctrl.Log.WithName("eventSource"))),
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarConnection")
 		os.Exit(1)
