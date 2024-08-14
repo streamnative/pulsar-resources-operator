@@ -22,6 +22,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -257,6 +258,24 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 	return nil, nil
 }
 
+// GetServiceAccountToken obtains a service account token from a service account
+func GetServiceAccountToken(ctx context.Context, k8sClient client.Client, namespace string, serviceAccount string, brokerAudience string) (string, error) {
+	sa := &corev1.ServiceAccount{}
+	sa.ObjectMeta = metav1.ObjectMeta{
+		Name:      serviceAccount,
+		Namespace: namespace,
+	}
+
+	request := &authenticationv1.TokenRequest{}
+	request.Spec.Audiences = []string{brokerAudience}
+	request.Spec.ExpirationSeconds = pointer.Int64(3600)
+
+	if err := k8sClient.SubResource("token").Create(ctx, sa, request); err != nil {
+		return "", err
+	}
+	return request.Status.Token, nil
+}
+
 // MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
 	return MakePulsarAdminConfig(ctx, r.connection, r.client)
@@ -291,6 +310,12 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			if value != nil {
 				cfg.Token = *value
 				hasAuth = true
+			}
+		}
+		if serviceAccount := authn.ServiceAccount; !hasAuth && serviceAccount != nil {
+			// service account auth
+			cfg.TokenSupplier = func() (string, error) {
+				return GetServiceAccountToken(ctx, k8sClient, connection.Namespace, serviceAccount.Name, serviceAccount.Audience)
 			}
 		}
 		if oauth2 := authn.OAuth2; !hasAuth && oauth2 != nil {

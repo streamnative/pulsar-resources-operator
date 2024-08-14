@@ -15,6 +15,8 @@
 package controllers
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +48,7 @@ func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Reques
 // var _ handler.Mapper = &PulsarConnectionRefMapper{}
 
 // ConnectionRefMapper maps resource object to PulsarConnection request
-func ConnectionRefMapper(object client.Object) []reconcile.Request {
+func ConnectionRefMapper(ctx context.Context, object client.Object) []reconcile.Request {
 	ref := getConnectionRef(object)
 	if ref == nil {
 		return nil
