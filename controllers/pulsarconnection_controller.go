@@ -33,7 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -211,42 +210,42 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.PulsarConnection{}).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarTenant{}},
+		Watches(
+			&resourcev1alpha1.PulsarTenant{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarNamespace{}},
+		Watches(&resourcev1alpha1.PulsarNamespace{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarTopic{}},
+		Watches(&resourcev1alpha1.PulsarTopic{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarPermission{}},
+		Watches(&resourcev1alpha1.PulsarPermission{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarGeoReplication{}},
+		Watches(&resourcev1alpha1.PulsarGeoReplication{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarPackage{}},
+		Watches(&resourcev1alpha1.PulsarPackage{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarFunction{}},
+		Watches(&resourcev1alpha1.PulsarFunction{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSink{}},
+		Watches(&resourcev1alpha1.PulsarSink{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSource{}},
+		Watches(&resourcev1alpha1.PulsarSource{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &corev1.Secret{}},
+		Watches(&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findSecretsForConnection),
 			builder.WithPredicates(secretPredicate())).
 		WithOptions(options).
 		Complete(r)
 }
 
-func (r *PulsarConnectionReconciler) findSecretsForConnection(secret client.Object) []reconcile.Request {
-	ctx := context.Background()
+func (r *PulsarConnectionReconciler) findSecretsForConnection(ctx context.Context, secret client.Object) []reconcile.Request {
 	conns := &resourcev1alpha1.PulsarConnectionList{}
 	err := r.List(ctx, conns, client.InNamespace(secret.GetNamespace()))
 	if err != nil {

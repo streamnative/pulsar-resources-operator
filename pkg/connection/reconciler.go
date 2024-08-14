@@ -260,10 +260,17 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 
 // GetServiceAccountToken obtains a service account token from a service account
 func GetServiceAccountToken(ctx context.Context, k8sClient client.Client, namespace string, serviceAccount string, brokerAudience string) (string, error) {
+	sa := &corev1.ServiceAccount{}
+	sa.ObjectMeta = metav1.ObjectMeta{
+		Name:      serviceAccount,
+		Namespace: namespace,
+	}
+
 	request := &authenticationv1.TokenRequest{}
 	request.Spec.Audiences = []string{brokerAudience}
 	request.Spec.ExpirationSeconds = pointer.Int64(3600)
-	if err := k8sClient.Create(ctx, request); err != nil {
+
+	if err := k8sClient.SubResource("token").Create(ctx, sa, request); err != nil {
 		return "", err
 	}
 	return request.Status.Token, nil
