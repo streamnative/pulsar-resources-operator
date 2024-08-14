@@ -1,3 +1,5 @@
+// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
+
 package utils
 
 import (
