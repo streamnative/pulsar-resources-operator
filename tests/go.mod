@@ -11,17 +11,17 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/streamnative/pulsar-resources-operator v0.0.0-00010101000000-000000000000
 	k8s.io/api v0.23.0
+	k8s.io/apiextensions-apiserver v0.23.0
 	k8s.io/apimachinery v0.23.0
-	k8s.io/client-go v12.0.0+incompatible
+	k8s.io/client-go v0.23.0
 	sigs.k8s.io/controller-runtime v0.11.0
 )
 
 require k8s.io/utils v0.0.0-20210930125809-cb0fa318a74b
 
-require k8s.io/apiextensions-apiserver v0.23.0
-
 require (
-	cloud.google.com/go v0.81.0 // indirect
+	cloud.google.com/go/compute v1.20.1 // indirect
+	cloud.google.com/go/compute/metadata v0.2.3 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.1 // indirect
 	github.com/AthenZ/athenz v1.10.39 // indirect
@@ -89,8 +89,4 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
-replace (
-	github.com/streamnative/pulsar-operators/commons => github.com/streamnative/pulsar-operators/commons v0.0.0-20211228075820-f17e933b1e80
-	github.com/streamnative/pulsar-resources-operator => ../
-	k8s.io/client-go => k8s.io/client-go v0.22.4
-)
+replace github.com/streamnative/pulsar-resources-operator => ../

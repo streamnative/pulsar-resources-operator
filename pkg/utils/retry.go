@@ -38,6 +38,7 @@ type retryTask struct {
 	resourceVersion string
 }
 
+// ReconcileRetryer is a helper to trigger reconcile with retry
 type ReconcileRetryer struct {
 	source     *EventSource
 	mu         sync.Mutex
@@ -48,6 +49,7 @@ type ReconcileRetryer struct {
 	stop       chan struct{}
 }
 
+// NewReconcileRetryer creates a new ReconcileRetryer
 func NewReconcileRetryer(maxRetries int, source *EventSource) *ReconcileRetryer {
 	r := &ReconcileRetryer{
 		source:     source,
@@ -95,16 +97,19 @@ func NewReconcileRetryer(maxRetries int, source *EventSource) *ReconcileRetryer 
 	return r
 }
 
+// Close closes the ReconcileRetryer
 func (r *ReconcileRetryer) Close() {
 	close(r.stop)
 	close(r.events)
 	r.source.Close()
 }
 
+// Source returns the event source
 func (r *ReconcileRetryer) Source() <-chan event.GenericEvent {
 	return r.events
 }
 
+// CreateIfAbsent creates a new task if not exist
 func (r *ReconcileRetryer) CreateIfAbsent(obj client.Object) {
 	uid := string(obj.GetUID())
 	initTask := &retryTask{
@@ -134,6 +139,7 @@ func (r *ReconcileRetryer) Contains(obj client.Object) bool {
 	return exist
 }
 
+// Remove removes the task
 func (r *ReconcileRetryer) Remove(obj client.Object) {
 	uid := string(obj.GetUID())
 	r.mu.Lock()
