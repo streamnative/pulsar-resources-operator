@@ -158,7 +158,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			for _, err := range policyErrs {
 				msg += err.Error() + ";\n"
 			}
-			r.conn.retry()
+			r.conn.retryer.CreateIfAbsent(topic)
 			meta.SetStatusCondition(&topic.Status.Conditions,
 				NewTopicErrorCondition(topic.Generation, resourcev1alpha1.ConditionTopicPolicyReady, msg))
 		} else {

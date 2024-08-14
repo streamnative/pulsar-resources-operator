@@ -90,10 +90,6 @@ func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger 
 		fmt.Sprintf("%s/%s", r.connection.Namespace, r.connection.Name))
 }
 
-func (r *PulsarConnectionReconciler) retry() {
-	r.retryer.CreateIfAbsent(r.connection)
-}
-
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 	r.log.Info("Start PulsarConnectionReconciler Observe")

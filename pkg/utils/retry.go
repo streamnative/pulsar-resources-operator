@@ -128,10 +128,9 @@ func (r *ReconcileRetryer) CreateIfAbsent(obj client.Object) {
 }
 
 func (r *ReconcileRetryer) Contains(obj client.Object) bool {
-	uid := string(obj.GetUID())
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	_, exist := r.tasks[uid]
+	_, exist := r.tasks[string(obj.GetUID())]
 	return exist
 }
 
