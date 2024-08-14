@@ -16,6 +16,7 @@ package admin
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"strings"
 
@@ -205,9 +206,11 @@ type PulsarAdminConfig struct {
 
 	TLSEnableHostnameVerification bool
 
-	// Either Token or OAuth2 configuration must be provided
+	// Either Token, TokenSupplier or OAuth2 configuration must be provided
 	// The Token used for authentication.
 	Token string
+
+	TokenSupplier func() (string, error)
 
 	// OAuth2 related configuration used for authentication.
 	IssuerEndpoint string
@@ -224,7 +227,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	var keyFile *os.File
 	var keyFilePath string
 	var err error
-	var adminClient admin.Client
+	var authProvider auth.Provider
 
 	config := &config.Config{
 		WebServiceURL:              conf.WebServiceURL,
@@ -254,7 +257,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		config.KeyFile = keyFilePath
 		config.Scope = conf.Scope
 
-		oauthProvider, err := auth.NewAuthenticationOAuth2WithFlow(oauth2.Issuer{
+		authProvider, err = auth.NewAuthenticationOAuth2WithFlow(oauth2.Issuer{
 			IssuerEndpoint: conf.IssuerEndpoint,
 			ClientID:       conf.ClientID,
 			Audience:       conf.Audience,
@@ -262,22 +265,23 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 			KeyFile:          keyFilePath,
 			AdditionalScopes: strings.Split(conf.Scope, " "),
 		})
-
-		if err != nil {
-			return nil, err
-		}
-		adminClient, err = admin.NewPulsarClientWithAuthProvider(config, oauthProvider)
-		if err != nil {
-			return nil, err
-		}
+	} else if conf.TokenSupplier != nil {
+		authProvider = utils.NewPulsarAdminAuthProviderWithTokenSupplier(conf.TokenSupplier, http.DefaultTransport)
+	} else if strings.HasPrefix(conf.Token, "file://") {
+		authProvider, err = auth.NewAuthenticationTokenFromFile(conf.Token[7:], http.DefaultTransport)
 	} else {
-		config.Token = conf.Token
-
-		adminClient, err = admin.New(config)
-		if err != nil {
-			return nil, err
-		}
+		authProvider, err = auth.NewAuthenticationToken(conf.Token, http.DefaultTransport)
 	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	adminClient, err := admin.NewPulsarClientWithAuthProvider(config, authProvider)
+	if err != nil {
+		return nil, err
+	}
+
 	pulsarAdminClient := &PulsarAdminClient{
 		adminClient,
 		keyFile,

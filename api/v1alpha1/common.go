@@ -38,10 +38,19 @@ type ValueOrSecretRef struct {
 	SecretRef *SecretKeyRef `json:"secretRef,omitempty"`
 }
 
+// ServiceAccountAuth references a service account to authenticate with pulsar
+type ServiceAccountAuth struct {
+	Name     string `json:"name,omitempty"`
+	Audience string `json:"audience,omitempty"`
+}
+
 // PulsarAuthentication use the token or OAuth2 for pulsar authentication
 type PulsarAuthentication struct {
 	// +optional
 	Token *ValueOrSecretRef `json:"token,omitempty"`
+
+	// +optional
+	ServiceAccount *ServiceAccountAuth `json:"serviceAccount,omitempty"`
 
 	// +optional
 	OAuth2 *PulsarAuthenticationOAuth2 `json:"oauth2,omitempty"`
