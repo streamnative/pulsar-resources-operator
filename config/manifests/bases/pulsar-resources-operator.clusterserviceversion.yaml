@@ -41,11 +41,6 @@ spec:
       kind: PulsarConnection
       name: pulsarconnections.resource.streamnative.io
       version: v1alpha1
-    - description: PulsarGeoReplication is the Schema for the pulsargeoreplications API
-      displayName: Pulsar Geo Replication
-      kind: PulsarGeoReplication
-      name: pulsargeoreplications.resource.streamnative.io
-      version: v1alpha1
     - description: PulsarNamespace is the Schema for the pulsarnamespaces API
       displayName: Pulsar Namespace
       kind: PulsarNamespace
@@ -65,6 +60,21 @@ spec:
       displayName: Pulsar Topic
       kind: PulsarTopic
       name: pulsartopics.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarGeoReplication is the Schema for the pulsargeoreplications API
+      displayName: Pulsar GeoReplication
+      kind: PulsarGeoReplication
+      name: pulsargeoreplications.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarFunction is the Schema for the pulsarfunctions API
+      displayName: Pulsar Function
+      kind: PulsarFunction
+      name: pulsarfunctions.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarPackage is the Schema for the pulsarpackages API
+      displayName: Pulsar Package
+      kind: PulsarPackage
+      name: pulsarpackages.resource.streamnative.io
       version: v1alpha1
   description: pulsar resources operator
   displayName: Pulsar Resources Operator
