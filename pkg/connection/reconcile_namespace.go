@@ -17,11 +17,12 @@ package connection
 import (
 	"context"
 	"fmt"
-
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
+	"net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -92,20 +93,30 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		if namespace.Status.GeoReplicationEnabled {
 			log.Info("GeoReplication is enabled. Reset namespace cluster", "LifecyclePolicy", namespace.Spec.LifecyclePolicy, "ClusterName", r.conn.connection.Spec.ClusterName)
 			if err := pulsarAdmin.SetNamespaceClusters(namespace.Spec.Name, []string{r.conn.connection.Spec.ClusterName}); err != nil {
-				log.Error(err, "Failed to reset the cluster for namespace")
-				return err
+				var dnsErr *net.DNSError
+				if errors.As(err, &dnsErr) && dnsErr.Err == "no such host" {
+					log.Info("Pulsar cluster has been deleted")
+				} else {
+					log.Error(err, "Failed to reset the cluster for namespace")
+					return err
+				}
 			}
 		}
 
 		if namespace.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && !admin.IsNotFound(err) {
-				log.Error(err, "Failed to delete namespace")
-				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
-				if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
-					log.Error(err, "Failed to update the geo replication status")
+				var dnsErr *net.DNSError
+				if errors.As(err, &dnsErr) && dnsErr.Err == "no such host" {
+					log.Info("Pulsar cluster has been deleted")
+				} else {
+					log.Error(err, "Failed to delete namespace")
+					meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+					if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+						log.Error(err, "Failed to update the geo replication status")
+						return err
+					}
 					return err
 				}
-				return err
 			}
 		}
 

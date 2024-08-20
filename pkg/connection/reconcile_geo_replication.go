@@ -16,7 +16,9 @@ package connection
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net"
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
@@ -154,8 +156,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 				// Delete the cluster that created with destination cluster info.
 				// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
 				if err := pulsarAdmin.DeleteCluster(destClusterName); err != nil && !admin.IsNotFound(err) {
-					log.Error(err, "Failed to delete geo replication cluster")
-					return err
+					var dnsErr *net.DNSError
+					if errors.As(err, &dnsErr) && dnsErr.Err == "no such host" {
+						log.Info("Pulsar cluster has been deleted")
+					} else {
+						log.Error(err, "Failed to delete geo replication cluster")
+						return err
+					}
 				}
 			}
 			controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
