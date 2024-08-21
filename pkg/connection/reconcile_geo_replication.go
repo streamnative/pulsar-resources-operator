@@ -16,6 +16,8 @@ package connection
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -271,6 +273,7 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
 	}
 
+	hasAuth := false
 	if auth := destConnection.Spec.Authentication; auth != nil {
 		if auth.Token != nil {
 			value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
@@ -280,11 +283,35 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 			if value != nil {
 				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
 				clusterParam.AuthParameters = "token:" + *value
+				hasAuth = true
 			}
 		}
-		// TODO support oauth2
-		// if auth.OAuth2 != nil && !hasAuth {
-		// }
+		if oauth2 := auth.OAuth2; !hasAuth && oauth2 != nil {
+			var paramsJSON = utils.ClientCredentials{
+				IssuerURL: oauth2.IssuerEndpoint,
+				Audience:  oauth2.Audience,
+				Scope:     oauth2.Scope,
+				ClientID:  oauth2.ClientID,
+			}
+			if oauth2.Key != nil {
+				value, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
+				if err != nil {
+					return nil, err
+				}
+				if value != nil {
+					paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
+					clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginOAuth2
+					paramsJSONString, err := json.Marshal(paramsJSON)
+					if err != nil {
+						return nil, err
+					}
+					clusterParam.AuthParameters = string(paramsJSONString)
+					hasAuth = true
+				}
+			} else {
+				return nil, fmt.Errorf("OAuth2 key is empty")
+			}
+		}
 	}
 	return clusterParam, nil
 }

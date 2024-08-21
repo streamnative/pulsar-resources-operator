@@ -64,7 +64,7 @@ type PulsarAuthenticationOAuth2 struct {
 	IssuerEndpoint string           `json:"issuerEndpoint"`
 	ClientID       string           `json:"clientID"`
 	Audience       string           `json:"audience"`
-	Key            ValueOrSecretRef `json:"key"`
+	Key            *ValueOrSecretRef `json:"key"`
 	Scope          string           `json:"scope,omitempty"`
 }
 
