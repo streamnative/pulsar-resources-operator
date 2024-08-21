@@ -306,7 +306,6 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 						return nil, err
 					}
 					clusterParam.AuthParameters = string(paramsJSONString)
-					hasAuth = true
 				}
 			} else {
 				return nil, fmt.Errorf("OAuth2 key is empty")
