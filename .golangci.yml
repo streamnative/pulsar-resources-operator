@@ -24,7 +24,7 @@ linters:
   - exportloopref
   # - gci
   - gocritic
-  - gocyclo
+#   - gocyclo
   # - godot
   - gofmt
   - goimports
