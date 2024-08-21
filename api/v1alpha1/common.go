@@ -64,11 +64,11 @@ const (
 
 // PulsarAuthenticationOAuth2 indicates the parameters which are need by pulsar OAuth2
 type PulsarAuthenticationOAuth2 struct {
-	IssuerEndpoint string           `json:"issuerEndpoint"`
-	ClientID       string           `json:"clientID"`
-	Audience       string           `json:"audience"`
-	Key            ValueOrSecretRef `json:"key"`
-	Scope          string           `json:"scope,omitempty"`
+	IssuerEndpoint string            `json:"issuerEndpoint"`
+	ClientID       string            `json:"clientID"`
+	Audience       string            `json:"audience"`
+	Key            *ValueOrSecretRef `json:"key"`
+	Scope          string            `json:"scope,omitempty"`
 }
 
 // PulsarAuthenticationTLS indicates the parameters which are need by pulsar TLS Authentication
