@@ -16,10 +16,7 @@ package connection
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net"
-
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -90,8 +87,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
 		if tenant.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && !admin.IsNotFound(err) {
-				var dnsErr *net.DNSError
-				if errors.As(err, &dnsErr) && dnsErr.Err == "no such host" {
+				if admin.IsNoSuchHostError(err) {
 					log.Info("Pulsar cluster has been deleted")
 				} else {
 					log.Error(err, "Failed to delete tenant")

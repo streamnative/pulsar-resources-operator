@@ -99,8 +99,12 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 			if topic.Status.GeoReplicationEnabled {
 				log.Info("GeoReplication is enabled. Reset topic cluster first", "LifecyclePolicy", topic.Spec.LifecyclePolicy, "ClusterName", r.conn.connection.Spec.ClusterName)
 				if err := pulsarAdmin.SetTopicClusters(topic.Spec.Name, topic.Spec.Persistent, []string{r.conn.connection.Spec.ClusterName}); err != nil {
-					log.Error(err, "Failed to reset the cluster for topic")
-					return err
+					if admin.IsNoSuchHostError(err) {
+						log.Info("Pulsar cluster has been deleted")
+					} else {
+						log.Error(err, "Failed to reset the cluster for topic")
+						return err
+					}
 				}
 			}
 

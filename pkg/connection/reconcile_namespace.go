@@ -18,11 +18,9 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
-	"net"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -93,8 +91,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		if namespace.Status.GeoReplicationEnabled {
 			log.Info("GeoReplication is enabled. Reset namespace cluster", "LifecyclePolicy", namespace.Spec.LifecyclePolicy, "ClusterName", r.conn.connection.Spec.ClusterName)
 			if err := pulsarAdmin.SetNamespaceClusters(namespace.Spec.Name, []string{r.conn.connection.Spec.ClusterName}); err != nil {
-				var dnsErr *net.DNSError
-				if errors.As(err, &dnsErr) && dnsErr.Err == "no such host" {
+				if admin.IsNoSuchHostError(err) {
 					log.Info("Pulsar cluster has been deleted")
 				} else {
 					log.Error(err, "Failed to reset the cluster for namespace")
@@ -105,8 +102,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 
 		if namespace.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && !admin.IsNotFound(err) {
-				var dnsErr *net.DNSError
-				if errors.As(err, &dnsErr) && dnsErr.Err == "no such host" {
+				if admin.IsNoSuchHostError(err) {
 					log.Info("Pulsar cluster has been deleted")
 				} else {
 					log.Error(err, "Failed to delete namespace")
