@@ -14,6 +14,7 @@
 
 package utils
 
+// ClientCredentials represents the client credentials for OAuth2
 type ClientCredentials struct {
 	IssuerURL  string `json:"issuerUrl,omitempty"`
 	Audience   string `json:"audience,omitempty"`
