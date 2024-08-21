@@ -29,6 +29,8 @@ header:
     - '.github/openshift/'
     - 'PROJECT'
     - '**/go.mod'
+    - '**/go.work'
+    - '**/go.work.sum'
     - '**/go.sum'
     - '.husky/**'
     - 'hack/**'
