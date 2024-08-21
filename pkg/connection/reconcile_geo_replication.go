@@ -16,6 +16,8 @@ package connection
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -244,22 +246,41 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourcev1alpha1.PulsarConnection) (bool, error) {
 	auth := connection.Spec.Authentication
-	if auth == nil || auth.Token.SecretRef == nil {
+	if auth == nil || (auth.Token != nil && auth.Token.SecretRef == nil) ||
+		(auth.OAuth2 != nil && auth.OAuth2.Key == nil) ||
+		(auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef == nil) {
 		return false, nil
 	}
 	secret := &corev1.Secret{}
-	namespacedName := types.NamespacedName{
-		Name:      auth.Token.SecretRef.Name,
-		Namespace: connection.Namespace,
+	if auth.Token != nil && auth.Token.SecretRef != nil {
+		namespacedName := types.NamespacedName{
+			Name:      auth.Token.SecretRef.Name,
+			Namespace: connection.Namespace,
+		}
+		if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+			return false, err
+		}
+		secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+		if err != nil {
+			return false, err
+		}
+		return connection.Status.SecretKeyHash != secretHash, nil
 	}
-	if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
-		return false, err
+	if auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+		namespacedName := types.NamespacedName{
+			Name:      auth.OAuth2.Key.SecretRef.Name,
+			Namespace: connection.Namespace,
+		}
+		if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+			return false, err
+		}
+		secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.OAuth2.Key.SecretRef.Key)
+		if err != nil {
+			return false, err
+		}
+		return connection.Status.SecretKeyHash != secretHash, nil
 	}
-	secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
-	if err != nil {
-		return false, err
-	}
-	return connection.Status.SecretKeyHash != secretHash, nil
+	return false, nil
 }
 
 func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client) (*admin.ClusterParams, error) {
@@ -271,6 +292,7 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
 	}
 
+	hasAuth := false
 	if auth := destConnection.Spec.Authentication; auth != nil {
 		if auth.Token != nil {
 			value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
@@ -280,11 +302,34 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 			if value != nil {
 				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
 				clusterParam.AuthParameters = "token:" + *value
+				hasAuth = true
 			}
 		}
-		// TODO support oauth2
-		// if auth.OAuth2 != nil && !hasAuth {
-		// }
+		if oauth2 := auth.OAuth2; !hasAuth && oauth2 != nil {
+			var paramsJSON = utils.ClientCredentials{
+				IssuerURL: oauth2.IssuerEndpoint,
+				Audience:  oauth2.Audience,
+				Scope:     oauth2.Scope,
+				ClientID:  oauth2.ClientID,
+			}
+			if oauth2.Key != nil {
+				value, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
+				if err != nil {
+					return nil, err
+				}
+				if value != nil {
+					paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
+					clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginOAuth2
+					paramsJSONString, err := json.Marshal(paramsJSON)
+					if err != nil {
+						return nil, err
+					}
+					clusterParam.AuthParameters = string(paramsJSONString)
+				}
+			} else {
+				return nil, fmt.Errorf("OAuth2 key is empty")
+			}
+		}
 	}
 	return clusterParam, nil
 }

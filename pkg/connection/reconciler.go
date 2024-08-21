@@ -298,7 +298,10 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			cfg.ClientID = oauth2.ClientID
 			cfg.Audience = oauth2.Audience
 			cfg.Scope = oauth2.Scope
-			value, err := GetValue(ctx, k8sClient, connection.Namespace, &oauth2.Key)
+			if oauth2.Key == nil {
+				return nil, fmt.Errorf("oauth2 key must not be empty")
+			}
+			value, err := GetValue(ctx, k8sClient, connection.Namespace, oauth2.Key)
 			if err != nil {
 				return nil, err
 			}
