@@ -269,6 +269,16 @@ func (r *PulsarConnectionReconciler) findSecretsForConnection(secret client.Obje
 				})
 			}
 		}
+		if auth != nil && auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+			if auth.OAuth2.Key.SecretRef.Name == secret.GetName() {
+				requests = append(requests, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      i.GetName(),
+						Namespace: i.GetNamespace(),
+					},
+				})
+			}
+		}
 	}
 
 	return requests

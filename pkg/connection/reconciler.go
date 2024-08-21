@@ -207,6 +207,21 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		}
 		r.connection.Status.SecretKeyHash = hash
 	}
+	if auth != nil && auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+		// calculate secret key hash
+		secret := &corev1.Secret{}
+		if err := r.client.Get(ctx, types.NamespacedName{
+			Namespace: r.connection.Namespace,
+			Name:      auth.OAuth2.Key.SecretRef.Name,
+		}, secret); err != nil {
+			return err
+		}
+		hash, err := utils.CalculateSecretKeyMd5(secret, auth.OAuth2.Key.SecretRef.Key)
+		if err != nil {
+			return err
+		}
+		r.connection.Status.SecretKeyHash = hash
+	}
 	r.connection.Status.ObservedGeneration = r.connection.Generation
 	meta.SetStatusCondition(&r.connection.Status.Conditions, *NewReadyCondition(r.connection.Generation))
 	if err := r.client.Status().Update(ctx, r.connection); err != nil {
