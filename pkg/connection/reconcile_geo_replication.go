@@ -246,22 +246,41 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourcev1alpha1.PulsarConnection) (bool, error) {
 	auth := connection.Spec.Authentication
-	if auth == nil || auth.Token.SecretRef == nil {
+	if auth == nil || (auth.Token != nil && auth.Token.SecretRef == nil) ||
+		(auth.OAuth2 != nil && auth.OAuth2.Key == nil) ||
+		(auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef == nil) {
 		return false, nil
 	}
 	secret := &corev1.Secret{}
-	namespacedName := types.NamespacedName{
-		Name:      auth.Token.SecretRef.Name,
-		Namespace: connection.Namespace,
+	if auth.Token != nil && auth.Token.SecretRef != nil {
+		namespacedName := types.NamespacedName{
+			Name:      auth.Token.SecretRef.Name,
+			Namespace: connection.Namespace,
+		}
+		if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+			return false, err
+		}
+		secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+		if err != nil {
+			return false, err
+		}
+		return connection.Status.SecretKeyHash != secretHash, nil
 	}
-	if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
-		return false, err
+	if auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+		namespacedName := types.NamespacedName{
+			Name:      auth.OAuth2.Key.SecretRef.Name,
+			Namespace: connection.Namespace,
+		}
+		if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+			return false, err
+		}
+		secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.OAuth2.Key.SecretRef.Key)
+		if err != nil {
+			return false, err
+		}
+		return connection.Status.SecretKeyHash != secretHash, nil
 	}
-	secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
-	if err != nil {
-		return false, err
-	}
-	return connection.Status.SecretKeyHash != secretHash, nil
+	return false, nil
 }
 
 func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client) (*admin.ClusterParams, error) {
