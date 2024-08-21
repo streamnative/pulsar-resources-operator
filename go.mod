@@ -6,6 +6,7 @@ require (
 	github.com/apache/pulsar-client-go v0.12.1
 	github.com/go-logr/logr v1.2.1
 	github.com/onsi/ginkgo v1.16.5
+	github.com/onsi/ginkgo/v2 v2.1.3
 	github.com/onsi/gomega v1.19.0
 	github.com/xhit/go-str2duration/v2 v2.1.0
 	go.uber.org/zap v1.19.1

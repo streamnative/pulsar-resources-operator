@@ -23,7 +23,6 @@ linters:
   - errcheck
   - exportloopref
   # - gci
-  - goconst
   - gocritic
   - gocyclo
   # - godot
@@ -33,7 +32,6 @@ linters:
   - gosec
   - gosimple
   - govet
-  - ifshort
   - importas
   - ineffassign
   - misspell
@@ -42,7 +40,6 @@ linters:
   - nolintlint
   - prealloc
   - predeclared
-  - revive
   - rowserrcheck
   - staticcheck
   - structcheck
@@ -52,7 +49,6 @@ linters:
   - unconvert
   - unparam
   - varcheck
-  - whitespace
 
 linters-settings:
   godot:
@@ -63,12 +59,9 @@ linters-settings:
     exclude:
     - '^ \+.*'
     - '^ ANCHOR.*'
-  ifshort:
-    # Maximum length of variable declaration measured in number of characters, after which linter won't suggest using short syntax.
-    max-decl-chars: 50
   gci:
     local-prefixes: "github.com/streamnative"
-    
+
   importas:
     no-unaliased: true
     alias:
