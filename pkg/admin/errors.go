@@ -16,8 +16,9 @@ package admin
 
 import (
 	"errors"
-	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/rest"
 	"net"
+
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/rest"
 )
 
 // Reason indicates the status code

@@ -17,6 +17,7 @@ package connection
 import (
 	"context"
 	"fmt"
+
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
