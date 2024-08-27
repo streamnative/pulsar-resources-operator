@@ -737,9 +737,9 @@ func (in *PulsarNamespaceSpec) DeepCopyInto(out *PulsarNamespaceSpec) {
 		*out = new(utils.Duration)
 		**out = **in
 	}
-	if in.OffloadThresholdSize != nil{
+	if in.OffloadThresholdSize != nil {
 		in, out := &in.OffloadThresholdSize, &out.OffloadThresholdSize
-		x:=(*in).DeepCopy()
+		x := (*in).DeepCopy()
 		*out = &x
 	}
 	if in.GeoReplicationRefs != nil {
