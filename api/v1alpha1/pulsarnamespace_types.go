@@ -85,6 +85,14 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
 
+	// OffloadThreshold policy by time
+	// +optional
+	OffloadThresholdTime *utils.Duration `json:"offloadThresholdTime,omitempty"`
+
+	// OffloadThreshold policy by size
+	// +optional
+	OffloadThresholdSize *resource.Quantity `json:"offloadThresholdSize,omitempty"`
+
 	// GeoReplicationRefs is the reference list to the PulsarGeoReplication resource
 	// +optional
 	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`

@@ -50,6 +50,8 @@ type NamespaceParams struct {
 	BacklogQuotaRetentionPolicy *string
 	BacklogQuotaType            *string
 	ReplicationClusters         []string
+	OffloadThresholdTime        *utils.Duration
+	OffloadThresholdSize        *resource.Quantity
 }
 
 // TopicParams indicates the parameters for creating a topic
