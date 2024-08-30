@@ -150,6 +150,11 @@ spec:
               name:
                 description: Name is the namespace name
                 type: string
+              replicationClusters:
+                description: ReplicationClusters
+                items:
+                  type: string
+                type: array
               retentionSize:
                 anyOf:
                 - type: integer
