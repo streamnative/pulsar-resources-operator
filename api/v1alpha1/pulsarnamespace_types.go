@@ -89,7 +89,7 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
 
-	// ReplicationClusters
+	// ReplicationClusters is the list of clusters to which the namespace is replicated
 	// +optional
 	ReplicationClusters []string `json:"replicationClusters,omitempty"`
 }
@@ -112,7 +112,7 @@ type PulsarNamespaceStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
-	// GeoReplicationEnabled
+	// GeoReplicationEnabled indicates whether geo-replication is enabled for the namespace
 	// +optional
 	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
 }

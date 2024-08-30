@@ -151,7 +151,8 @@ spec:
                 description: Name is the namespace name
                 type: string
               replicationClusters:
-                description: ReplicationClusters
+                description: ReplicationClusters is the list of clusters to which
+                  the namespace is replicated
                 items:
                   type: string
                 type: array
@@ -255,7 +256,8 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               geoReplicationEnabled:
-                description: GeoReplicationEnabled
+                description: GeoReplicationEnabled indicates whether geo-replication
+                  is enabled for the namespace
                 type: boolean
               observedGeneration:
                 description: |-
