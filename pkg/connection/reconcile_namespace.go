@@ -175,14 +175,18 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		}
 
 		if len(namespace.Spec.ReplicationClusters) > 0 {
-			// check if the ReplicationClusters exists in tenant.AllowedClusters
-			// if not, throw error
 			parts := strings.Split(namespace.Spec.Name, "/")
 			if len(parts) != 2 {
-				return fmt.Errorf("invalid namespace name %s", namespace.Spec.Name)
+				err := fmt.Errorf("invalid namespace name %s", namespace.Spec.Name)
+				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+				log.Error(err, "Failed to apply namespace")
+				if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+					log.Error(err, "Failed to update the namespace status")
+					return err
+				}
+				return err
 			}
 			tenantName := parts[0]
-
 			allowedClusters, err := pulsarAdmin.GetTenantAllowedClusters(tenantName)
 			if err != nil {
 				return err
@@ -191,7 +195,14 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 			if len(allowedClusters) > 0 {
 				for _, cluster := range namespace.Spec.ReplicationClusters {
 					if !slices.Contains(allowedClusters, cluster) {
-						return fmt.Errorf("cluster %s is not allowed in tenant %s", cluster, tenantName)
+						err := fmt.Errorf("cluster %s is not allowed in tenant %s", cluster, tenantName)
+						meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+						log.Error(err, "Failed to apply namespace")
+						if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+							log.Error(err, "Failed to update the namespace status")
+							return err
+						}
+						return err
 					}
 					params.ReplicationClusters = append(params.ReplicationClusters, namespace.Spec.ReplicationClusters...)
 					if !slices.Contains(params.ReplicationClusters, r.conn.connection.Spec.ClusterName) {
@@ -218,7 +229,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		log.Error(err, "Failed to apply namespace")
 		if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
 			log.Error(err, "Failed to update the namespace status")
-			return nil
+			return err
 		}
 		return err
 	}
