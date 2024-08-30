@@ -1191,8 +1191,8 @@ func (p *PulsarAdminClient) CheckPulsarPackageExist(packageURL string) (bool, er
 }
 
 // GetTenantAllowedClusters get the allowed clusters of the tenant
-func (d *PulsarAdminClient) GetTenantAllowedClusters(tenantName string) ([]string, error) {
-	tenant, err := d.adminClient.Tenants().Get(tenantName)
+func (p *PulsarAdminClient) GetTenantAllowedClusters(tenantName string) ([]string, error) {
+	tenant, err := p.adminClient.Tenants().Get(tenantName)
 	if err != nil {
 		return []string{}, err
 	}
