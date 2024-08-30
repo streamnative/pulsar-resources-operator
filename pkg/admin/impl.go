@@ -92,7 +92,7 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		},
 		SchemaCompatibilityStrategy: utils.AlwaysCompatible,
 		SubscriptionAuthMode:        utils.None,
-		ReplicationClusters:         params.ReplicationClusters,
+		ReplicationClusters:         []string{},
 	})
 	if err != nil && !IsAlreadyExist(err) {
 		return err
