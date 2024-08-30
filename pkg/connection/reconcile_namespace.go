@@ -17,6 +17,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
@@ -146,10 +147,9 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaLimitSize:       namespace.Spec.BacklogQuotaLimitSize,
 		BacklogQuotaRetentionPolicy: namespace.Spec.BacklogQuotaRetentionPolicy,
 		BacklogQuotaType:            namespace.Spec.BacklogQuotaType,
-		ReplicationClusters:         namespace.Spec.ReplicationClusters,
 	}
 
-	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 {
+	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 || len(namespace.Spec.ReplicationClusters) > 0 {
 		for _, ref := range refs {
 			geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
 			namespacedName := types.NamespacedName{
@@ -170,6 +170,11 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 				return err
 			}
 			params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
+			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
+		}
+
+		params.ReplicationClusters = append(params.ReplicationClusters, namespace.Spec.ReplicationClusters...)
+		if !slices.Contains(params.ReplicationClusters, r.conn.connection.Spec.ClusterName) {
 			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
 		}
 
