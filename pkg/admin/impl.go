@@ -412,15 +412,17 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 		}
 	}
 
-	if c, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName); err == nil {
-		if !reflect.DeepEqual(c, params.ReplicationClusters) {
-			err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, params.ReplicationClusters)
-			if err != nil {
-				return err
+	if len(params.ReplicationClusters) > 0 {
+		if c, err := p.adminClient.Namespaces().GetNamespaceReplicationClusters(completeNSName); err == nil {
+			if !reflect.DeepEqual(c, params.ReplicationClusters) {
+				err = p.adminClient.Namespaces().SetNamespaceReplicationClusters(completeNSName, params.ReplicationClusters)
+				if err != nil {
+					return err
+				}
 			}
+		} else {
+			return err
 		}
-	} else {
-		return err
 	}
 
 	return nil
