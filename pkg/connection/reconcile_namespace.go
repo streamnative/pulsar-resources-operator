@@ -205,9 +205,6 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 						return err
 					}
 					params.ReplicationClusters = append(params.ReplicationClusters, namespace.Spec.ReplicationClusters...)
-					if !slices.Contains(params.ReplicationClusters, r.conn.connection.Spec.ClusterName) {
-						params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
-					}
 				}
 			}
 		}
