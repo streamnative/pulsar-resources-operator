@@ -93,10 +93,15 @@ func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger 
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 	r.log.Info("Start PulsarConnectionReconciler Observe")
+	errs := []error{}
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.Observe(ctx); err != nil {
-			return err
+			r.log.Error(err, "PulsarConnectionReconciler Observe error")
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("PulsarConnectionReconciler Observe errors: %v", errs)
 	}
 	return nil
 }
@@ -104,6 +109,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
+	errs := []error{}
 	log := r.log.WithValues("name", r.connection.Name, "namespace", r.connection.Namespace)
 
 	if !r.hasUnreadyResource() {
@@ -179,16 +185,20 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	if r.connection.DeletionTimestamp.IsZero() {
 		for _, reconciler := range r.reconcilers {
 			if err = reconciler.Reconcile(ctx); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	} else {
 		// delete children resources first
 		for i := len(r.reconcilers) - 1; i >= 0; i-- {
 			if err = r.reconcilers[i].Reconcile(ctx); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("PulsarConnectionReconciler Reconcile errors: %v", errs)
 	}
 
 	auth := r.connection.Spec.Authentication

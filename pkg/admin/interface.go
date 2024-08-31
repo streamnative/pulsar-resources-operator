@@ -188,6 +188,9 @@ type PulsarAdmin interface {
 
 	// ApplyPulsarSource apply pulsar source
 	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error
+
+	// GetTenantAllowedClusters get the allowed clusters of the tenant
+	GetTenantAllowedClusters(name string) ([]string, error)
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

@@ -17,6 +17,8 @@ package connection
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
@@ -69,11 +71,15 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all namespaces
 func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.namespaces {
 		namespace := &r.conn.namespaces[i]
 		if err := r.ReconcileNamespace(ctx, r.conn.pulsarAdmin, namespace); err != nil {
-			return fmt.Errorf("reconcile namespace [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile namespaces error: [%v]", errs)
 	}
 	return nil
 }
@@ -148,7 +154,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaType:            namespace.Spec.BacklogQuotaType,
 	}
 
-	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 {
+	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 || len(namespace.Spec.ReplicationClusters) > 0 {
 		for _, ref := range refs {
 			geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
 			namespacedName := types.NamespacedName{
@@ -172,8 +178,45 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
 		}
 
-		log.Info("apply namespace with extra replication clusters", "clusters", params.ReplicationClusters)
-		namespace.Status.GeoReplicationEnabled = true
+		if len(namespace.Spec.ReplicationClusters) > 0 {
+			parts := strings.Split(namespace.Spec.Name, "/")
+			if len(parts) != 2 {
+				err := fmt.Errorf("invalid namespace name %s", namespace.Spec.Name)
+				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+				log.Error(err, "Failed to apply namespace")
+				if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+					log.Error(err, "Failed to update the namespace status")
+					return err
+				}
+				return err
+			}
+			tenantName := parts[0]
+			allowedClusters, err := pulsarAdmin.GetTenantAllowedClusters(tenantName)
+			if err != nil {
+				return err
+			}
+
+			if len(allowedClusters) > 0 {
+				for _, cluster := range namespace.Spec.ReplicationClusters {
+					if !slices.Contains(allowedClusters, cluster) {
+						err := fmt.Errorf("cluster %s is not allowed in tenant %s", cluster, tenantName)
+						meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+						log.Error(err, "Failed to apply namespace")
+						if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+							log.Error(err, "Failed to update the namespace status")
+							return err
+						}
+						return err
+					}
+					params.ReplicationClusters = append(params.ReplicationClusters, namespace.Spec.ReplicationClusters...)
+				}
+			}
+		}
+
+		if len(params.ReplicationClusters) > 0 {
+			log.Info("apply namespace with extra replication clusters", "clusters", params.ReplicationClusters)
+			namespace.Status.GeoReplicationEnabled = true
+		}
 	} else if namespace.Status.GeoReplicationEnabled {
 		// when GeoReplicationRefs is removed, it should reset the namespace clusters
 		// to the default local cluster
@@ -187,7 +230,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		log.Error(err, "Failed to apply namespace")
 		if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
 			log.Error(err, "Failed to update the namespace status")
-			return nil
+			return err
 		}
 		return err
 	}
