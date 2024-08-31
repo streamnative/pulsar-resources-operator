@@ -71,11 +71,15 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all namespaces
 func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.namespaces {
 		namespace := &r.conn.namespaces[i]
 		if err := r.ReconcileNamespace(ctx, r.conn.pulsarAdmin, namespace); err != nil {
-			return fmt.Errorf("reconcile namespace [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile namespaces error: [%v]", errs)
 	}
 	return nil
 }
