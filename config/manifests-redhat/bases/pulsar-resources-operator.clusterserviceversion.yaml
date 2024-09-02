@@ -1,4 +1,4 @@
-# Copyright 2023 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -83,7 +83,27 @@ spec:
     - description: PulsarGeoReplication is the Schema for the pulsargeoreplications API
       displayName: Pulsar GeoReplication
       kind: PulsarGeoReplication
-      name: pulsargeoreplication.resource.streamnative.io
+      name: pulsargeoreplications.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarFunction is the Schema for the pulsarfunctions API
+      displayName: Pulsar Function
+      kind: PulsarFunction
+      name: pulsarfunctions.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarPackage is the Schema for the pulsarpackages API
+      displayName: Pulsar Package
+      kind: PulsarPackage
+      name: pulsarpackages.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarSink is the Schema for the pulsarsinks API
+      displayName: Pulsar Sink
+      kind: PulsarSink
+      name: pulsarsinks.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarSource is the Schema for the pulsarsources API
+      displayName: Pulsar Source
+      kind: PulsarSource
+      name: pulsarsources.resource.streamnative.io
       version: v1alpha1
   description: |
     Authored by [StreamNative](https://streamnative.io), this Pulsar Resources Operator is a controller that manages the Pulsar resources automatically using the manifest on Kubernetes. Therefore, you can manage the Pulsar resources without the help of `pulsar-admin` or `pulsarctl` CLI tool. It is useful for initializing basic resources when creating a new Pulsar cluster.
