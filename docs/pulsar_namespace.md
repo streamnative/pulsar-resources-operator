@@ -22,6 +22,8 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `backlogQuotaLimitSize` | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy. | No |
 | `backlogQuotaRetentionPolicy` | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction". | No |
 | `backlogQuotaType` | Controls how the backlog quota is enforced. Options: "destination_storage" (limits backlog by size in bytes), "message_age" (limits by time). | No |
+| `offloadThresholdTime` | Time limit for message offloading. Messages older than this limit will be offloaded to the tiered storage. | No |
+| `offloadThresholdSize` | Size limit for message offloading. When the limit is reached, older messages will be offloaded to the tiered storage. | No |
 | `geoReplicationRefs` | List of references to PulsarGeoReplication resources, used to configure geo-replication for this namespace. Use only when using PulsarGeoReplication for setting up geo-replication between two Pulsar instances. | No |
 | `replicationClusters` | List of clusters to which the namespace is replicated. Use only if replicating clusters within the same Pulsar instance. | No |
 
