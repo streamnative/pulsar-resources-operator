@@ -49,6 +49,8 @@ type NamespaceParams struct {
 	BacklogQuotaLimitSize       *resource.Quantity
 	BacklogQuotaRetentionPolicy *string
 	BacklogQuotaType            *string
+	OffloadThresholdTime        *utils.Duration
+	OffloadThresholdSize        *resource.Quantity
 	ReplicationClusters         []string
 }
 
