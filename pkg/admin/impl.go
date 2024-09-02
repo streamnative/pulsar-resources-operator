@@ -425,7 +425,7 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 
 	if params.OffloadThresholdSize != nil {
 		s := params.OffloadThresholdSize.Value()
-		err = p.adminClient.Namespaces().SetOffloadThreshold(*naName, int64(s))
+		err = p.adminClient.Namespaces().SetOffloadThreshold(*naName, s)
 		if err != nil {
 			return err
 		}
