@@ -48,6 +48,7 @@ type PulsarConnectionReconciler struct {
 	Log                logr.Logger
 	Recorder           record.EventRecorder
 	PulsarAdminCreator admin.PulsarAdminCreator
+	Retryer            *utils.ReconcileRetryer
 }
 
 //nolint:lll
@@ -109,11 +110,12 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	r.Log.Info("Reconciling PulsarConnection", "name", pulsarConnection.Name, "namespace", pulsarConnection.Namespace)
 
-	reconciler := connection.MakeReconciler(r.Log, r.Client, r.PulsarAdminCreator, pulsarConnection)
+	reconciler := connection.MakeReconciler(r.Log, r.Client, r.PulsarAdminCreator, pulsarConnection, r.Retryer)
 	if err := reconciler.Observe(ctx); err != nil {
 		return ctrl.Result{}, err
 	}
 	if err := reconciler.Reconcile(ctx); err != nil {
+		r.Retryer.CreateIfAbsent(pulsarConnection)
 		return ctrl.Result{}, err
 	}
 
@@ -241,8 +243,10 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		Watches(&source.Kind{Type: &corev1.Secret{}},
 			handler.EnqueueRequestsFromMapFunc(r.findSecretsForConnection),
 			builder.WithPredicates(secretPredicate())).
+		Watches(&source.Channel{Source: r.Retryer.Source()}, &handler.EnqueueRequestForObject{}).
 		WithOptions(options).
 		Complete(r)
+
 }
 
 func (r *PulsarConnectionReconciler) findSecretsForConnection(secret client.Object) []reconcile.Request {
@@ -257,6 +261,16 @@ func (r *PulsarConnectionReconciler) findSecretsForConnection(secret client.Obje
 		auth := i.Spec.Authentication
 		if auth != nil && auth.Token != nil && auth.Token.SecretRef != nil {
 			if auth.Token.SecretRef.Name == secret.GetName() {
+				requests = append(requests, reconcile.Request{
+					NamespacedName: types.NamespacedName{
+						Name:      i.GetName(),
+						Namespace: i.GetNamespace(),
+					},
+				})
+			}
+		}
+		if auth != nil && auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+			if auth.OAuth2.Key.SecretRef.Name == secret.GetName() {
 				requests = append(requests, reconcile.Request{
 					NamespacedName: types.NamespacedName{
 						Name:      i.GetName(),

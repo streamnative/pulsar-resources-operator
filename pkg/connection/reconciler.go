@@ -55,18 +55,21 @@ type PulsarConnectionReconciler struct {
 	pulsarAdmin   admin.PulsarAdmin
 	pulsarAdminV3 admin.PulsarAdmin
 	reconcilers   []reconciler.Interface
+
+	retryer *utils.ReconcileRetryer
 }
 
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
-	connection *resourcev1alpha1.PulsarConnection) reconciler.Interface {
+	connection *resourcev1alpha1.PulsarConnection, retryer *utils.ReconcileRetryer) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:        log,
 		connection: connection,
 		creator:    creator,
 		client:     k8sClient,
+		retryer:    retryer,
 	}
 	r.reconcilers = []reconciler.Interface{
 		makeGeoReplicationReconciler(r),
@@ -90,10 +93,15 @@ func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger 
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 	r.log.Info("Start PulsarConnectionReconciler Observe")
+	errs := []error{}
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.Observe(ctx); err != nil {
-			return err
+			r.log.Error(err, "PulsarConnectionReconciler Observe error")
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("PulsarConnectionReconciler Observe errors: %v", errs)
 	}
 	return nil
 }
@@ -101,6 +109,7 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
+	errs := []error{}
 	log := r.log.WithValues("name", r.connection.Name, "namespace", r.connection.Namespace)
 
 	if !r.hasUnreadyResource() {
@@ -176,16 +185,20 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	if r.connection.DeletionTimestamp.IsZero() {
 		for _, reconciler := range r.reconcilers {
 			if err = reconciler.Reconcile(ctx); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	} else {
 		// delete children resources first
 		for i := len(r.reconcilers) - 1; i >= 0; i-- {
 			if err = r.reconcilers[i].Reconcile(ctx); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("PulsarConnectionReconciler Reconcile errors: %v", errs)
 	}
 
 	auth := r.connection.Spec.Authentication
@@ -199,6 +212,21 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			return err
 		}
 		hash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+		if err != nil {
+			return err
+		}
+		r.connection.Status.SecretKeyHash = hash
+	}
+	if auth != nil && auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+		// calculate secret key hash
+		secret := &corev1.Secret{}
+		if err := r.client.Get(ctx, types.NamespacedName{
+			Namespace: r.connection.Namespace,
+			Name:      auth.OAuth2.Key.SecretRef.Name,
+		}, secret); err != nil {
+			return err
+		}
+		hash, err := utils.CalculateSecretKeyMd5(secret, auth.OAuth2.Key.SecretRef.Key)
 		if err != nil {
 			return err
 		}
@@ -298,7 +326,10 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			cfg.ClientID = oauth2.ClientID
 			cfg.Audience = oauth2.Audience
 			cfg.Scope = oauth2.Scope
-			value, err := GetValue(ctx, k8sClient, connection.Namespace, &oauth2.Key)
+			if oauth2.Key == nil {
+				return nil, fmt.Errorf("oauth2 key must not be empty")
+			}
+			value, err := GetValue(ctx, k8sClient, connection.Namespace, oauth2.Key)
 			if err != nil {
 				return nil, err
 			}

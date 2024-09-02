@@ -25,69 +25,94 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// PulsarNamespaceSpec defines the desired state of PulsarNamespace
+// PulsarNamespaceSpec defines the desired state of a Pulsar namespace.
+// It corresponds to the configuration options available in Pulsar's namespace admin API.
 type PulsarNamespaceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// TODO make these fields immutable
 
-	// Name is the namespace name
+	// Name is the fully qualified namespace name in the format "tenant/namespace".
 	Name string `json:"name"`
 
+	// Bundles specifies the number of bundles to split the namespace into.
+	// This affects how the namespace is distributed across the cluster.
 	Bundles *int32 `json:"bundles,omitempty"`
 
 	// ConnectionRef is the reference to the PulsarConnection resource
+	// used to connect to the Pulsar cluster for this namespace.
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
 
+	// LifecyclePolicy determines whether to keep or delete the Pulsar namespace
+	// when the Kubernetes resource is deleted.
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 
-	// Tenant Policy Setting
+	// MaxProducersPerTopic sets the maximum number of producers allowed on a single topic in the namespace.
 	// +optional
 	MaxProducersPerTopic *int32 `json:"maxProducersPerTopic,omitempty"`
 
+	// MaxConsumersPerTopic sets the maximum number of consumers allowed on a single topic in the namespace.
 	// +optional
 	MaxConsumersPerTopic *int32 `json:"maxConsumersPerTopic,omitempty"`
 
+	// MaxConsumersPerSubscription sets the maximum number of consumers allowed on a single subscription in the namespace.
 	// +optional
 	MaxConsumersPerSubscription *int32 `json:"maxConsumersPerSubscription,omitempty"`
 
-	// MessageTTL indicates the message ttl for the namespace
+	// MessageTTL specifies the Time to Live (TTL) for messages in the namespace.
+	// Messages older than this TTL will be automatically marked as consumed.
 	// +optional
 	MessageTTL *utils.Duration `json:"messageTTL,omitempty"`
 
-	// Retention
-	// Should set at least one of them if setting retention
+	// RetentionTime specifies the minimum time to retain messages in the namespace.
+	// Should be set in conjunction with RetentionSize for effective retention policy.
 	// Retention Quota must exceed configured backlog quota for namespace
 	// +optional
 	RetentionTime *utils.Duration `json:"retentionTime,omitempty"`
 
+	// RetentionSize specifies the maximum size of backlog retained in the namespace.
+	// Should be set in conjunction with RetentionTime for effective retention policy.
 	// +optional
 	RetentionSize *resource.Quantity `json:"retentionSize,omitempty"`
 
-	// Backlog
-	// Should set at least one of them if setting backlog
+	// BacklogQuotaLimitTime specifies the time limit for message backlog.
+	// Messages older than this limit will be removed or handled according to the retention policy.
 	// +optional
 	BacklogQuotaLimitTime *utils.Duration `json:"backlogQuotaLimitTime,omitempty"`
 
+	// BacklogQuotaLimitSize specifies the size limit for message backlog.
+	// When the limit is reached, older messages will be removed or handled according to the retention policy.
 	// +optional
 	BacklogQuotaLimitSize *resource.Quantity `json:"backlogQuotaLimitSize,omitempty"`
 
+	// BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
+	// Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
 	// +optional
 	BacklogQuotaRetentionPolicy *string `json:"backlogQuotaRetentionPolicy,omitempty"`
 
-	// BacklogQuotaType controls the backlog by setting the type to destination_storage or message_age
-	// destination_storage limits backlog by size (in bytes). message_age limits backlog by time,
-	// that is, message timestamp (broker or publish timestamp)
+	// BacklogQuotaType controls how the backlog quota is enforced.
+	// "destination_storage" limits backlog by size (in bytes), while "message_age" limits by time.
 	// +kubebuilder:validation:Enum=destination_storage;message_age
 	// +optional
 	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
 
-	// GeoReplicationRefs is the reference list to the PulsarGeoReplication resource
+	// GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
+	// used to configure geo-replication for this namespace.
+	// This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication
+	// between two Pulsar instances.
+	// Please use `ReplicationClusters` instead if you are replicating clusters within the same Pulsar instance.
 	// +optional
 	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
+
+	// ReplicationClusters is the list of clusters to which the namespace is replicated
+	// This is **ONLY** used if you are replicating clusters within the same Pulsar instance.
+	// Please use `GeoReplicationRefs` instead if you are setting up geo-replication
+	// between two Pulsar instances.
+	// +optional
+	ReplicationClusters []string `json:"replicationClusters,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace
@@ -97,10 +122,13 @@ type PulsarNamespaceStatus struct {
 
 	// ObservedGeneration is the most recent generation observed for this resource.
 	// It corresponds to the metadata generation, which is updated on mutation by the API Server.
+	// This field is used to track whether the controller has processed the latest changes.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Represents the observations of a connection's current state.
+	// Conditions represent the latest available observations of the namespace's current state.
+	// It follows the Kubernetes conventions for condition types and status.
+	// The "Ready" condition type is typically used to indicate the overall status of the namespace.
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	// +listType=map
@@ -108,7 +136,8 @@ type PulsarNamespaceStatus struct {
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type"`
 
-	// GeoReplicationEnabled
+	// GeoReplicationEnabled indicates whether geo-replication between two Pulsar instances (via PulsarGeoReplication)
+	// is enabled for the namespace
 	// +optional
 	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
 }
@@ -122,6 +151,8 @@ type PulsarNamespaceStatus struct {
 //+kubebuilder:printcolumn:name="READY",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 
 // PulsarNamespace is the Schema for the pulsarnamespaces API
+// It represents a Pulsar namespace in the Kubernetes cluster and includes both
+// the desired state (Spec) and the observed state (Status) of the namespace.
 type PulsarNamespace struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -132,7 +163,8 @@ type PulsarNamespace struct {
 
 //+kubebuilder:object:root=true
 
-// PulsarNamespaceList contains a list of PulsarNamespace
+// PulsarNamespaceList contains a list of PulsarNamespace resources.
+// It is used by the Kubernetes API to return multiple PulsarNamespace objects.
 type PulsarNamespaceList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

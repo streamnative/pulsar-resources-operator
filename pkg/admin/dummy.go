@@ -188,3 +188,8 @@ func (d *DummyPulsarAdmin) CheckPulsarSourceExist(_, _, _ string) (bool, error) 
 func (d *DummyPulsarAdmin) CheckPulsarPackageExist(_ string) (bool, error) {
 	return true, nil
 }
+
+// GetTenantAllowedClusters is a fake implements of GetTenantAllowedClusters
+func (d *DummyPulsarAdmin) GetTenantAllowedClusters(_ string) ([]string, error) {
+	return []string{}, nil
+}

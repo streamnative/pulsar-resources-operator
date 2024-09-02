@@ -38,34 +38,71 @@ type ValueOrSecretRef struct {
 	SecretRef *SecretKeyRef `json:"secretRef,omitempty"`
 }
 
-// PulsarAuthentication use the token or OAuth2 for pulsar authentication
+// PulsarAuthentication defines the authentication configuration for Pulsar resources.
+// It supports two authentication methods: Token-based and OAuth2-based.
+// Only one authentication method should be specified at a time.
 type PulsarAuthentication struct {
+	// Token specifies the configuration for token-based authentication.
+	// This can be either a direct token value or a reference to a secret containing the token.
+	// If using a secret, the token should be stored under the specified key in the secret.
 	// +optional
 	Token *ValueOrSecretRef `json:"token,omitempty"`
 
+	// OAuth2 specifies the configuration for OAuth2-based authentication.
+	// This includes all necessary parameters for setting up OAuth2 authentication with Pulsar.
+	// For detailed information on the OAuth2 fields, refer to the PulsarAuthenticationOAuth2 struct.
 	// +optional
 	OAuth2 *PulsarAuthenticationOAuth2 `json:"oauth2,omitempty"`
 }
 
-// PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
-// in pulsar cluster after resource is deleted by controller
-// KeepAfterDeletion or CleanUpAfterDeletion
+// PulsarResourceLifeCyclePolicy defines the behavior for managing Pulsar resources
+// when the corresponding custom resource (CR) is deleted from the Kubernetes cluster.
+// This policy allows users to control whether Pulsar resources should be retained or
+// removed from the Pulsar cluster after the CR is deleted.
 type PulsarResourceLifeCyclePolicy string
 
 const (
-	// KeepAfterDeletion keeps the resource in pulsar cluster when cr is deleted
+	// KeepAfterDeletion instructs the operator to retain the Pulsar resource
+	// in the Pulsar cluster even after the corresponding CR is deleted from Kubernetes.
+	// Use this option when:
+	// - You want to preserve data or configurations in Pulsar for backup or future use.
+	// - You're performing temporary maintenance on Kubernetes resources without affecting Pulsar.
+	// - You need to migrate or recreate Kubernetes resources without losing Pulsar data.
 	KeepAfterDeletion PulsarResourceLifeCyclePolicy = "KeepAfterDeletion"
-	// CleanUpAfterDeletion deletes the resource in pulsar cluster when cr is deleted
+
+	// CleanUpAfterDeletion instructs the operator to remove the Pulsar resource
+	// from the Pulsar cluster when the corresponding CR is deleted from Kubernetes.
+	// Use this option when:
+	// - You want to ensure complete removal of resources to free up Pulsar cluster capacity.
+	// - You're decommissioning services or environments and need to clean up all associated resources.
+	// - You want to maintain strict synchronization between Kubernetes and Pulsar resources.
 	CleanUpAfterDeletion PulsarResourceLifeCyclePolicy = "CleanUpAfterDeletion"
 )
 
-// PulsarAuthenticationOAuth2 indicates the parameters which are need by pulsar OAuth2
+// PulsarAuthenticationOAuth2 represents the configuration for Pulsar OAuth2 authentication.
+// This struct aligns with Pulsar's OAuth2 authentication mechanism as described in
+// https://pulsar.apache.org/docs/3.3.x/security-oauth2/ and
+// https://docs.streamnative.io/docs/access-cloud-clusters-oauth
 type PulsarAuthenticationOAuth2 struct {
-	IssuerEndpoint string           `json:"issuerEndpoint"`
-	ClientID       string           `json:"clientID"`
-	Audience       string           `json:"audience"`
-	Key            ValueOrSecretRef `json:"key"`
-	Scope          string           `json:"scope,omitempty"`
+	// IssuerEndpoint is the URL of the OAuth2 authorization server.
+	// This is typically the base URL of your identity provider's OAuth2 service.
+	IssuerEndpoint string `json:"issuerEndpoint"`
+
+	// ClientID is the OAuth2 client identifier issued to the client during the registration process.
+	ClientID string `json:"clientID"`
+
+	// Audience is the intended recipient of the token. In Pulsar's context, this is usually
+	// the URL of your Pulsar cluster or a specific identifier for your Pulsar service.
+	Audience string `json:"audience"`
+
+	// Key is either the client secret or the path to a JSON credentials file.
+	// For confidential clients, this would be the client secret.
+	// For public clients using JWT authentication, this would be the path to the JSON credentials file.
+	Key *ValueOrSecretRef `json:"key"`
+
+	// Scope is an optional field to request specific permissions from the OAuth2 server.
+	// If not specified, the default scope defined by the OAuth2 server will be used.
+	Scope string `json:"scope,omitempty"`
 }
 
 // IsPulsarResourceReady returns true if resource satisfies with these condition

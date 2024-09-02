@@ -19,54 +19,68 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// PulsarPermissionSpec defines the desired state of PulsarPermission
+// PulsarPermissionSpec defines the desired state of PulsarPermission.
+// It specifies the configuration for granting permissions to Pulsar resources.
 type PulsarPermissionSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// ConnectionRef is the reference to the PulsarConnection resource
+	// used to connect to the Pulsar cluster for this permission.
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
 
-	// ResourceName name of the target resource which will be granted the permssions
+	// ResourceName is the name of the target resource (namespace or topic)
+	// to which the permissions will be granted.
 	ResourceName string `json:"resourceName"`
 
+	// ResourceType indicates whether the permission is for a namespace or a topic.
 	// +kubebuilder:validation:Enum=namespace;topic
-	// ResourceType indicates the resource type, the options include namespace and topic
 	ResoureType PulsarResourceType `json:"resourceType"`
-	// Roles contains a list of role which will be granted the same permissions
-	// for the same target
+
+	// Roles is a list of role names that will be granted the specified permissions
+	// for the target resource.
 	Roles []string `json:"roles"`
-	// Actions contains a list of action to grant.
-	// the options include produce,consume,functions
+
+	// Actions is a list of permissions to grant.
+	// Valid options include "produce", "consume", and "functions".
+	// +optional
 	Actions []string `json:"actions,omitempty"`
 
-	// LifecyclePolicy is the policy that how to deal with pulsar resource when
-	// PulsarPermission is deleted
+	// LifecyclePolicy determines how to handle the Pulsar permissions
+	// when the PulsarPermission resource is deleted.
 	// +optional
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
-// PulsarResourceType indicates the resource type, the options include namespace and topic
+// PulsarResourceType indicates the type of Pulsar resource for which permissions can be granted.
+// Currently, it supports namespace and topic level permissions.
 type PulsarResourceType string
 
 const (
-	// PulsarResourceTypeNamespace resource type namespace
+	// PulsarResourceTypeNamespace represents a Pulsar namespace resource.
+	// Use this when granting permissions at the namespace level.
 	PulsarResourceTypeNamespace PulsarResourceType = "namespace"
-	// PulsarResourceTypeTopic resource type topic
+
+	// PulsarResourceTypeTopic represents a Pulsar topic resource.
+	// Use this when granting permissions at the individual topic level.
 	PulsarResourceTypeTopic PulsarResourceType = "topic"
 )
 
-// PulsarPermissionStatus defines the observed state of PulsarPermission
+// PulsarPermissionStatus defines the observed state of PulsarPermission.
+// It provides information about the current status of the Pulsar permission configuration.
 type PulsarPermissionStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// ObservedGeneration is the most recent generation observed for this resource.
 	// It corresponds to the metadata generation, which is updated on mutation by the API Server.
+	// This field is used to track whether the controller has processed the latest changes.
 	// +optional
 	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
 
-	// Represents the observations of a connection's current state.
+	// Conditions represent the latest available observations of the PulsarPermission's current state.
+	// It follows the Kubernetes conventions for condition types and status.
+	// The "Ready" condition type is typically used to indicate the overall status of the permission configuration.
 	// +patchMergeKey=type
 	// +patchStrategy=merge
 	// +listType=map
@@ -86,7 +100,8 @@ type PulsarPermissionStatus struct {
 //+kubebuilder:printcolumn:name="OBSERVED GENERATION",type=string,JSONPath=`.status.observedGeneration`
 //+kubebuilder:printcolumn:name="READY",type=string,JSONPath=`.status.conditions[?(@.type=="Ready")].status`
 
-// PulsarPermission is the Schema for the pulsarpermissions API
+// PulsarPermission is the Schema for the pulsarpermissions API.
+// It represents a set of permissions granted to specific roles for a Pulsar resource (namespace or topic).
 type PulsarPermission struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -97,7 +112,8 @@ type PulsarPermission struct {
 
 //+kubebuilder:object:root=true
 
-// PulsarPermissionList contains a list of PulsarPermission
+// PulsarPermissionList contains a list of PulsarPermission resources.
+// It is used by the Kubernetes API to return multiple PulsarPermission objects.
 type PulsarPermissionList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
