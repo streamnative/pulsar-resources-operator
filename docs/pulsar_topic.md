@@ -8,27 +8,47 @@ The `PulsarTopic` resource defines a topic in a Pulsar cluster. It allows you to
 
 ## Specifications
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name` | The fully qualified topic name in the format "persistent://tenant/namespace/topic" or "non-persistent://tenant/namespace/topic". | Yes |
-| `connectionRef` | Reference to the PulsarConnection resource used to connect to the Pulsar cluster for this topic. | Yes |
-| `persistent` | Whether the topic is persistent or non-persistent. Default is false. Can also be set by topic name prefix. | No |
-| `partitions` | Number of partitions for the topic. Default is 0. | No |
-| `maxProducers` | Maximum number of producers allowed on the topic. | No |
-| `maxConsumers` | Maximum number of consumers allowed on the topic. | No |
-| `messageTTL` | Time to Live (TTL) for messages in the topic. Messages older than this TTL will be automatically marked as consumed. | No |
-| `maxUnAckedMessagesPerConsumer` | Maximum number of unacknowledged messages allowed per consumer. | No |
-| `maxUnAckedMessagesPerSubscription` | Maximum number of unacknowledged messages allowed per subscription. | No |
-| `retentionTime` | Minimum time to retain messages in the topic. Should be set in conjunction with retentionSize for effective retention policy. | No |
-| `retentionSize` | Maximum size of backlog retained in the topic. Should be set in conjunction with retentionTime for effective retention policy. | No |
-| `backlogQuotaLimitTime` | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy. | No |
-| `backlogQuotaLimitSize` | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy. | No |
-| `backlogQuotaRetentionPolicy` | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction". | No |
+| Field | Description                                                                                                                                                                             | Required |
+|-------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `name` | The fully qualified topic name in the format "persistent://tenant/namespace/topic" or "non-persistent://tenant/namespace/topic".                                                        | Yes |
+| `connectionRef` | Reference to the PulsarConnection resource used to connect to the Pulsar cluster for this topic.                                                                                        | Yes |
+| `persistent` | Whether the topic is persistent or non-persistent. Default is false. Can also be set by topic name prefix.                                                                              | No |
+| `partitions` | Number of partitions for the topic. Default is 0.                                                                                                                                       | No |
+| `maxProducers` | Maximum number of producers allowed on the topic.                                                                                                                                       | No |
+| `maxConsumers` | Maximum number of consumers allowed on the topic.                                                                                                                                       | No |
+| `messageTTL` | Time to Live (TTL) for messages in the topic. Messages older than this TTL will be automatically marked as consumed.                                                                    | No |
+| `maxUnAckedMessagesPerConsumer` | Maximum number of unacknowledged messages allowed per consumer.                                                                                                                         | No |
+| `maxUnAckedMessagesPerSubscription` | Maximum number of unacknowledged messages allowed per subscription.                                                                                                                     | No |
+| `retentionTime` | Minimum time to retain messages in the topic. Should be set in conjunction with retentionSize for effective retention policy.                                                           | No |
+| `retentionSize` | Maximum size of backlog retained in the topic. Should be set in conjunction with retentionTime for effective retention policy.                                                          | No |
+| `backlogQuotaLimitTime` | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy.                                                            | No |
+| `backlogQuotaLimitSize` | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy.                                                 | No |
+| `backlogQuotaRetentionPolicy` | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".                                   | No |
 | `lifecyclePolicy` | Determines whether to keep or delete the Pulsar topic when the Kubernetes resource is deleted. Options: `CleanUpAfterDeletion`, `KeepAfterDeletion`. Default is `CleanUpAfterDeletion`. | No |
-| `schemaInfo` | Schema information for the topic. See [schemaInfo](#schemainfo) for more details. | No |
-| `geoReplicationRefs` | List of references to PulsarGeoReplication resources, used to enable geo-replication at the topic level. | No |
+| `schemaInfo` | Schema information for the topic. See [schemaInfo](#schemainfo) for more details.                                                                                                       | No |
+| `geoReplicationRefs` | List of references to PulsarGeoReplication resources, used to enable geo-replication at the topic level.                                                                                | No |
+| `replicationClusters` | List of clusters to which the topic is replicated. Use only if replicating clusters within the same Pulsar instance.                                                                    | No |
 
 Note: Valid time units for duration fields are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
+
+## replicationClusters vs geoReplicationRefs
+
+The `replicationClusters` and `geoReplicationRefs` fields serve different purposes in configuring replication for a Pulsar topic:
+
+1. `replicationClusters`:
+   - Use this when replicating data between clusters within the same Pulsar instance.
+   - It's a simple list of cluster names to which the topic should be replicated.
+   - This is suitable for scenarios where all clusters are managed by the same Pulsar instance and have direct connectivity.
+   - Example use case: Replicating data between regions within a single Pulsar instance.
+
+2. `geoReplicationRefs`:
+   - Use this when setting up geo-replication between separate Pulsar instances.
+   - It references PulsarGeoReplication resources, which contain more detailed configuration for connecting to external Pulsar clusters.
+   - This is appropriate for scenarios involving separate Pulsar deployments, possibly in different data centers or cloud providers.
+   - Example use case: Replicating data between two independent Pulsar instancesin different geographical locations.
+
+Choose `replicationClusters` for simpler, intra-instance replication, and `geoReplicationRefs` for more complex, inter-instance geo-replication scenarios. These fields are mutually exclusive; use only one depending on your replication requirements.
+
 
 ## Create A Pulsar Topic
 

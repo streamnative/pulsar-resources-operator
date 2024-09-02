@@ -120,6 +120,13 @@ type PulsarTopicSpec struct {
 	// between two Pulsar instances.
 	// +optional
 	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
+
+	// ReplicationClusters is the list of clusters to which the topic is replicated
+	// This is **ONLY** used if you are replicating clusters within the same Pulsar instance.
+	// Please use `GeoReplicationRefs` instead if you are setting up geo-replication
+	// between two Pulsar instances.
+	// +optional
+	ReplicationClusters []string `json:"replicationClusters,omitempty"`
 }
 
 // SchemaInfo defines the Pulsar Schema for a topic.
