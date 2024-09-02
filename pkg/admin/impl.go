@@ -126,7 +126,7 @@ func (p *PulsarAdminClient) SetNamespaceClusters(completeNSName string, clusters
 
 // ApplyTopic creates a topic with policies
 func (p *PulsarAdminClient) ApplyTopic(name string, params *TopicParams) (creationErr error, policyErr error) {
-	completeTopicName := makeCompleteTopicName(name, params.Persistent)
+	completeTopicName := MakeCompleteTopicName(name, params.Persistent)
 	topicName, err := utils.GetTopicName(completeTopicName)
 	if err != nil {
 		return err, nil
@@ -295,7 +295,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 // GetTopicClusters get the assigned clusters of the topic to the local default cluster
 func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]string, error) {
-	completeTopicName := makeCompleteTopicName(name, persistent)
+	completeTopicName := MakeCompleteTopicName(name, persistent)
 	topicName, err := utils.GetTopicName(completeTopicName)
 	if err != nil {
 		return []string{}, err
@@ -309,7 +309,7 @@ func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]s
 
 // SetTopicClusters resets the assigned clusters of the topic to the local default cluster
 func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clusters []string) error {
-	completeTopicName := makeCompleteTopicName(name, persistent)
+	completeTopicName := MakeCompleteTopicName(name, persistent)
 	topicName, err := utils.GetTopicName(completeTopicName)
 	if err != nil {
 		return err
@@ -428,7 +428,7 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 	return nil
 }
 
-func makeCompleteTopicName(topicName string, persistent *bool) string {
+func MakeCompleteTopicName(topicName string, persistent *bool) string {
 	if strings.Contains(topicName, TopicDomainSeparator) {
 		return topicName
 	}

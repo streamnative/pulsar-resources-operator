@@ -62,7 +62,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarConnection is the Schema for the pulsarconnections API
+        description: |-
+          PulsarConnection is the Schema for the pulsarconnections API
+          It represents a connection to a Pulsar cluster and includes both the desired state (Spec)
+          and the observed state (Status) of the connection.
         properties:
           apiVersion:
             description: |-
@@ -82,34 +85,63 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarConnectionSpec defines the desired state of PulsarConnection
+            description: |-
+              PulsarConnectionSpec defines the desired state of PulsarConnection
+              It specifies the configuration for connecting to a Pulsar cluster.
+
+
+              For plaintext (non-TLS) Pulsar clusters:
+              - Set AdminServiceURL to "http://<admin-service-host>:<port>"
+              - Set BrokerServiceURL to "pulsar://<broker-service-host>:<port>"
+
+
+              For TLS-enabled Pulsar clusters:
+              - Set AdminServiceSecureURL to "https://<admin-service-host>:<port>"
+              - Set BrokerServiceSecureURL to "pulsar+ssl://<broker-service-host>:<port>"
+              - Optionally set BrokerClientTrustCertsFilePath if using custom CA certificates
             properties:
               adminServiceSecureURL:
-                description: AdminServiceSecureURL is the admin service url for secure
-                  connection.
+                description: |-
+                  AdminServiceSecureURL is the HTTPS URL for secure connections to the Pulsar admin service.
+                  Use this for encrypted administrative operations.
                 pattern: ^https://.+$
                 type: string
               adminServiceURL:
-                description: AdminServiceURL is the admin service url of the pulsar
-                  cluster
+                description: |-
+                  AdminServiceURL is the HTTP(S) URL for the Pulsar cluster's admin service.
+                  This URL is used for administrative operations.
                 pattern: ^https?://.+$
                 type: string
               authentication:
-                description: Authentication defines authentication configurations
+                description: |-
+                  Authentication defines the authentication configuration for connecting to the Pulsar cluster.
+                  It supports both token-based and OAuth2-based authentication methods.
                 properties:
                   oauth2:
-                    description: PulsarAuthenticationOAuth2 indicates the parameters
-                      which are need by pulsar OAuth2
+                    description: |-
+                      OAuth2 specifies the configuration for OAuth2-based authentication.
+                      This includes all necessary parameters for setting up OAuth2 authentication with Pulsar.
+                      For detailed information on the OAuth2 fields, refer to the PulsarAuthenticationOAuth2 struct.
                     properties:
                       audience:
+                        description: |-
+                          Audience is the intended recipient of the token. In Pulsar's context, this is usually
+                          the URL of your Pulsar cluster or a specific identifier for your Pulsar service.
                         type: string
                       clientID:
+                        description: ClientID is the OAuth2 client identifier issued
+                          to the client during the registration process.
                         type: string
                       issuerEndpoint:
+                        description: |-
+                          IssuerEndpoint is the URL of the OAuth2 authorization server.
+                          This is typically the base URL of your identity provider's OAuth2 service.
                         type: string
                       key:
-                        description: ValueOrSecretRef is a string or a secret reference
-                          of the authentication
+                        description: |-
+                          Key is either the client secret or the path to a JSON credentials file.
+                          For confidential clients, this would be the client secret.
+                          For public clients using JWT authentication, this would be the path to the JSON credentials file.
                         properties:
                           secretRef:
                             description: SecretKeyRef indicates a secret name and
@@ -127,6 +159,9 @@ spec:
                             type: string
                         type: object
                       scope:
+                        description: |-
+                          Scope is an optional field to request specific permissions from the OAuth2 server.
+                          If not specified, the default scope defined by the OAuth2 server will be used.
                         type: string
                     required:
                     - audience
@@ -135,8 +170,10 @@ spec:
                     - key
                     type: object
                   token:
-                    description: ValueOrSecretRef is a string or a secret reference
-                      of the authentication
+                    description: |-
+                      Token specifies the configuration for token-based authentication.
+                      This can be either a direct token value or a reference to a secret containing the token.
+                      If using a secret, the token should be stored under the specified key in the secret.
                     properties:
                       secretRef:
                         description: SecretKeyRef indicates a secret name and key
@@ -154,31 +191,38 @@ spec:
                     type: object
                 type: object
               brokerClientTrustCertsFilePath:
-                description: BrokerClientTrustCertsFilePath Path for the trusted TLS
-                  certificate file for outgoing connection to a server (broker)
+                description: |-
+                  BrokerClientTrustCertsFilePath is the file path to the trusted TLS certificate
+                  for outgoing connections to Pulsar brokers. This is used for TLS verification.
                 type: string
               brokerServiceSecureURL:
-                description: BrokerServiceSecureURL is the broker service url for
-                  secure connection.
+                description: |-
+                  BrokerServiceSecureURL is the TLS-enabled URL for secure connections to Pulsar brokers.
+                  Use this for encrypted communications with the Pulsar cluster.
                 pattern: ^pulsar\+ssl://.+$
                 type: string
               brokerServiceURL:
-                description: BrokerServiceURL is the broker service url of the pulsar
-                  cluster
+                description: |-
+                  BrokerServiceURL is the non-TLS URL for connecting to Pulsar brokers.
+                  Use this for non-secure connections to the Pulsar cluster.
                 pattern: ^pulsar?://.+$
                 type: string
               clusterName:
                 description: |-
-                  ClusterName indicates the local cluster name of the pulsar cluster. It should
-                  set when enabling the Geo Replication
+                  ClusterName specifies the name of the local Pulsar cluster.
+                  When setting up Geo-Replication between Pulsar instances, this should be enabled to identify the cluster.
                 type: string
             type: object
           status:
-            description: PulsarConnectionStatus defines the observed state of PulsarConnection
+            description: |-
+              PulsarConnectionStatus defines the observed state of PulsarConnection.
+              It provides information about the current status of the Pulsar connection.
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: |-
+                  Conditions represent the latest available observations of the connection's current state.
+                  It follows the Kubernetes conventions for condition types and status.
+                  The "Ready" condition type is typically used to indicate the overall status.
                 items:
                   description: |-
                     Condition contains details for one aspect of the current state of this API Resource.
@@ -260,10 +304,14 @@ spec:
                 description: |-
                   ObservedGeneration is the most recent generation observed for this resource.
                   It corresponds to the metadata generation, which is updated on mutation by the API Server.
+                  This field is used to track whether the controller has processed the latest changes.
                 format: int64
                 type: integer
               secretKeyHash:
-                description: SecretKeyHash is the hash of the secret ref
+                description: |-
+                  SecretKeyHash is the hash of the secret reference used for authentication.
+                  This is used to detect changes in the secret without exposing sensitive information.
+                  The controller should update this hash when the secret changes.
                 type: string
             type: object
         type: object

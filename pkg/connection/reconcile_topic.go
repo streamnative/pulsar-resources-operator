@@ -18,7 +18,9 @@ import (
 	"context"
 	"fmt"
 	"reflect"
+	"slices"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	corev1 "k8s.io/api/core/v1"
@@ -175,16 +177,48 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 
 	r.applyDefault(params)
 
-	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 {
-		for _, ref := range refs {
-			if err := r.applyGeo(ctx, params, ref, topic); err != nil {
-				log.Error(err, "Failed to get destination connection for geo replication "+ref.Name)
-				policyErrs = append(policyErrs, err)
+	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 || len(topic.Spec.ReplicationClusters) > 0 {
+		if len(refs) > 0 && len(topic.Spec.ReplicationClusters) > 0 {
+			return fmt.Errorf("GeoReplicationRefs and ReplicationClusters cannot be set at the same time")
+		}
+
+		if len(refs) > 0 {
+			for _, ref := range refs {
+				if err := r.applyGeo(ctx, params, ref, topic); err != nil {
+					log.Error(err, "Failed to get destination connection for geo replication "+ref.Name)
+					policyErrs = append(policyErrs, err)
+				}
+			}
+		} else if len(topic.Spec.ReplicationClusters) > 0 {
+			topicNameStr := admin.MakeCompleteTopicName(topic.Spec.Name, topic.Spec.Persistent)
+			topicName, err := utils.GetTopicName(topicNameStr)
+			if err != nil {
+				return err
+			}
+			tenantName := topicName.GetTenant()
+			allowedClusters, err := pulsarAdmin.GetTenantAllowedClusters(tenantName)
+			if err != nil {
+				return err
+			}
+			for _, cluster := range topic.Spec.ReplicationClusters {
+				if !slices.Contains(allowedClusters, cluster) {
+					err := fmt.Errorf("cluster %s is not allowed in tenant %s", cluster, tenantName)
+					meta.SetStatusCondition(&topic.Status.Conditions, *NewErrorCondition(topic.Generation, err.Error()))
+					log.Error(err, "Failed to apply topic")
+					if err := r.conn.client.Status().Update(ctx, topic); err != nil {
+						log.Error(err, "Failed to update the topic status")
+						return err
+					}
+					return err
+				}
+				params.ReplicationClusters = append(params.ReplicationClusters, topic.Spec.ReplicationClusters...)
 			}
 		}
 
-		log.Info("apply topic with replication clusters", "clusters", params.ReplicationClusters)
-		topic.Status.GeoReplicationEnabled = true
+		if len(params.ReplicationClusters) > 0 {
+			log.Info("apply topic with replication clusters", "clusters", params.ReplicationClusters)
+			topic.Status.GeoReplicationEnabled = true
+		}
 	} else if topic.Status.GeoReplicationEnabled {
 		// when GeoReplicationRefs is removed, it should reset the topic clusters
 		params.ReplicationClusters = []string{r.conn.connection.Spec.ClusterName}

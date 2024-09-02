@@ -197,9 +197,10 @@ spec:
                 type: object
               lifecyclePolicy:
                 description: |-
-                  PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
-                  in pulsar cluster after resource is deleted by controller
-                  KeepAfterDeletion or CleanUpAfterDeletion
+                  PulsarResourceLifeCyclePolicy defines the behavior for managing Pulsar resources
+                  when the corresponding custom resource (CR) is deleted from the Kubernetes cluster.
+                  This policy allows users to control whether Pulsar resources should be retained or
+                  removed from the Pulsar cluster after the CR is deleted.
                 enum:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
