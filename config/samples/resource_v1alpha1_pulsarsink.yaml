@@ -13,14 +13,29 @@
 # limitations under the License.
 
 apiVersion: resource.streamnative.io/v1alpha1
-kind: PulsarPackage
+kind: PulsarSink
 metadata:
-  name: pulsarpackage-sample
-  namespace: pulsar
+  name: test-pulsar-sink
+  namespace: default
 spec:
-  packageURL: function://public/default/test@latest
-  fileURL: https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-2.10.4/connectors/pulsar-io-file-2.10.4.nar
+  autoAck: true
+  className: org.apache.pulsar.io.datagenerator.DataGeneratorPrintSink
+  cleanupSubscription: false
   connectionRef:
-    name: pulsarconnection-sample
-  description: "test"
+    name: "test-pulsar-connection"
+  customRuntimeOptions: {}
+  inputs:
+  - sink-input
+  archive:
+    url: builtin://data-generator
   lifecyclePolicy: CleanUpAfterDeletion
+  name: test-pulsar-sink
+  namespace: default
+  parallelism: 1
+  processingGuarantees: EFFECTIVELY_ONCE
+  secrets:
+    SECRET1:
+      key: hello
+      path: sectest
+  sourceSubscriptionPosition: Latest
+  tenant: public
