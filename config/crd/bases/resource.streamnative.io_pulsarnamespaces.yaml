@@ -49,7 +49,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarNamespace is the Schema for the pulsarnamespaces API
+        description: |-
+          PulsarNamespace is the Schema for the pulsarnamespaces API
+          It represents a Pulsar namespace in the Kubernetes cluster and includes both
+          the desired state (Spec) and the observed state (Status) of the namespace.
         properties:
           apiVersion:
             description: |-
@@ -69,36 +72,47 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarNamespaceSpec defines the desired state of PulsarNamespace
+            description: |-
+              PulsarNamespaceSpec defines the desired state of a Pulsar namespace.
+              It corresponds to the configuration options available in Pulsar's namespace admin API.
             properties:
               backlogQuotaLimitSize:
                 anyOf:
                 - type: integer
                 - type: string
+                description: |-
+                  BacklogQuotaLimitSize specifies the size limit for message backlog.
+                  When the limit is reached, older messages will be removed or handled according to the retention policy.
                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                 x-kubernetes-int-or-string: true
               backlogQuotaLimitTime:
                 description: |-
-                  Backlog
-                  Should set at least one of them if setting backlog
+                  BacklogQuotaLimitTime specifies the time limit for message backlog.
+                  Messages older than this limit will be removed or handled according to the retention policy.
                 type: string
               backlogQuotaRetentionPolicy:
+                description: |-
+                  BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
+                  Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
                 type: string
               backlogQuotaType:
                 description: |-
-                  BacklogQuotaType controls the backlog by setting the type to destination_storage or message_age
-                  destination_storage limits backlog by size (in bytes). message_age limits backlog by time,
-                  that is, message timestamp (broker or publish timestamp)
+                  BacklogQuotaType controls how the backlog quota is enforced.
+                  "destination_storage" limits backlog by size (in bytes), while "message_age" limits by time.
                 enum:
                 - destination_storage
                 - message_age
                 type: string
               bundles:
+                description: |-
+                  Bundles specifies the number of bundles to split the namespace into.
+                  This affects how the namespace is distributed across the cluster.
                 format: int32
                 type: integer
               connectionRef:
-                description: ConnectionRef is the reference to the PulsarConnection
-                  resource
+                description: |-
+                  ConnectionRef is the reference to the PulsarConnection resource
+                  used to connect to the Pulsar cluster for this namespace.
                 properties:
                   name:
                     description: |-
@@ -109,8 +123,12 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
               geoReplicationRefs:
-                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
-                  resource
+                description: |-
+                  GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
+                  used to configure geo-replication for this namespace.
+                  This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication
+                  between two Pulsar instances.
+                  Please use `ReplicationClusters` instead if you are replicating clusters within the same Pulsar instance.
                 items:
                   description: |-
                     LocalObjectReference contains enough information to let you locate the
@@ -127,32 +145,42 @@ spec:
                 type: array
               lifecyclePolicy:
                 description: |-
-                  PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
-                  in pulsar cluster after resource is deleted by controller
-                  KeepAfterDeletion or CleanUpAfterDeletion
+                  LifecyclePolicy determines whether to keep or delete the Pulsar namespace
+                  when the Kubernetes resource is deleted.
                 enum:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
               maxConsumersPerSubscription:
+                description: MaxConsumersPerSubscription sets the maximum number of
+                  consumers allowed on a single subscription in the namespace.
                 format: int32
                 type: integer
               maxConsumersPerTopic:
+                description: MaxConsumersPerTopic sets the maximum number of consumers
+                  allowed on a single topic in the namespace.
                 format: int32
                 type: integer
               maxProducersPerTopic:
-                description: Tenant Policy Setting
+                description: MaxProducersPerTopic sets the maximum number of producers
+                  allowed on a single topic in the namespace.
                 format: int32
                 type: integer
               messageTTL:
-                description: MessageTTL indicates the message ttl for the namespace
+                description: |-
+                  MessageTTL specifies the Time to Live (TTL) for messages in the namespace.
+                  Messages older than this TTL will be automatically marked as consumed.
                 type: string
               name:
-                description: Name is the namespace name
+                description: Name is the fully qualified namespace name in the format
+                  "tenant/namespace".
                 type: string
               replicationClusters:
-                description: ReplicationClusters is the list of clusters to which
-                  the namespace is replicated
+                description: |-
+                  ReplicationClusters is the list of clusters to which the namespace is replicated
+                  This is **ONLY** used if you are replicating clusters within the same Pulsar instance.
+                  Please use `GeoReplicationRefs` instead if you are setting up geo-replication
+                  between two Pulsar instances.
                 items:
                   type: string
                 type: array
@@ -160,12 +188,15 @@ spec:
                 anyOf:
                 - type: integer
                 - type: string
+                description: |-
+                  RetentionSize specifies the maximum size of backlog retained in the namespace.
+                  Should be set in conjunction with RetentionTime for effective retention policy.
                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                 x-kubernetes-int-or-string: true
               retentionTime:
                 description: |-
-                  Retention
-                  Should set at least one of them if setting retention
+                  RetentionTime specifies the minimum time to retain messages in the namespace.
+                  Should be set in conjunction with RetentionSize for effective retention policy.
                   Retention Quota must exceed configured backlog quota for namespace
                 type: string
             required:
@@ -176,8 +207,10 @@ spec:
             description: PulsarNamespaceStatus defines the observed state of PulsarNamespace
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: |-
+                  Conditions represent the latest available observations of the namespace's current state.
+                  It follows the Kubernetes conventions for condition types and status.
+                  The "Ready" condition type is typically used to indicate the overall status of the namespace.
                 items:
                   description: |-
                     Condition contains details for one aspect of the current state of this API Resource.
@@ -256,13 +289,15 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               geoReplicationEnabled:
-                description: GeoReplicationEnabled indicates whether geo-replication
+                description: |-
+                  GeoReplicationEnabled indicates whether geo-replication between two Pulsar instances (via PulsarGeoReplication)
                   is enabled for the namespace
                 type: boolean
               observedGeneration:
                 description: |-
                   ObservedGeneration is the most recent generation observed for this resource.
                   It corresponds to the metadata generation, which is updated on mutation by the API Server.
+                  This field is used to track whether the controller has processed the latest changes.
                 format: int64
                 type: integer
             type: object

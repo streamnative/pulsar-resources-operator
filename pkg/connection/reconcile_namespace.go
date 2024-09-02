@@ -155,30 +155,33 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 	}
 
 	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 || len(namespace.Spec.ReplicationClusters) > 0 {
-		for _, ref := range refs {
-			geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
-			namespacedName := types.NamespacedName{
-				Namespace: namespace.Namespace,
-				Name:      ref.Name,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
-				return err
-			}
-			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
-			destConnection := &resourcev1alpha1.PulsarConnection{}
-			namespacedName = types.NamespacedName{
-				Name:      geoReplication.Spec.DestinationConnectionRef.Name,
-				Namespace: geoReplication.Namespace,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
-				log.Error(err, "Failed to get destination connection for geo replication")
-				return err
-			}
-			params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
-			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
+		if len(refs) > 0 && len(namespace.Spec.ReplicationClusters) > 0 {
+			return fmt.Errorf("GeoReplicationRefs and ReplicationClusters cannot be set at the same time")
 		}
-
-		if len(namespace.Spec.ReplicationClusters) > 0 {
+		if len(refs) > 0 {
+			for _, ref := range refs {
+				geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
+				namespacedName := types.NamespacedName{
+					Namespace: namespace.Namespace,
+					Name:      ref.Name,
+				}
+				if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+					return err
+				}
+				log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
+				destConnection := &resourcev1alpha1.PulsarConnection{}
+				namespacedName = types.NamespacedName{
+					Name:      geoReplication.Spec.DestinationConnectionRef.Name,
+					Namespace: geoReplication.Namespace,
+				}
+				if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
+					log.Error(err, "Failed to get destination connection for geo replication")
+					return err
+				}
+				params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
+				params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
+			}
+		} else if len(namespace.Spec.ReplicationClusters) > 0 {
 			parts := strings.Split(namespace.Spec.Name, "/")
 			if len(parts) != 2 {
 				err := fmt.Errorf("invalid namespace name %s", namespace.Spec.Name)
