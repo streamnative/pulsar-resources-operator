@@ -84,7 +84,7 @@ func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error
 // ApplyNamespace creates a namespace with policies
 func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams) error {
 	if params.Bundles == nil {
-		params.Bundles = pointer.Int32Ptr(4)
+		params.Bundles = pointer.Int32(4)
 	}
 	err := p.adminClient.Namespaces().CreateNsWithPolices(name, utils.Policies{
 		Bundles: &utils.BundlesData{

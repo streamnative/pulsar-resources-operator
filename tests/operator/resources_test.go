@@ -68,7 +68,7 @@ var _ = Describe("Resources", func() {
 			},
 			Spec: v1alphav1.PulsarTopicSpec{
 				Name:       "persistent://cloud/stage/partitioned-topic",
-				Partitions: pointer.Int32Ptr(1),
+				Partitions: pointer.Int32(1),
 				ConnectionRef: corev1.LocalObjectReference{
 					Name: pconnName,
 				},
@@ -267,7 +267,7 @@ var _ = Describe("Resources", func() {
 					Name:      partitionedTopic.Name,
 				}, curTopic)).ShouldNot(HaveOccurred())
 
-				curTopic.Spec.Partitions = pointer.Int32Ptr(2)
+				curTopic.Spec.Partitions = pointer.Int32(2)
 				err := k8sClient.Update(ctx, curTopic)
 				Expect(err).ShouldNot(HaveOccurred())
 				Eventually(func() bool {
