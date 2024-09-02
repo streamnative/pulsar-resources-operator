@@ -95,6 +95,16 @@ spec:
       kind: PulsarPackage
       name: pulsarpackages.resource.streamnative.io
       version: v1alpha1
+    - description: PulsarSink is the Schema for the pulsarsinks API
+      displayName: Pulsar Sink
+      kind: PulsarSink
+      name: pulsarsinks.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarSource is the Schema for the pulsarsources API
+      displayName: Pulsar Source
+      kind: PulsarSource
+      name: pulsarsources.resource.streamnative.io
+      version: v1alpha1
   description: |
     Authored by [StreamNative](https://streamnative.io), this Pulsar Resources Operator is a controller that manages the Pulsar resources automatically using the manifest on Kubernetes. Therefore, you can manage the Pulsar resources without the help of `pulsar-admin` or `pulsarctl` CLI tool. It is useful for initializing basic resources when creating a new Pulsar cluster.
 
