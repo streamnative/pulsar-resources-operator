@@ -15,6 +15,9 @@
 package admin
 
 import (
+	"errors"
+	"net"
+
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/rest"
 )
 
@@ -69,4 +72,10 @@ func IsAlreadyExist(err error) bool {
 // IsInternalServerError returns true if the error indicates the resource already exist
 func IsInternalServerError(err error) bool {
 	return ErrorReason(err) == ReasonInternalServerError
+}
+
+// IsNoSuchHostError returns true if operator cannot connect the resource host
+func IsNoSuchHostError(err error) bool {
+	var dnsErr *net.DNSError
+	return errors.As(err, &dnsErr) && dnsErr.Err == "no such host"
 }
