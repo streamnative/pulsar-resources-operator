@@ -291,12 +291,12 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {
 	if params.Persistent == nil {
 		// by default create persistent topic
-		params.Persistent = pointer.BoolPtr(true)
+		params.Persistent = pointer.Bool(true)
 	}
 
 	if params.Partitions == nil {
 		// by default create non-partitioned topic
-		params.Partitions = pointer.Int32Ptr(0)
+		params.Partitions = pointer.Int32(0)
 	}
 }
 

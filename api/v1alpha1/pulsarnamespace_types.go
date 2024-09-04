@@ -99,6 +99,16 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
 
+	// OffloadThresholdTime specifies the time limit for message offloading.
+	// Messages older than this limit will be offloaded to the tiered storage.
+	// +optional
+	OffloadThresholdTime *utils.Duration `json:"offloadThresholdTime,omitempty"`
+
+	// OffloadThresholdSize specifies the size limit for message offloading.
+	// When the limit is reached, older messages will be offloaded to the tiered storage.
+	// +optional
+	OffloadThresholdSize *resource.Quantity `json:"offloadThresholdSize,omitempty"`
+
 	// GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
 	// used to configure geo-replication for this namespace.
 	// This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication

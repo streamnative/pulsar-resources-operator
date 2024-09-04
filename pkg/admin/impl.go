@@ -84,7 +84,7 @@ func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error
 // ApplyNamespace creates a namespace with policies
 func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams) error {
 	if params.Bundles == nil {
-		params.Bundles = pointer.Int32Ptr(4)
+		params.Bundles = pointer.Int32(4)
 	}
 	err := p.adminClient.Namespaces().CreateNsWithPolices(name, utils.Policies{
 		Bundles: &utils.BundlesData{
@@ -98,7 +98,7 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		return err
 	}
 
-	err = p.applyTenantPolicies(name, params)
+	err = p.applyNamespacePolicies(name, params)
 	if err != nil {
 		return err
 	}
@@ -321,7 +321,7 @@ func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clus
 	return nil
 }
 
-func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *NamespaceParams) error {
+func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params *NamespaceParams) error {
 	naName, err := utils.GetNamespaceName(completeNSName)
 	if err != nil {
 		return err
@@ -407,6 +407,25 @@ func (p *PulsarAdminClient) applyTenantPolicies(completeNSName string, params *N
 			}
 		}
 		err = p.adminClient.Namespaces().SetBacklogQuota(completeNSName, backlogQuotaPolicy, backlogQuotaType)
+		if err != nil {
+			return err
+		}
+	}
+
+	if params.OffloadThresholdTime != nil {
+		t, err := params.OffloadThresholdTime.Parse()
+		if err != nil {
+			return err
+		}
+		err = p.adminClient.Namespaces().SetOffloadThresholdInSeconds(*naName, int64(t.Seconds()))
+		if err != nil {
+			return err
+		}
+	}
+
+	if params.OffloadThresholdSize != nil {
+		s := params.OffloadThresholdSize.Value()
+		err = p.adminClient.Namespaces().SetOffloadThreshold(*naName, s)
 		if err != nil {
 			return err
 		}
