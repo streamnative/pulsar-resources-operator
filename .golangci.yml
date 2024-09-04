@@ -17,7 +17,8 @@ linters:
   enable:
   - asciicheck
   - bodyclose
-  - deadcode
+  - unused
+  # - deadcode
   # - depguard
   - dogsled
   - errcheck
@@ -42,13 +43,13 @@ linters:
   - predeclared
   - rowserrcheck
   - staticcheck
-  - structcheck
+  # - structcheck
   - stylecheck
   - thelper
   - typecheck
   - unconvert
   - unparam
-  - varcheck
+  # - varcheck
 
 linters-settings:
   godot:

@@ -279,7 +279,7 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 			return nil, err
 		}
 		if value, exists := secret.Data[ref.Key]; exists {
-			return pointer.StringPtr(string(value)), nil
+			return pointer.String(string(value)), nil
 		}
 	}
 	return nil, nil
