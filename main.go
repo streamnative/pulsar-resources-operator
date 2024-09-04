@@ -58,12 +58,14 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var resyncPeriod int
+	var retryCount int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.IntVar(&resyncPeriod, "resync-period", 10, "resyncPeriod is the base frequency the informers are resynced.")
+	flag.IntVar(&retryCount, "retry-count", 5, "The number of retries in case of error.")
 	opts := k8szap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
@@ -112,7 +114,7 @@ func main() {
 		Log:                ctrl.Log.WithName("controllers").WithName("PulsarConnection"),
 		Recorder:           mgr.GetEventRecorderFor("pulsarconnection-controller"),
 		PulsarAdminCreator: admin.NewPulsarAdmin,
-		Retryer:            utils.NewReconcileRetryer(5, utils.NewEventSource(ctrl.Log.WithName("eventSource"))),
+		Retryer:            utils.NewReconcileRetryer(retryCount, utils.NewEventSource(ctrl.Log.WithName("eventSource"))),
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarConnection")
 		os.Exit(1)
