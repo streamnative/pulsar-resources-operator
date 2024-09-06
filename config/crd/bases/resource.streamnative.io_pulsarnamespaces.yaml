@@ -18,6 +18,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
+  creationTimestamp: null
   name: pulsarnamespaces.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -175,6 +176,20 @@ spec:
                 description: Name is the fully qualified namespace name in the format
                   "tenant/namespace".
                 type: string
+              offloadThresholdSize:
+                anyOf:
+                - type: integer
+                - type: string
+                description: |-
+                  OffloadThresholdSize specifies the size limit for message offloading.
+                  When the limit is reached, older messages will be offloaded to the tiered storage.
+                pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                x-kubernetes-int-or-string: true
+              offloadThresholdTime:
+                description: |-
+                  OffloadThresholdTime specifies the time limit for message offloading.
+                  Messages older than this limit will be offloaded to the tiered storage.
+                type: string
               replicationClusters:
                 description: |-
                   ReplicationClusters is the list of clusters to which the namespace is replicated
@@ -212,22 +227,16 @@ spec:
                   It follows the Kubernetes conventions for condition types and status.
                   The "Ready" condition type is typically used to indicate the overall status of the namespace.
                 items:
-                  description: |-
-                    Condition contains details for one aspect of the current state of this API Resource.
-                    ---
-                    This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{
-                        // Represents the observations of a foo's current state.
-                        // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-                        // +patchMergeKey=type
-                        // +patchStrategy=merge
-                        // +listType=map
-                        // +listMapKey=type
-                        Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-                        // other fields
-                    }
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource.\n---\nThis struct is intended for
+                    direct use as an array at the field path .status.conditions.  For
+                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
+                    observations of a foo's current state.\n\t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
+                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
+                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
+                    \   // other fields\n\t}"
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -306,3 +315,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
