@@ -18,6 +18,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
+  creationTimestamp: null
   name: pulsartopics.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -52,7 +53,10 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarTopic is the Schema for the pulsartopics API
+        description: |-
+          PulsarTopic is the Schema for the pulsartopics API
+          It represents a Pulsar topic in the Kubernetes cluster and includes both
+          the desired state (Spec) and the observed state (Status) of the topic.
         properties:
           apiVersion:
             description: |-
@@ -72,24 +76,33 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarTopicSpec defines the desired state of PulsarTopic
+            description: |-
+              PulsarTopicSpec defines the desired state of PulsarTopic.
+              It corresponds to the configuration options available in Pulsar's topic admin API.
             properties:
               backlogQuotaLimitSize:
                 anyOf:
                 - type: integer
                 - type: string
+                description: |-
+                  BacklogQuotaLimitSize specifies the size limit for message backlog.
+                  When the limit is reached, older messages will be removed or handled according to the retention policy.
                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                 x-kubernetes-int-or-string: true
               backlogQuotaLimitTime:
                 description: |-
-                  Backlog
-                  Should set at least one of them if setting backlog
+                  BacklogQuotaLimitTime specifies the time limit for message backlog.
+                  Messages older than this limit will be removed or handled according to the retention policy.
                 type: string
               backlogQuotaRetentionPolicy:
+                description: |-
+                  BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
+                  Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
                 type: string
               connectionRef:
-                description: ConnectionRef is the reference to the PulsarConnection
-                  resource
+                description: |-
+                  ConnectionRef is the reference to the PulsarConnection resource
+                  used to connect to the Pulsar cluster for this topic.
                 properties:
                   name:
                     description: |-
@@ -100,8 +113,11 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
               geoReplicationRefs:
-                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
-                  resource
+                description: |-
+                  GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
+                  used to configure geo-replication for this topic across multiple Pulsar instances.
+                  This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication
+                  between two Pulsar instances.
                 items:
                   description: |-
                     LocalObjectReference contains enough information to let you locate the
@@ -118,68 +134,103 @@ spec:
                 type: array
               lifecyclePolicy:
                 description: |-
-                  PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
-                  in pulsar cluster after resource is deleted by controller
-                  KeepAfterDeletion or CleanUpAfterDeletion
+                  LifecyclePolicy determines whether to keep or delete the Pulsar topic
+                  when the Kubernetes resource is deleted.
                 enum:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
               maxConsumers:
+                description: MaxConsumers sets the maximum number of consumers allowed
+                  on the topic.
                 format: int32
                 type: integer
               maxProducers:
-                description: Topic Policy Setting
+                description: MaxProducers sets the maximum number of producers allowed
+                  on the topic.
                 format: int32
                 type: integer
               maxUnAckedMessagesPerConsumer:
-                description: Max unacked messages
+                description: |-
+                  MaxUnAckedMessagesPerConsumer sets the maximum number of unacknowledged
+                  messages allowed for a consumer before it's blocked from receiving more messages.
                 format: int32
                 type: integer
               maxUnAckedMessagesPerSubscription:
+                description: |-
+                  MaxUnAckedMessagesPerSubscription sets the maximum number of unacknowledged
+                  messages allowed for a subscription before it's blocked from receiving more messages.
                 format: int32
                 type: integer
               messageTTL:
-                description: MessageTTL indicates the message ttl for the topic
+                description: |-
+                  MessageTTL specifies the Time to Live (TTL) for messages on the topic.
+                  Messages older than this TTL will be automatically marked as deleted.
                 type: string
               name:
                 description: Name is the topic name
                 type: string
               partitions:
                 default: 0
+                description: |-
+                  Partitions specifies the number of partitions for a partitioned topic.
+                  Set to 0 for a non-partitioned topic.
                 format: int32
                 type: integer
               persistent:
                 default: true
+                description: |-
+                  Persistent determines if the topic is persistent (true) or non-persistent (false).
+                  Defaults to true if not specified.
                 type: boolean
+              replicationClusters:
+                description: |-
+                  ReplicationClusters is the list of clusters to which the topic is replicated
+                  This is **ONLY** used if you are replicating clusters within the same Pulsar instance.
+                  Please use `GeoReplicationRefs` instead if you are setting up geo-replication
+                  between two Pulsar instances.
+                items:
+                  type: string
+                type: array
               retentionSize:
                 anyOf:
                 - type: integer
                 - type: string
+                description: |-
+                  RetentionSize specifies the maximum size of backlog retained on the topic.
+                  Should be set in conjunction with RetentionTime for effective retention policy.
+                  Retention Quota must exceed configured backlog quota for topic
                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                 x-kubernetes-int-or-string: true
               retentionTime:
                 description: |-
-                  Retention
-                  Should set at least one of them if setting retention
+                  RetentionTime specifies the minimum time to retain messages on the topic.
+                  Should be set in conjunction with RetentionSize for effective retention policy.
                   Retention Quota must exceed configured backlog quota for topic
                 type: string
               schemaInfo:
-                description: |-
-                  SchemaInfo defines the Pulsar Schema.
-                  It is stored and enforced on a per-topic basis and cannot be stored at the namespace or tenant level.
+                description: SchemaInfo defines the schema for the topic, if any.
                 properties:
                   properties:
                     additionalProperties:
                       type: string
-                    description: Properties is a user defined properties as a string/string
-                      map
+                    description: |-
+                      Properties is a map of user-defined properties associated with the schema.
+                      These can be used to store additional metadata about the schema.
                     type: object
                   schema:
-                    description: Schema is schema data
+                    description: |-
+                      Schema contains the actual schema definition.
+                      For AVRO and JSON schemas, this should be a JSON string of the schema definition.
+                      For PROTOBUF schemas, this should be the protobuf definition string.
+                      For BYTES or NONE schemas, this field can be empty.
                     type: string
                   type:
-                    description: Type determines how to interpret the schema data
+                    description: |-
+                      Type determines how to interpret the schema data.
+                      Valid values include: "AVRO", "JSON", "PROTOBUF", "PROTOBUF_NATIVE", "KEY_VALUE", "BYTES", or "NONE".
+                      For KEY_VALUE schemas, use the format "KEY_VALUE(KeyType,ValueType)" where KeyType and ValueType
+                      are one of the other schema types.
                     type: string
                 type: object
             required:
@@ -190,25 +241,22 @@ spec:
             description: PulsarTopicStatus defines the observed state of PulsarTopic
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: |-
+                  Conditions represent the latest available observations of the PulsarTopic's current state.
+                  It follows the Kubernetes conventions for condition types and status.
+                  The "Ready" condition type indicates the overall status of the topic.
+                  The "PolicyReady" condition type indicates whether the topic policies have been successfully applied.
                 items:
-                  description: |-
-                    Condition contains details for one aspect of the current state of this API Resource.
-                    ---
-                    This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{
-                        // Represents the observations of a foo's current state.
-                        // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-                        // +patchMergeKey=type
-                        // +patchStrategy=merge
-                        // +listType=map
-                        // +listMapKey=type
-                        Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-                        // other fields
-                    }
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource.\n---\nThis struct is intended for
+                    direct use as an array at the field path .status.conditions.  For
+                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
+                    observations of a foo's current state.\n\t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
+                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
+                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
+                    \   // other fields\n\t}"
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -270,12 +318,15 @@ spec:
                 - type
                 x-kubernetes-list-type: map
               geoReplicationEnabled:
-                description: GeoReplicationEnabled
+                description: |-
+                  GeoReplicationEnabled indicates whether geo-replication is enabled for this topic.
+                  This is set to true when GeoReplicationRefs are configured in the spec and successfully applied.
                 type: boolean
               observedGeneration:
                 description: |-
                   ObservedGeneration is the most recent generation observed for this resource.
                   It corresponds to the metadata generation, which is updated on mutation by the API Server.
+                  This field is used to track whether the controller has processed the latest changes.
                 format: int64
                 type: integer
             type: object
@@ -284,3 +335,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null

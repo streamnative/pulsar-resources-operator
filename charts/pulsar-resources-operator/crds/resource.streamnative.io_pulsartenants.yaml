@@ -18,6 +18,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
+  creationTimestamp: null
   name: pulsartenants.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -69,19 +70,30 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarTenantSpec defines the desired state of PulsarTenant
+            description: |-
+              PulsarTenantSpec defines the desired state of PulsarTenant.
+              It corresponds to the configuration options available in Pulsar's tenant admin API.
             properties:
               adminRoles:
+                description: |-
+                  AdminRoles is a list of roles that have administrative privileges for this tenant.
+                  These roles can perform actions like creating namespaces, topics, and managing permissions.
                 items:
                   type: string
                 type: array
               allowedClusters:
+                description: |-
+                  AllowedClusters is a list of clusters that this tenant is allowed to access.
+                  This field is optional and can be used to restrict the clusters a tenant can connect to.
+                  Please use `GeoReplicationRefs` instead if you are setting up geo-replication
+                  between multiple Pulsar instances.
                 items:
                   type: string
                 type: array
               connectionRef:
-                description: ConnectionRef is the reference to the PulsarConnection
-                  resource
+                description: |-
+                  ConnectionRef is the reference to the PulsarConnection resource
+                  used to connect to the Pulsar cluster for this tenant.
                 properties:
                   name:
                     description: |-
@@ -92,8 +104,13 @@ spec:
                 type: object
                 x-kubernetes-map-type: atomic
               geoReplicationRefs:
-                description: GeoReplicationRefs is the reference list to the PulsarGeoReplication
-                  resource
+                description: |-
+                  GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
+                  used to configure geo-replication for this tenant across multiple Pulsar instances.
+                  This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication
+                  between multiple Pulsar instances.
+                  Please use `AllowedClusters` instead if you are allowing a tenant to be available within
+                  specific clusters in a same Pulsar instance.
                 items:
                   description: |-
                     LocalObjectReference contains enough information to let you locate the
@@ -110,43 +127,43 @@ spec:
                 type: array
               lifecyclePolicy:
                 description: |-
-                  PulsarResourceLifeCyclePolicy indicates whether it will keep or delete the resource
-                  in pulsar cluster after resource is deleted by controller
-                  KeepAfterDeletion or CleanUpAfterDeletion
+                  LifecyclePolicy determines whether to keep or delete the Pulsar tenant
+                  when the Kubernetes resource is deleted.
                 enum:
                 - CleanUpAfterDeletion
                 - KeepAfterDeletion
                 type: string
               name:
-                description: Name is the tenant name
+                description: |-
+                  Name is the tenant name.
+                  This field is required and must be unique within the Pulsar cluster.
                 type: string
             required:
             - connectionRef
             - name
             type: object
           status:
-            description: PulsarTenantStatus defines the observed state of PulsarTenant
+            description: |-
+              PulsarTenantStatus defines the observed state of PulsarTenant.
+              It contains information about the current state of the Pulsar tenant.
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: |-
+                  Conditions represent the latest available observations of the PulsarTenant's current state.
+                  It follows the Kubernetes conventions for condition types and status.
+                  The "Ready" condition type is typically used to indicate the overall status of the tenant.
+                  Other condition types may be used to provide more detailed status information.
                 items:
-                  description: |-
-                    Condition contains details for one aspect of the current state of this API Resource.
-                    ---
-                    This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{
-                        // Represents the observations of a foo's current state.
-                        // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-                        // +patchMergeKey=type
-                        // +patchStrategy=merge
-                        // +listType=map
-                        // +listMapKey=type
-                        Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-                        // other fields
-                    }
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource.\n---\nThis struct is intended for
+                    direct use as an array at the field path .status.conditions.  For
+                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
+                    observations of a foo's current state.\n\t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
+                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
+                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
+                    \   // other fields\n\t}"
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -211,6 +228,7 @@ spec:
                 description: |-
                   ObservedGeneration is the most recent generation observed for this resource.
                   It corresponds to the metadata generation, which is updated on mutation by the API Server.
+                  This field is used to track whether the controller has processed the latest changes.
                 format: int64
                 type: integer
             type: object
@@ -219,3 +237,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
