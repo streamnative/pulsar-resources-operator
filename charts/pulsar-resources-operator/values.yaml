@@ -43,6 +43,10 @@ imagePullSecrets: []
 features:
   # Enable to force always sync k8s resource status to pulsar.
   alwaysUpdatePulsarResource: false
+  # resyncPeriod  determines the minimum frequency at which watched resources are reconciled. The unit is hour, default value is 10 hours.
+  resyncPeriod: 10
+  # The number of retries in case of error.
+  retryCount: 5
 
 # -- It will override the value of label `app.kubernetes.io/name` on pod
 nameOverride: ""

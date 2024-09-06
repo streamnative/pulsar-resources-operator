@@ -18,6 +18,7 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
+  creationTimestamp: null
   name: pulsarpermissions.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -58,7 +59,9 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: PulsarPermission is the Schema for the pulsarpermissions API
+        description: |-
+          PulsarPermission is the Schema for the pulsarpermissions API.
+          It represents a set of permissions granted to specific roles for a Pulsar resource (namespace or topic).
         properties:
           apiVersion:
             description: |-
@@ -78,18 +81,21 @@ spec:
           metadata:
             type: object
           spec:
-            description: PulsarPermissionSpec defines the desired state of PulsarPermission
+            description: |-
+              PulsarPermissionSpec defines the desired state of PulsarPermission.
+              It specifies the configuration for granting permissions to Pulsar resources.
             properties:
               actions:
                 description: |-
-                  Actions contains a list of action to grant.
-                  the options include produce,consume,functions
+                  Actions is a list of permissions to grant.
+                  Valid options include "produce", "consume", and "functions".
                 items:
                   type: string
                 type: array
               connectionRef:
-                description: ConnectionRef is the reference to the PulsarConnection
-                  resource
+                description: |-
+                  ConnectionRef is the reference to the PulsarConnection resource
+                  used to connect to the Pulsar cluster for this permission.
                 properties:
                   name:
                     description: |-
@@ -101,24 +107,25 @@ spec:
                 x-kubernetes-map-type: atomic
               lifecyclePolicy:
                 description: |-
-                  LifecyclePolicy is the policy that how to deal with pulsar resource when
-                  PulsarPermission is deleted
+                  LifecyclePolicy determines how to handle the Pulsar permissions
+                  when the PulsarPermission resource is deleted.
                 type: string
               resourceName:
-                description: ResourceName name of the target resource which will be
-                  granted the permssions
+                description: |-
+                  ResourceName is the name of the target resource (namespace or topic)
+                  to which the permissions will be granted.
                 type: string
               resourceType:
-                description: ResourceType indicates the resource type, the options
-                  include namespace and topic
+                description: ResourceType indicates whether the permission is for
+                  a namespace or a topic.
                 enum:
                 - namespace
                 - topic
                 type: string
               roles:
                 description: |-
-                  Roles contains a list of role which will be granted the same permissions
-                  for the same target
+                  Roles is a list of role names that will be granted the specified permissions
+                  for the target resource.
                 items:
                   type: string
                 type: array
@@ -129,28 +136,26 @@ spec:
             - roles
             type: object
           status:
-            description: PulsarPermissionStatus defines the observed state of PulsarPermission
+            description: |-
+              PulsarPermissionStatus defines the observed state of PulsarPermission.
+              It provides information about the current status of the Pulsar permission configuration.
             properties:
               conditions:
-                description: Represents the observations of a connection's current
-                  state.
+                description: |-
+                  Conditions represent the latest available observations of the PulsarPermission's current state.
+                  It follows the Kubernetes conventions for condition types and status.
+                  The "Ready" condition type is typically used to indicate the overall status of the permission configuration.
                 items:
-                  description: |-
-                    Condition contains details for one aspect of the current state of this API Resource.
-                    ---
-                    This struct is intended for direct use as an array at the field path .status.conditions.  For example,
-                    type FooStatus struct{
-                        // Represents the observations of a foo's current state.
-                        // Known .status.conditions.type are: "Available", "Progressing", and "Degraded"
-                        // +patchMergeKey=type
-                        // +patchStrategy=merge
-                        // +listType=map
-                        // +listMapKey=type
-                        Conditions []metav1.Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
-
-
-                        // other fields
-                    }
+                  description: "Condition contains details for one aspect of the current
+                    state of this API Resource.\n---\nThis struct is intended for
+                    direct use as an array at the field path .status.conditions.  For
+                    example,\n\n\n\ttype FooStatus struct{\n\t    // Represents the
+                    observations of a foo's current state.\n\t    // Known .status.conditions.type
+                    are: \"Available\", \"Progressing\", and \"Degraded\"\n\t    //
+                    +patchMergeKey=type\n\t    // +patchStrategy=merge\n\t    // +listType=map\n\t
+                    \   // +listMapKey=type\n\t    Conditions []metav1.Condition `json:\"conditions,omitempty\"
+                    patchStrategy:\"merge\" patchMergeKey:\"type\" protobuf:\"bytes,1,rep,name=conditions\"`\n\n\n\t
+                    \   // other fields\n\t}"
                   properties:
                     lastTransitionTime:
                       description: |-
@@ -215,6 +220,7 @@ spec:
                 description: |-
                   ObservedGeneration is the most recent generation observed for this resource.
                   It corresponds to the metadata generation, which is updated on mutation by the API Server.
+                  This field is used to track whether the controller has processed the latest changes.
                 format: int64
                 type: integer
             type: object
@@ -223,3 +229,9 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: null
+  storedVersions: null
