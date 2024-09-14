@@ -79,6 +79,7 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all the geo replication objects
 func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.geoReplications {
 		r.log.V(1).Info("Reconcile Geo")
 		geoReplication := &r.conn.geoReplications[i]
@@ -104,7 +105,10 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 		}
 
 		if err := r.ReconcileGeoReplication(ctx, pulsarAdmin, geoReplication); err != nil {
-			return fmt.Errorf("reconcile geo replication [%w]", err)
+			errs = append(errs, err)
+		}
+		if len(errs) > 0 {
+			return fmt.Errorf("reconcile geo replication [%v]", errs)
 		}
 	}
 	return nil

@@ -70,15 +70,17 @@ func (r *PulsarSourceReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles the object
 func (r *PulsarSourceReconciler) Reconcile(ctx context.Context) error {
 	r.log.V(1).Info("Start Reconcile")
-
+	errs := []error{}
 	for i := range r.conn.sources {
 		source := &r.conn.sources[i]
 		r.log.Info("Reconcile source", "Name", source.Name)
 		if err := r.ReconcileSource(ctx, r.conn.pulsarAdminV3, source); err != nil {
-			return fmt.Errorf("reconcile source [%s] [%w]", source.Name, err)
+			errs = append(errs, err)
 		}
 	}
-
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile source [%v]", errs)
+	}
 	return nil
 }
 

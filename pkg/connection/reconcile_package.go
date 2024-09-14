@@ -73,11 +73,15 @@ func (r *PulsarPackageReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all topics
 func (r *PulsarPackageReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.packages {
 		pkg := &r.conn.packages[i]
 		if err := r.ReconcilePackage(ctx, r.conn.pulsarAdminV3, pkg); err != nil {
-			return fmt.Errorf("reconcile pulsar package [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile pulsar package [%v]", errs)
 	}
 	return nil
 }
