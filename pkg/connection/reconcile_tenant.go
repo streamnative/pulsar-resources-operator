@@ -69,11 +69,15 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all tenants
 func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.tenants {
 		tenant := &r.conn.tenants[i]
 		if err := r.ReconcileTenant(ctx, r.conn.pulsarAdmin, tenant); err != nil {
-			return fmt.Errorf("reconcile tenant [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile tenant [%v]", errs)
 	}
 	return nil
 }
