@@ -68,11 +68,15 @@ func (r *PulsarPermissionReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all permissions
 func (r *PulsarPermissionReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.permissions {
 		perm := &r.conn.permissions[i]
 		if err := r.ReconcilePermission(ctx, r.conn.pulsarAdmin, perm); err != nil {
-			return fmt.Errorf("reconcile permission [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile permission [%v]", errs)
 	}
 
 	return nil

@@ -69,12 +69,15 @@ func (r *PulsarSinkReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles the object
 func (r *PulsarSinkReconciler) Reconcile(ctx context.Context) error {
 	r.log.V(1).Info("Start Reconcile")
-
+	errs := []error{}
 	for i := range r.conn.sinks {
 		sink := &r.conn.sinks[i]
 		if err := r.ReconcileSink(ctx, r.conn.pulsarAdminV3, sink); err != nil {
-			return fmt.Errorf("reconcile sink [%s] [%w]", sink.Name, err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile sink [%v]", errs)
 	}
 
 	return nil
