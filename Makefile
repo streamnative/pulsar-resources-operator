@@ -230,7 +230,7 @@ bundle-redhat: manifests kustomize
 	sed -i  "s|image: docker.cloudsmith.io/.*|image: $(KUBE_RBAC_PROXY_IMG)|g" bundle/manifests/pulsar-resources-operator.clusterserviceversion.yaml
 
 	echo "  # OpenShift annotations." >> bundle/metadata/annotations.yaml
-	echo "  com.redhat.openshift.versions: v4.6-v4.15" >> bundle/metadata/annotations.yaml
+	echo "  com.redhat.openshift.versions: v4.6-v4.17" >> bundle/metadata/annotations.yaml
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
