@@ -123,6 +123,10 @@ type PulsarNamespaceSpec struct {
 	// between two Pulsar instances.
 	// +optional
 	ReplicationClusters []string `json:"replicationClusters,omitempty"`
+
+	// Deduplication controls whether to enable message deduplication for the namespace.
+	// +optional
+	Deduplication *bool `json:"deduplication,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace

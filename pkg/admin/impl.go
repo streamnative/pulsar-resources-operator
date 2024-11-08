@@ -289,6 +289,12 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 			return err
 		}
 	}
+	if params.Deduplication != nil {
+		err = p.adminClient.Topics().SetDeduplicationStatus(*topicName, *params.Deduplication)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -440,6 +446,13 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 				}
 			}
 		} else {
+			return err
+		}
+	}
+
+	if params.Deduplication != nil {
+		err = p.adminClient.Namespaces().SetDeduplicationStatus(completeNSName, *params.Deduplication)
+		if err != nil {
 			return err
 		}
 	}

@@ -53,6 +53,7 @@ type NamespaceParams struct {
 	OffloadThresholdTime        *utils.Duration
 	OffloadThresholdSize        *resource.Quantity
 	ReplicationClusters         []string
+	Deduplication               *bool
 }
 
 // TopicParams indicates the parameters for creating a topic
@@ -70,6 +71,7 @@ type TopicParams struct {
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
 	ReplicationClusters               []string
+	Deduplication                     *bool
 }
 
 // ClusterParams indicate the parameters for creating a cluster

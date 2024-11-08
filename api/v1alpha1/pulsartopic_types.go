@@ -127,6 +127,10 @@ type PulsarTopicSpec struct {
 	// between two Pulsar instances.
 	// +optional
 	ReplicationClusters []string `json:"replicationClusters,omitempty"`
+
+	// Deduplication controls whether to enable message deduplication for the topic.
+	// +optional
+	Deduplication *bool `json:"deduplication,omitempty"`
 }
 
 // SchemaInfo defines the Pulsar Schema for a topic.
