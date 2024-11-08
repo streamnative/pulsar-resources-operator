@@ -289,6 +289,7 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 		BacklogQuotaLimitTime:             topic.Spec.BacklogQuotaLimitTime,
 		BacklogQuotaLimitSize:             topic.Spec.BacklogQuotaLimitSize,
 		BacklogQuotaRetentionPolicy:       topic.Spec.BacklogQuotaRetentionPolicy,
+		Deduplication:                     topic.Spec.Deduplication,
 	}
 }
 

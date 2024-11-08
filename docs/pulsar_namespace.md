@@ -6,26 +6,27 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 
 ## Specifications
 
-| Field | Description | Required |
-|-------|-------------|----------|
-| `name` | The fully qualified namespace name in the format "tenant/namespace". | Yes |
-| `connectionRef` | Reference to the PulsarConnection resource used to connect to the Pulsar cluster for this namespace. | Yes |
-| `bundles` | Number of bundles to split the namespace into. This affects how the namespace is distributed across the cluster. | No |
-| `lifecyclePolicy` | Determines whether to keep or delete the Pulsar namespace when the Kubernetes resource is deleted. Options: `CleanUpAfterDeletion`, `KeepAfterDeletion`. | No |
-| `maxProducersPerTopic` | Maximum number of producers allowed on a single topic in the namespace. | No |
-| `maxConsumersPerTopic` | Maximum number of consumers allowed on a single topic in the namespace. | No |
-| `maxConsumersPerSubscription` | Maximum number of consumers allowed on a single subscription in the namespace. | No |
-| `messageTTL` | Time to Live (TTL) for messages in the namespace. Messages older than this TTL will be automatically marked as consumed. | No |
-| `retentionTime` | Minimum time to retain messages in the namespace. Should be set in conjunction with RetentionSize for effective retention policy. | No |
-| `retentionSize` | Maximum size of backlog retained in the namespace. Should be set in conjunction with RetentionTime for effective retention policy. | No |
-| `backlogQuotaLimitTime` | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy. | No |
-| `backlogQuotaLimitSize` | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy. | No |
-| `backlogQuotaRetentionPolicy` | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction". | No |
-| `backlogQuotaType` | Controls how the backlog quota is enforced. Options: "destination_storage" (limits backlog by size in bytes), "message_age" (limits by time). | No |
-| `offloadThresholdTime` | Time limit for message offloading. Messages older than this limit will be offloaded to the tiered storage. | No |
-| `offloadThresholdSize` | Size limit for message offloading. When the limit is reached, older messages will be offloaded to the tiered storage. | No |
-| `geoReplicationRefs` | List of references to PulsarGeoReplication resources, used to configure geo-replication for this namespace. Use only when using PulsarGeoReplication for setting up geo-replication between two Pulsar instances. | No |
-| `replicationClusters` | List of clusters to which the namespace is replicated. Use only if replicating clusters within the same Pulsar instance. | No |
+| Field                         | Description                                                                                                                                                                                                       | Required |
+|-------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------|
+| `name`                        | The fully qualified namespace name in the format "tenant/namespace".                                                                                                                                              | Yes      |
+| `connectionRef`               | Reference to the PulsarConnection resource used to connect to the Pulsar cluster for this namespace.                                                                                                              | Yes      |
+| `bundles`                     | Number of bundles to split the namespace into. This affects how the namespace is distributed across the cluster.                                                                                                  | No       |
+| `lifecyclePolicy`             | Determines whether to keep or delete the Pulsar namespace when the Kubernetes resource is deleted. Options: `CleanUpAfterDeletion`, `KeepAfterDeletion`.                                                          | No       |
+| `maxProducersPerTopic`        | Maximum number of producers allowed on a single topic in the namespace.                                                                                                                                           | No       |
+| `maxConsumersPerTopic`        | Maximum number of consumers allowed on a single topic in the namespace.                                                                                                                                           | No       |
+| `maxConsumersPerSubscription` | Maximum number of consumers allowed on a single subscription in the namespace.                                                                                                                                    | No       |
+| `messageTTL`                  | Time to Live (TTL) for messages in the namespace. Messages older than this TTL will be automatically marked as consumed.                                                                                          | No       |
+| `retentionTime`               | Minimum time to retain messages in the namespace. Should be set in conjunction with RetentionSize for effective retention policy.                                                                                 | No       |
+| `retentionSize`               | Maximum size of backlog retained in the namespace. Should be set in conjunction with RetentionTime for effective retention policy.                                                                                | No       |
+| `backlogQuotaLimitTime`       | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy.                                                                                      | No       |
+| `backlogQuotaLimitSize`       | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy.                                                                           | No       |
+| `backlogQuotaRetentionPolicy` | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".                                                             | No       |
+| `backlogQuotaType`            | Controls how the backlog quota is enforced. Options: "destination_storage" (limits backlog by size in bytes), "message_age" (limits by time).                                                                     | No       |
+| `offloadThresholdTime`        | Time limit for message offloading. Messages older than this limit will be offloaded to the tiered storage.                                                                                                        | No       |
+| `offloadThresholdSize`        | Size limit for message offloading. When the limit is reached, older messages will be offloaded to the tiered storage.                                                                                             | No       |
+| `geoReplicationRefs`          | List of references to PulsarGeoReplication resources, used to configure geo-replication for this namespace. Use only when using PulsarGeoReplication for setting up geo-replication between two Pulsar instances. | No       |
+| `replicationClusters`         | List of clusters to which the namespace is replicated. Use only if replicating clusters within the same Pulsar instance.                                                                                          | No       |
+| `deduplication`               | whether to enable message deduplication for the namespace.                                                                                                                                                        | No       |
 
 Note: Valid time units are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
 
