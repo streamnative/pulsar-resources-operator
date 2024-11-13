@@ -112,6 +112,10 @@ spec:
                     type: string
                 type: object
                 x-kubernetes-map-type: atomic
+              deduplication:
+                description: Deduplication controls whether to enable message deduplication
+                  for the topic.
+                type: boolean
               geoReplicationRefs:
                 description: |-
                   GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
