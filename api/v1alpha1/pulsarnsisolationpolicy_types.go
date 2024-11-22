@@ -37,7 +37,7 @@ type PulsarNSIsolationPolicySpec struct {
 	Cluster string `json:"cluster"`
 
 	// ConnectionRef is the reference to the PulsarConnection resource
-	// used to connect to the Pulsar cluster for this namespace.
+	// used to connect to the Pulsar cluster for this ns-isolation-policy.
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
 
 	// Namespaces namespaces-regex list
@@ -92,7 +92,7 @@ type PulsarNSIsolationPolicyStatus struct {
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
-//+kubebuilder:resource:categories=pulsar;pulsarres,shortName=pns
+//+kubebuilder:resource:categories=pulsar;pulsarres,shortName=pnsip
 //+kubebuilder:printcolumn:name="RESOURCE_NAME",type=string,JSONPath=`.spec.name`
 //+kubebuilder:printcolumn:name="GENERATION",type=string,JSONPath=`.metadata.generation`
 //+kubebuilder:printcolumn:name="OBSERVED_GENERATION",type=string,JSONPath=`.status.observedGeneration`

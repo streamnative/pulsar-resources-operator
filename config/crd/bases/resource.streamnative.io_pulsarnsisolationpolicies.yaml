@@ -15,7 +15,7 @@ spec:
     listKind: PulsarNSIsolationPolicyList
     plural: pulsarnsisolationpolicies
     shortNames:
-    - pns
+    - pnsip
     singular: pulsarnsisolationpolicy
   scope: Namespaced
   versions:
@@ -79,7 +79,7 @@ spec:
               connectionRef:
                 description: |-
                   ConnectionRef is the reference to the PulsarConnection resource
-                  used to connect to the Pulsar cluster for this namespace.
+                  used to connect to the Pulsar cluster for this ns-isolation-policy.
                 properties:
                   name:
                     description: |-
