@@ -54,7 +54,7 @@ type NamespaceParams struct {
 	OffloadThresholdSize        *resource.Quantity
 	ReplicationClusters         []string
 	Deduplication               *bool
-	BookieAffinityGroup         *utils2.BookieAffinityGroupData
+	BookieAffinityGroup         *v1alpha1.BookieAffinityGroupData
 }
 
 // TopicParams indicates the parameters for creating a topic

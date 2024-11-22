@@ -457,7 +457,10 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 	if params.BookieAffinityGroup != nil {
-		err = p.adminClient.Namespaces().SetBookieAffinityGroup(completeNSName, *params.BookieAffinityGroup)
+		err = p.adminClient.Namespaces().SetBookieAffinityGroup(completeNSName, utils.BookieAffinityGroupData{
+			BookkeeperAffinityGroupPrimary:   params.BookieAffinityGroup.BookkeeperAffinityGroupPrimary,
+			BookkeeperAffinityGroupSecondary: params.BookieAffinityGroup.BookkeeperAffinityGroupSecondary,
+		})
 		if err != nil {
 			return err
 		}
