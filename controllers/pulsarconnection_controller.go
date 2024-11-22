@@ -213,6 +213,14 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		}); err != nil {
 		return err
 	}
+	if err := mgr.GetCache().IndexField(context.TODO(), &resourcev1alpha1.PulsarNSIsolationPolicy{}, ".spec.connectionRef.name",
+		func(object client.Object) []string {
+			return []string{
+				object.(*resourcev1alpha1.PulsarNSIsolationPolicy).Spec.ConnectionRef.Name,
+			}
+		}); err != nil {
+		return err
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.PulsarConnection{}).
@@ -235,6 +243,9 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarFunction{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarNSIsolationPolicy{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSink{}},
