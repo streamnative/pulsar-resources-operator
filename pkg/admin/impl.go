@@ -464,6 +464,11 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		if err != nil {
 			return err
 		}
+	} else {
+		err = p.adminClient.Namespaces().DeleteBookieAffinityGroup(completeNSName)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
