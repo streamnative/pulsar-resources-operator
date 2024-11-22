@@ -456,6 +456,12 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 			return err
 		}
 	}
+	if params.BookieAffinityGroup != nil {
+		err = p.adminClient.Namespaces().SetBookieAffinityGroup(completeNSName, *params.BookieAffinityGroup)
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
@@ -1230,4 +1236,34 @@ func (p *PulsarAdminClient) GetTenantAllowedClusters(tenantName string) ([]strin
 	}
 
 	return tenant.AllowedClusters, nil
+}
+
+// GetNSIsolationPolicy get the ns-isolation-policy
+func (p *PulsarAdminClient) GetNSIsolationPolicy(policyName, clusterName string) (*utils.NamespaceIsolationData, error) {
+	policyData, err := p.adminClient.NsIsolationPolicy().GetNamespaceIsolationPolicy(clusterName, policyName)
+	if err != nil {
+		return nil, err
+	}
+
+	return policyData, nil
+}
+
+// CreateNSIsolationPolicy create a ns-isolation-policy
+func (p *PulsarAdminClient) CreateNSIsolationPolicy(policyName, clusterName string, policyData utils.NamespaceIsolationData) error {
+	err := p.adminClient.NsIsolationPolicy().CreateNamespaceIsolationPolicy(clusterName, policyName, policyData)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// DeleteNSIsolationPolicy delete the ns-isolation-policy
+func (p *PulsarAdminClient) DeleteNSIsolationPolicy(policyName, clusterName string) error {
+	err := p.adminClient.NsIsolationPolicy().DeleteNamespaceIsolationPolicy(clusterName, policyName)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -15,6 +15,7 @@
 package v1alpha1
 
 import (
+	utils2 "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -127,6 +128,9 @@ type PulsarNamespaceSpec struct {
 	// Deduplication controls whether to enable message deduplication for the namespace.
 	// +optional
 	Deduplication *bool `json:"deduplication,omitempty"`
+
+	// BookieAffinityGroup is the name of the namespace isolation policy to apply to the namespace.
+	BookieAffinityGroup *utils2.BookieAffinityGroupData `json:"bookieAffinityGroup,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace

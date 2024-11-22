@@ -61,6 +61,9 @@ type PulsarConnectionReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnamespaces,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnamespaces/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnamespaces/finalizers,verbs=update
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnsisolationpolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnsisolationpolicies/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnsisolationpolicies/finalizers,verbs=update
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsartopics,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsartopics/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsartopics/finalizers,verbs=update
