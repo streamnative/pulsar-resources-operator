@@ -127,6 +127,10 @@ func (r *PulsarNSIsolationPolicyReconciler) ReconcilePolicy(ctx context.Context,
 		return nil
 	}
 
+	// Pulsar backend will fail when no secondary argument is passed, so assign an empty array here
+	if policy.Spec.Secondary == nil {
+		policy.Spec.Secondary = []string{}
+	}
 	if err := pulsarAdmin.CreateNSIsolationPolicy(policy.Spec.Name, policy.Spec.Cluster, utils2.NamespaceIsolationData{
 		Namespaces: policy.Spec.Namespaces,
 		Primary:    policy.Spec.Primary,
