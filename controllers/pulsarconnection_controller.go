@@ -61,6 +61,9 @@ type PulsarConnectionReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnamespaces,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnamespaces/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnamespaces/finalizers,verbs=update
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnsisolationpolicies,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnsisolationpolicies/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsarnsisolationpolicies/finalizers,verbs=update
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsartopics,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsartopics/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=pulsartopics/finalizers,verbs=update
@@ -210,6 +213,14 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		}); err != nil {
 		return err
 	}
+	if err := mgr.GetCache().IndexField(context.TODO(), &resourcev1alpha1.PulsarNSIsolationPolicy{}, ".spec.connectionRef.name",
+		func(object client.Object) []string {
+			return []string{
+				object.(*resourcev1alpha1.PulsarNSIsolationPolicy).Spec.ConnectionRef.Name,
+			}
+		}); err != nil {
+		return err
+	}
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.PulsarConnection{}).
@@ -232,6 +243,9 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarFunction{}},
+			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarNSIsolationPolicy{}},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSink{}},

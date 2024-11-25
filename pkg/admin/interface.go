@@ -23,6 +23,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/auth"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
+	utils2 "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -53,6 +54,7 @@ type NamespaceParams struct {
 	OffloadThresholdSize        *resource.Quantity
 	ReplicationClusters         []string
 	Deduplication               *bool
+	BookieAffinityGroup         *v1alpha1.BookieAffinityGroupData
 }
 
 // TopicParams indicates the parameters for creating a topic
@@ -194,6 +196,15 @@ type PulsarAdmin interface {
 
 	// GetTenantAllowedClusters get the allowed clusters of the tenant
 	GetTenantAllowedClusters(name string) ([]string, error)
+
+	// GetNSIsolationPolicy get the ns-isolation-policy
+	GetNSIsolationPolicy(policyName, clusterName string) (*utils2.NamespaceIsolationData, error)
+
+	// CreateNSIsolationPolicy create a ns-isolation-policy
+	CreateNSIsolationPolicy(policyName, clusterName string, policyData utils2.NamespaceIsolationData) error
+
+	// DeleteNSIsolationPolicy delete the ns-isolation-policy
+	DeleteNSIsolationPolicy(policyName, clusterName string) error
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

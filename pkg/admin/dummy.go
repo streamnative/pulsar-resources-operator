@@ -15,6 +15,7 @@
 package admin
 
 import (
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 )
 
@@ -25,6 +26,18 @@ func NewDummyPulsarAdmin(PulsarAdminConfig) (PulsarAdmin, error) {
 
 // DummyPulsarAdmin is a dummy struct of PulsarAdmin
 type DummyPulsarAdmin struct {
+}
+
+func (d *DummyPulsarAdmin) GetNSIsolationPolicy(policyName, clusterName string) (*utils.NamespaceIsolationData, error) {
+	return nil, nil
+}
+
+func (d *DummyPulsarAdmin) CreateNSIsolationPolicy(policyName, clusterName string, policyData utils.NamespaceIsolationData) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) DeleteNSIsolationPolicy(policyName, clusterName string) error {
+	return nil
 }
 
 var _ PulsarAdmin = &DummyPulsarAdmin{}

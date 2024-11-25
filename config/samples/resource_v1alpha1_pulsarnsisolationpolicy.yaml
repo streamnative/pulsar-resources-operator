@@ -1,0 +1,34 @@
+# Copyright 2024 StreamNative
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarNSIsolationPolicy
+metadata:
+  name: test-pulsar-ns-isolation-policy
+  namespace: test
+spec:
+  name: test-policy
+  cluster: standalone
+  connectionRef:
+    name: test-pulsar-connection
+  namespaces:
+    - test-tenant/test-ns
+  primary:
+    - test-pulsar-broker-0.*
+  secondary:
+    - test-pulsar-broker-1.*
+  autoFailoverPolicyType: min_available
+  autoFailoverPolicyParams:
+    min_limit: "1"
+    usage_threshold: "80"

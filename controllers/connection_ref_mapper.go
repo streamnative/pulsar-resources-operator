@@ -81,6 +81,8 @@ func getConnectionRef(object client.Object) *corev1.LocalObjectReference {
 		return &v.Spec.ConnectionRef
 	case *pulsarv1alpha1.PulsarPackage:
 		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarNSIsolationPolicy:
+		return &v.Spec.ConnectionRef
 	default:
 		return nil
 	}

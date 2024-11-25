@@ -104,6 +104,17 @@ spec:
                 - destination_storage
                 - message_age
                 type: string
+              bookieAffinityGroup:
+                description: BookieAffinityGroup is the name of the namespace isolation
+                  policy to apply to the namespace.
+                properties:
+                  bookkeeperAffinityGroupPrimary:
+                    type: string
+                  bookkeeperAffinityGroupSecondary:
+                    type: string
+                required:
+                - bookkeeperAffinityGroupPrimary
+                type: object
               bundles:
                 description: |-
                   Bundles specifies the number of bundles to split the namespace into.

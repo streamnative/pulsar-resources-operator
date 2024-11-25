@@ -37,20 +37,21 @@ import (
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
 type PulsarConnectionReconciler struct {
-	connection       *resourcev1alpha1.PulsarConnection
-	log              logr.Logger
-	client           client.Client
-	creator          admin.PulsarAdminCreator
-	tenants          []resourcev1alpha1.PulsarTenant
-	namespaces       []resourcev1alpha1.PulsarNamespace
-	topics           []resourcev1alpha1.PulsarTopic
-	permissions      []resourcev1alpha1.PulsarPermission
-	geoReplications  []resourcev1alpha1.PulsarGeoReplication
-	packages         []resourcev1alpha1.PulsarPackage
-	sinks            []resourcev1alpha1.PulsarSink
-	sources          []resourcev1alpha1.PulsarSource
-	functions        []resourcev1alpha1.PulsarFunction
-	unreadyResources []string
+	connection          *resourcev1alpha1.PulsarConnection
+	log                 logr.Logger
+	client              client.Client
+	creator             admin.PulsarAdminCreator
+	tenants             []resourcev1alpha1.PulsarTenant
+	namespaces          []resourcev1alpha1.PulsarNamespace
+	topics              []resourcev1alpha1.PulsarTopic
+	permissions         []resourcev1alpha1.PulsarPermission
+	geoReplications     []resourcev1alpha1.PulsarGeoReplication
+	packages            []resourcev1alpha1.PulsarPackage
+	sinks               []resourcev1alpha1.PulsarSink
+	sources             []resourcev1alpha1.PulsarSource
+	functions           []resourcev1alpha1.PulsarFunction
+	nsIsolationPolicies []resourcev1alpha1.PulsarNSIsolationPolicy
+	unreadyResources    []string
 
 	pulsarAdmin   admin.PulsarAdmin
 	pulsarAdminV3 admin.PulsarAdmin
@@ -81,6 +82,7 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		makeFunctionsReconciler(r),
 		makeSinksReconciler(r),
 		makeSourcesReconciler(r),
+		makeNSIsolationPoliciesReconciler(r),
 	}
 	return r
 }
