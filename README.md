@@ -13,6 +13,7 @@ Currently, the Pulsar Resources Operator provides full lifecycle management for 
 - [Sinks](docs/pulsar_sink.md)
 - [Sources](docs/pulsar_source.md)
 - [Geo-Replication](docs/pulsar_geo_replication.md)
+- [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
 
 ## Lifecycle Management
 
@@ -128,6 +129,7 @@ In this tutorial, a Kubernetes namespace called `test` is used for examples, whi
 - [PulsarSink](docs/pulsar_sink.md)
 - [PulsarSource](docs/pulsar_source.md)
 - [PulsarGeoReplication](docs/pulsar_geo_replication.md)
+- [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
 
 # Contributing
 

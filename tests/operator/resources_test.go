@@ -74,18 +74,21 @@ var _ = Describe("Resources", func() {
 				},
 			},
 		}
-		ppackage          *v1alphav1.PulsarPackage
-		ppackageurl       string = "function://public/default/api-examples@v3.2.3.3"
-		pfuncName         string = "test-func"
-		pfuncFailureName  string = "func-test-failure"
-		psinkName         string = "test-sink"
-		psourceName       string = "test-source"
-		pfunc             *v1alphav1.PulsarFunction
-		pfuncfailure      *v1alphav1.PulsarFunction
-		psinkpackageurl   string = "builtin://data-generator"
-		psink             *v1alphav1.PulsarSink
-		psource           *v1alphav1.PulsarSource
-		psourcepackageurl string = "builtin://data-generator"
+		ppackage               *v1alphav1.PulsarPackage
+		ppackageurl            string = "function://public/default/api-examples@v3.2.3.3"
+		pfuncName              string = "test-func"
+		pfuncFailureName       string = "func-test-failure"
+		psinkName              string = "test-sink"
+		psourceName            string = "test-source"
+		pclusterName           string = "test-pulsar"
+		pnsIsolationPolicyName string = "test-ns-isolation-policy"
+		pfunc                  *v1alphav1.PulsarFunction
+		pfuncfailure           *v1alphav1.PulsarFunction
+		psinkpackageurl        string = "builtin://data-generator"
+		psink                  *v1alphav1.PulsarSink
+		psource                *v1alphav1.PulsarSource
+		pnsisolationpolicy     *v1alphav1.PulsarNSIsolationPolicy
+		psourcepackageurl      string = "builtin://data-generator"
 	)
 
 	BeforeEach(func() {
@@ -111,6 +114,14 @@ var _ = Describe("Resources", func() {
 		pfuncfailure = utils.MakePulsarFunction(namespaceName, pfuncFailureName, "function://not/exists/package@latest", pconnName, lifecyclePolicy)
 		psink = utils.MakePulsarSink(namespaceName, psinkName, psinkpackageurl, pconnName, lifecyclePolicy)
 		psource = utils.MakePulsarSource(namespaceName, psourceName, psourcepackageurl, pconnName, lifecyclePolicy)
+		pnsisolationpolicy = utils.MakeNSIsolationPolicy(namespaceName, pnsIsolationPolicyName, pclusterName, pconnName,
+			[]string{pnamespaceName},
+			[]string{"test-pulsar-broker-0.*"},
+			[]string{},
+			map[string]string{
+				"min_limit":       "1",
+				"usage_threshold": "80",
+			})
 	})
 
 	Describe("Basic resource operations", Ordered, func() {
@@ -454,6 +465,31 @@ var _ = Describe("Resources", func() {
 				Eventually(func(g Gomega) {
 					t := &v1alphav1.PulsarPackage{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarNSIsolationPolicy operation", func() {
+			It("should create the pulsar ns-isolation-policy successfully", func() {
+				err := k8sClient.Create(ctx, pnsisolationpolicy)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the ns-isolation-policy should be ready", func() {
+				Eventually(func() bool {
+					s := &v1alphav1.PulsarNSIsolationPolicy{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pnsIsolationPolicyName}
+					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(s)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsar ns-isolation-policy successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarNSIsolationPolicy{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pnsIsolationPolicyName}
 					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 				}).Should(Succeed())

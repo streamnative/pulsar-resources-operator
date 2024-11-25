@@ -127,6 +127,16 @@ type PulsarNamespaceSpec struct {
 	// Deduplication controls whether to enable message deduplication for the namespace.
 	// +optional
 	Deduplication *bool `json:"deduplication,omitempty"`
+
+	// BookieAffinityGroup is the name of the namespace isolation policy to apply to the namespace.
+	BookieAffinityGroup *BookieAffinityGroupData `json:"bookieAffinityGroup,omitempty"`
+}
+
+type BookieAffinityGroupData struct {
+	BookkeeperAffinityGroupPrimary string `json:"bookkeeperAffinityGroupPrimary"`
+
+	// +optional
+	BookkeeperAffinityGroupSecondary string `json:"bookkeeperAffinityGroupSecondary,omitempty"`
 }
 
 // PulsarNamespaceStatus defines the observed state of PulsarNamespace

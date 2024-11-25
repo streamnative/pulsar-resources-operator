@@ -137,6 +137,32 @@ rules:
 - apiGroups:
   - resource.streamnative.io
   resources:
+  - pulsarnsisolationpolicies
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarnsisolationpolicies/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - pulsarnsisolationpolicies/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
   - pulsarpackages
   verbs:
   - create

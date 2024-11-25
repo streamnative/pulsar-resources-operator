@@ -285,3 +285,25 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 		},
 	}
 }
+
+// MakeNSIsolationPolicy will generate a object of PulsarNSIsolationPolicy
+func MakeNSIsolationPolicy(namespace, name, clusterName, connectionName string, namespaces, primary, secondary []string, params map[string]string) *v1alpha1.PulsarNSIsolationPolicy {
+	return &v1alpha1.PulsarNSIsolationPolicy{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarNSIsolationPolicySpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:                     name,
+			Cluster:                  clusterName,
+			Namespaces:               namespaces,
+			Primary:                  primary,
+			Secondary:                secondary,
+			AutoFailoverPolicyType:   v1alpha1.MinAvailable,
+			AutoFailoverPolicyParams: params,
+		},
+	}
+}
