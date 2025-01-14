@@ -25,7 +25,7 @@ on:
 
 jobs:
   lint-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       changed: ${{ steps.list-changed.outputs.changed }}
       chart_name: ${{ steps.list-changed.outputs.chart_name }}
@@ -98,7 +98,7 @@ jobs:
         if: failure()
 
   install-on-v1-26:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-test
     steps:
       - name: Checkout
@@ -148,7 +148,7 @@ jobs:
         if: failure()
 
   install-on-v1-27:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-test
     steps:
       - name: Checkout
@@ -198,7 +198,7 @@ jobs:
         if: failure()
   
   install-on-v1-28:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-test
     steps:
       - name: Checkout
@@ -248,7 +248,7 @@ jobs:
         if: failure()
 
   install-on-v1-29:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-test
     steps:
       - name: Checkout
