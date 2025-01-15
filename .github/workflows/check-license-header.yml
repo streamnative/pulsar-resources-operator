@@ -23,7 +23,7 @@ on:
 jobs:
   license-check:
     name: check license header
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
 

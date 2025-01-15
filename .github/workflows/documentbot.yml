@@ -34,7 +34,7 @@ jobs:
     if: ${{ github.repository == 'streamnative/pulsar-resources-operator' }}
     permissions:
       pull-requests: write 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: streamnative/github-workflow-libraries/doc-label-check@master
         with:

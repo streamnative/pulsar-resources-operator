@@ -27,7 +27,7 @@ jobs:
     strategy:
       matrix:
         alwaysUpdatePulsar: [ "true", "false" ]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
       GOPRIVATE: github.com/streamnative
