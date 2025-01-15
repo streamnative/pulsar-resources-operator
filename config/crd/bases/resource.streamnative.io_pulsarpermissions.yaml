@@ -1,4 +1,4 @@
-# Copyright 2024 StreamNative
+# Copyright 2025 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.15.0
-  creationTimestamp: null
   name: pulsarpermissions.resource.streamnative.io
 spec:
   group: resource.streamnative.io
@@ -229,9 +228,3 @@ spec:
     storage: true
     subresources:
       status: {}
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: null
-  storedVersions: null
