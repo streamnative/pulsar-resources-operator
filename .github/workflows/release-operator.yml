@@ -22,7 +22,7 @@ on:
 jobs:
   build:
     name: Build image and bundle
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
@@ -112,7 +112,7 @@ jobs:
   operatorhub:
     name: Create PR to the operatorhub
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Sync up the upstream
         env:
