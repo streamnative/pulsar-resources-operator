@@ -18,6 +18,9 @@ package main
 import (
 	"flag"
 	"os"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"time"
 
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
@@ -92,15 +95,19 @@ func main() {
 	reSync := time.Duration(resyncPeriod) * time.Hour
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+		},
 		// TODO uncomment it until kube-instrumentation upgrade controller-runtime version to newer
 		// NewClient:              otelcontroller.NewClient,
-		Port:                   9443,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port: 9443,
+		}),
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "feaa54b6.streamnative.io",
-		SyncPeriod:             &reSync,
+		Cache:                  cache.Options{SyncPeriod: &reSync},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -117,6 +124,38 @@ func main() {
 		Retryer:            utils.NewReconcileRetryer(retryCount, utils.NewEventSource(ctrl.Log.WithName("eventSource"))),
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarConnection")
+		os.Exit(1)
+	}
+
+	connectionManager := controllers.NewConnectionManager(mgr.GetClient())
+
+	// Set up APIServerConnection controller
+	if err = (&controllers.APIServerConnectionReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "APIServerConnection")
+		os.Exit(1)
+	}
+
+	// Set up Workspace controller
+	if err = (&controllers.WorkspaceReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Workspace")
+		os.Exit(1)
+	}
+
+	// Set up FlinkDeployment controller
+	if err = (&controllers.FlinkDeploymentReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "FlinkDeployment")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

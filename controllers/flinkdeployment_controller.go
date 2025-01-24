@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
 	"sync"
 	"time"
 
@@ -83,7 +84,7 @@ func (r *FlinkDeploymentReconciler) handleWatchEvents(ctx context.Context, names
 				newStatus.DeploymentStatus = &runtime.RawExtension{Raw: statusBytes}
 
 				// Check if status has changed
-				if !flinkDeploymentStatusHasChanged(&localDeployment.Status, newStatus) {
+				if !controllers2.FlinkDeploymentStatusHasChanged(&localDeployment.Status, newStatus) {
 					continue
 				}
 
@@ -98,7 +99,7 @@ func (r *FlinkDeploymentReconciler) handleWatchEvents(ctx context.Context, names
 }
 
 // setupWatch creates a new watcher for a FlinkDeployment
-func (r *FlinkDeploymentReconciler) setupWatch(ctx context.Context, deployment *resourcev1alpha1.ComputeFlinkDeployment, deploymentClient *FlinkDeploymentClient) error {
+func (r *FlinkDeploymentReconciler) setupWatch(ctx context.Context, deployment *resourcev1alpha1.ComputeFlinkDeployment, deploymentClient *controllers2.FlinkDeploymentClient) error {
 	namespacedName := types.NamespacedName{
 		Namespace: deployment.Namespace,
 		Name:      deployment.Name,
@@ -177,7 +178,7 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Create deployment client
-	deploymentClient, err := NewFlinkDeploymentClient(conn, apiConn.Spec.Organization)
+	deploymentClient, err := controllers2.NewFlinkDeploymentClient(conn, apiConn.Spec.Organization)
 	if err != nil {
 		r.updateDeploymentStatus(ctx, deployment, err, "CreateDeploymentClientFailed",
 			fmt.Sprintf("Failed to create deployment client: %v", err))
@@ -186,7 +187,7 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Handle deletion
 	if !deployment.DeletionTimestamp.IsZero() {
-		if containsString(deployment.Finalizers, flinkDeploymentFinalizer) {
+		if controllers2.ContainsString(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer) {
 			// Try to delete remote deployment
 			if err := deploymentClient.DeleteFlinkDeployment(ctx, deployment); err != nil {
 				if !apierrors.IsNotFound(err) {
@@ -200,7 +201,7 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			}
 
 			// Remove finalizer after successful deletion
-			deployment.Finalizers = removeString(deployment.Finalizers, flinkDeploymentFinalizer)
+			deployment.Finalizers = controllers2.RemoveString(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer)
 			if err := r.Update(ctx, deployment); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -209,8 +210,8 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	}
 
 	// Add finalizer if it doesn't exist
-	if !containsString(deployment.Finalizers, flinkDeploymentFinalizer) {
-		deployment.Finalizers = append(deployment.Finalizers, flinkDeploymentFinalizer)
+	if !controllers2.ContainsString(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer) {
+		deployment.Finalizers = append(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer)
 		if err := r.Update(ctx, deployment); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -315,7 +316,7 @@ func (r *FlinkDeploymentReconciler) updateDeploymentStatus(
 	newStatus.Conditions = append(newStatus.Conditions, condition)
 
 	// Check if status has actually changed
-	if !flinkDeploymentStatusHasChanged(&deployment.Status, newStatus) {
+	if !controllers2.FlinkDeploymentStatusHasChanged(&deployment.Status, newStatus) {
 		return
 	}
 

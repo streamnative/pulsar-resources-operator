@@ -8,12 +8,12 @@ import (
 
 const (
 	// Finalizers for resources
-	flinkDeploymentFinalizer = "resource.compute.streamnative.io/flinkdeployment-finalizer"
-	workspaceFinalizer       = "resource.compute.streamnative.io/workspace-finalizer"
+	FlinkDeploymentFinalizer = "resource.compute.streamnative.io/flinkdeployment-finalizer"
+	WorkspaceFinalizer       = "resource.compute.streamnative.io/workspace-finalizer"
 )
 
-// statusHasChanged compares two slices of conditions to determine if there's a meaningful change
-func statusHasChanged(oldConditions, newConditions []metav1.Condition) bool {
+// StatusHasChanged compares two slices of conditions to determine if there's a meaningful change
+func StatusHasChanged(oldConditions, newConditions []metav1.Condition) bool {
 	if len(oldConditions) != len(newConditions) {
 		return true
 	}
@@ -43,10 +43,10 @@ func statusHasChanged(oldConditions, newConditions []metav1.Condition) bool {
 	return false
 }
 
-// flinkDeploymentStatusHasChanged compares two FlinkDeployment statuses to determine if there's a meaningful change
-func flinkDeploymentStatusHasChanged(old, new *resourcev1alpha1.ComputeFlinkDeploymentStatus) bool {
+// FlinkDeploymentStatusHasChanged compares two FlinkDeployment statuses to determine if there's a meaningful change
+func FlinkDeploymentStatusHasChanged(old, new *resourcev1alpha1.ComputeFlinkDeploymentStatus) bool {
 	// Compare conditions
-	if statusHasChanged(old.Conditions, new.Conditions) {
+	if StatusHasChanged(old.Conditions, new.Conditions) {
 		return true
 	}
 
@@ -63,8 +63,8 @@ func flinkDeploymentStatusHasChanged(old, new *resourcev1alpha1.ComputeFlinkDepl
 	return !bytes.Equal(old.DeploymentStatus.Raw, new.DeploymentStatus.Raw)
 }
 
-// containsString checks if a string is present in a slice
-func containsString(slice []string, s string) bool {
+// ContainsString checks if a string is present in a slice
+func ContainsString(slice []string, s string) bool {
 	for _, item := range slice {
 		if item == s {
 			return true
@@ -73,8 +73,8 @@ func containsString(slice []string, s string) bool {
 	return false
 }
 
-// removeString removes a string from a slice
-func removeString(slice []string, s string) []string {
+// RemoveString removes a string from a slice
+func RemoveString(slice []string, s string) []string {
 	result := make([]string, 0, len(slice))
 	for _, item := range slice {
 		if item != s {

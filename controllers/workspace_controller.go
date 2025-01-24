@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
 	"sync"
 	"time"
 
@@ -81,7 +82,7 @@ func (r *WorkspaceReconciler) handleWatchEvents(ctx context.Context, namespacedN
 }
 
 // setupWatch creates a new watcher for a Workspace
-func (r *WorkspaceReconciler) setupWatch(ctx context.Context, workspace *resourcev1alpha1.ComputeWorkspace, workspaceClient *WorkspaceClient) error {
+func (r *WorkspaceReconciler) setupWatch(ctx context.Context, workspace *resourcev1alpha1.ComputeWorkspace, workspaceClient *controllers2.WorkspaceClient) error {
 	namespacedName := types.NamespacedName{
 		Namespace: workspace.Namespace,
 		Name:      workspace.Name,
@@ -168,7 +169,7 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Create workspace client
-	workspaceClient, err := NewWorkspaceClient(apiConn, organization)
+	workspaceClient, err := controllers2.NewWorkspaceClient(apiConn, organization)
 	if err != nil {
 		r.updateWorkspaceStatus(ctx, workspace, err, "ClientCreationFailed",
 			fmt.Sprintf("Failed to create workspace client: %v", err))
@@ -177,7 +178,7 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Handle deletion
 	if !workspace.DeletionTimestamp.IsZero() {
-		if containsString(workspace.Finalizers, workspaceFinalizer) {
+		if controllers2.ContainsString(workspace.Finalizers, controllers2.WorkspaceFinalizer) {
 			// Try to delete remote workspace
 			if err := workspaceClient.DeleteWorkspace(ctx, workspace); err != nil {
 				if !apierrors.IsNotFound(err) {
@@ -191,7 +192,7 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			}
 
 			// Remove finalizer after successful deletion
-			workspace.Finalizers = removeString(workspace.Finalizers, workspaceFinalizer)
+			workspace.Finalizers = controllers2.RemoveString(workspace.Finalizers, controllers2.WorkspaceFinalizer)
 			if err := r.Update(ctx, workspace); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -200,8 +201,8 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Add finalizer if it doesn't exist
-	if !containsString(workspace.Finalizers, workspaceFinalizer) {
-		workspace.Finalizers = append(workspace.Finalizers, workspaceFinalizer)
+	if !controllers2.ContainsString(workspace.Finalizers, controllers2.WorkspaceFinalizer) {
+		workspace.Finalizers = append(workspace.Finalizers, controllers2.WorkspaceFinalizer)
 		if err := r.Update(ctx, workspace); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -284,7 +285,7 @@ func (r *WorkspaceReconciler) updateWorkspaceStatus(
 	newConditions = append(newConditions, condition)
 
 	// Check if status has actually changed
-	if !statusHasChanged(workspace.Status.Conditions, newConditions) {
+	if !controllers2.StatusHasChanged(workspace.Status.Conditions, newConditions) {
 		return
 	}
 

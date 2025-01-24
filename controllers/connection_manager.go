@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
 	"sync"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,14 +14,14 @@ import (
 type ConnectionManager struct {
 	client.Client
 	mu          sync.RWMutex
-	connections map[string]*APIConnection
+	connections map[string]*controllers2.APIConnection
 }
 
 // NewConnectionManager creates a new connection manager
 func NewConnectionManager(client client.Client) *ConnectionManager {
 	return &ConnectionManager{
 		Client:      client,
-		connections: make(map[string]*APIConnection),
+		connections: make(map[string]*controllers2.APIConnection),
 	}
 }
 
@@ -28,7 +29,7 @@ func NewConnectionManager(client client.Client) *ConnectionManager {
 func (m *ConnectionManager) GetOrCreateConnection(
 	apiConn *resourcev1alpha1.StreamNativeCloudConnection,
 	creds *resourcev1alpha1.ServiceAccountCredentials,
-) (*APIConnection, error) {
+) (*controllers2.APIConnection, error) {
 	m.mu.RLock()
 	conn, exists := m.connections[apiConn.Name]
 	m.mu.RUnlock()
@@ -52,7 +53,7 @@ func (m *ConnectionManager) GetOrCreateConnection(
 	}
 
 	// Create new connection
-	newConn, err := NewAPIConnection(apiConn, creds)
+	newConn, err := controllers2.NewAPIConnection(apiConn, creds)
 	if err != nil {
 		// Store uninitialized connection for future retry
 		m.mu.Lock()
