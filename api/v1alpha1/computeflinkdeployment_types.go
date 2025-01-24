@@ -55,8 +55,8 @@ type ComputeFlinkDeploymentSpec struct {
 	DefaultPulsarCluster *string `json:"defaultPulsarCluster,omitempty"`
 }
 
-// FlinkDeploymentStatus defines the observed state of ComputeFlinkDeployment
-type FlinkDeploymentStatus struct {
+// ComputeFlinkDeploymentStatus defines the observed state of ComputeFlinkDeployment
+type ComputeFlinkDeploymentStatus struct {
 	// Conditions represent the latest available observations of an object's state
 	// +optional
 	Conditions []metav1.Condition `json:"conditions,omitempty"`
@@ -351,8 +351,8 @@ type ComputeFlinkDeployment struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ComputeFlinkDeploymentSpec `json:"spec,omitempty"`
-	Status FlinkDeploymentStatus      `json:"status,omitempty"`
+	Spec   ComputeFlinkDeploymentSpec   `json:"spec,omitempty"`
+	Status ComputeFlinkDeploymentStatus `json:"status,omitempty"`
 }
 
 //+kubebuilder:object:root=true

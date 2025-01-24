@@ -17,6 +17,7 @@ require (
 	k8s.io/component-base v0.26.0
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 	sigs.k8s.io/controller-runtime v0.14.0
+	github.com/streamnative/cloud-api-server v1.25.2-0.20250110052043-df94d8adecc9
 )
 
 require (
@@ -82,3 +83,60 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+// OTEL
+replace (
+	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace => github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/trace v1.19.1
+	github.com/streamnative/kube-instrumentation => github.com/streamnative/kube-instrumentation v0.3.2
+	go.opentelemetry.io/contrib/detectors/gcp => go.opentelemetry.io/contrib/detectors/gcp v1.19.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp => go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.44.0
+	go.opentelemetry.io/contrib/propagators/aws => go.opentelemetry.io/contrib/propagators/aws v1.19.0
+	go.opentelemetry.io/otel => go.opentelemetry.io/otel v1.19.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace => go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0
+	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc => go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.19.0
+	go.opentelemetry.io/otel/exporters/stdout => go.opentelemetry.io/otel/exporters/stdout v0.19.0
+	go.opentelemetry.io/otel/exporters/stdout/stdouttrace => go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.19.0
+	go.opentelemetry.io/otel/metric => go.opentelemetry.io/otel/metric v1.19.0
+	go.opentelemetry.io/otel/sdk => go.opentelemetry.io/otel/sdk v1.19.0
+	go.opentelemetry.io/otel/sdk/metric => go.opentelemetry.io/otel/sdk/metric v1.19.0
+	go.opentelemetry.io/otel/sdk/trace => go.opentelemetry.io/otel/sdk/trace v1.19.0
+	go.opentelemetry.io/otel/trace => go.opentelemetry.io/otel/trace v1.19.0
+)
+
+// Pulsar Operator
+replace (
+	github.com/operator-framework/api => github.com/operator-framework/api v0.14.0
+	github.com/streamnative/sn-operator/api => github.com/streamnative/sn-operator/api v0.8.0-rc.27
+	github.com/streamnative/sn-operator/api/commons => github.com/streamnative/sn-operator/api/commons v0.8.0-rc.27
+	github.com/streamnative/sn-operator/pkg/commons => github.com/streamnative/sn-operator/pkg/commons v0.8.0-rc.27
+)
+
+// kubernetes (apiserver, controller-runtime)
+replace (
+	github.com/google/cel-go => github.com/google/cel-go v0.16.1
+	go.etcd.io/etcd/api/v3 => go.etcd.io/etcd/api/v3 v3.5.9
+	go.etcd.io/etcd/client/pkg/v3 => go.etcd.io/etcd/client/pkg/v3 v3.5.9
+	go.etcd.io/etcd/client/v3 => go.etcd.io/etcd/client/v3 v3.5.9
+	google.golang.org/grpc => google.golang.org/grpc v1.56.3
+	k8s.io/api => k8s.io/api v0.28.15
+	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.28.15
+	k8s.io/apimachinery => k8s.io/apimachinery v0.28.15
+	k8s.io/apiserver => k8s.io/apiserver v0.28.15
+	k8s.io/cli-runtime => k8s.io/cli-runtime v0.28.15
+	k8s.io/client-go => k8s.io/client-go v0.28.15
+	k8s.io/code-generator => k8s.io/code-generator v0.28.15
+	k8s.io/component-base => k8s.io/component-base v0.28.15
+	k8s.io/gengo => k8s.io/gengo v0.0.0-20220902162205-c0856e24416d
+	k8s.io/klog/v2 => k8s.io/klog/v2 v2.100.1
+	k8s.io/kube-aggregator => k8s.io/kube-aggregator v0.28.15
+	k8s.io/kube-openapi => k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9
+	k8s.io/kubectl => k8s.io/kubectl v0.28.15
+	k8s.io/utils => k8s.io/utils v0.0.0-20230726121419-3b25d923346b
+	sigs.k8s.io/controller-runtime => sigs.k8s.io/controller-runtime v0.16.6
+	sigs.k8s.io/json => sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd
+	sigs.k8s.io/structured-merge-diff/v4 => sigs.k8s.io/structured-merge-diff/v4 v4.2.3
+	sigs.k8s.io/yaml => sigs.k8s.io/yaml v1.3.0
+)
+
+// pinned to v0.11.1 to align with kubernetes dependencies
+replace sigs.k8s.io/external-dns => sigs.k8s.io/external-dns v0.11.1

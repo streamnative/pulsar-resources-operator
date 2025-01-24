@@ -1,17 +1,3 @@
-# Copyright 2025 StreamNative
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
@@ -1140,7 +1126,7 @@ spec:
                                             DynamicResourceAllocation feature gate.
 
 
-                                            This field is immutable.
+                                            This field is immutable. It can only be set for containers.
                                           items:
                                             description: ResourceClaim references
                                               one entry in PodSpec.ResourceClaims.
@@ -1179,7 +1165,7 @@ spec:
                                           description: |-
                                             Requests describes the minimum amount of compute resources required.
                                             If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                                            otherwise to an implementation-defined value.
+                                            otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                             More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                                           type: object
                                       type: object
@@ -1302,7 +1288,7 @@ spec:
                                                 localhostProfile indicates a profile defined in a file on the node should be used.
                                                 The profile must be preconfigured on the node to work.
                                                 Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                                Must only be set if type is "Localhost".
+                                                Must be set if type is "Localhost". Must NOT be set for any other type.
                                               type: string
                                             type:
                                               description: |-
@@ -1338,12 +1324,9 @@ spec:
                                             hostProcess:
                                               description: |-
                                                 HostProcess determines if a container should be run as a 'Host Process' container.
-                                                This field is alpha-level and will only be honored by components that enable the
-                                                WindowsHostProcessContainers feature flag. Setting this field without the feature
-                                                flag will result in errors when validating the Pod. All of a Pod's containers must
-                                                have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                                                containers and non-HostProcess containers).  In addition, if HostProcess is true
-                                                then HostNetwork must also be set to true.
+                                                All of a Pod's containers must have the same effective HostProcess value
+                                                (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                                                In addition, if HostProcess is true then HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
                                               description: |-
@@ -1631,7 +1614,7 @@ spec:
                                             DynamicResourceAllocation feature gate.
 
 
-                                            This field is immutable.
+                                            This field is immutable. It can only be set for containers.
                                           items:
                                             description: ResourceClaim references
                                               one entry in PodSpec.ResourceClaims.
@@ -1670,7 +1653,7 @@ spec:
                                           description: |-
                                             Requests describes the minimum amount of compute resources required.
                                             If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                                            otherwise to an implementation-defined value.
+                                            otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                             More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                                           type: object
                                       type: object
@@ -1793,7 +1776,7 @@ spec:
                                                 localhostProfile indicates a profile defined in a file on the node should be used.
                                                 The profile must be preconfigured on the node to work.
                                                 Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                                Must only be set if type is "Localhost".
+                                                Must be set if type is "Localhost". Must NOT be set for any other type.
                                               type: string
                                             type:
                                               description: |-
@@ -1829,12 +1812,9 @@ spec:
                                             hostProcess:
                                               description: |-
                                                 HostProcess determines if a container should be run as a 'Host Process' container.
-                                                This field is alpha-level and will only be honored by components that enable the
-                                                WindowsHostProcessContainers feature flag. Setting this field without the feature
-                                                flag will result in errors when validating the Pod. All of a Pod's containers must
-                                                have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                                                containers and non-HostProcess containers).  In addition, if HostProcess is true
-                                                then HostNetwork must also be set to true.
+                                                All of a Pod's containers must have the same effective HostProcess value
+                                                (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                                                In addition, if HostProcess is true then HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
                                               description: |-
@@ -1996,7 +1976,7 @@ spec:
                                           localhostProfile indicates a profile defined in a file on the node should be used.
                                           The profile must be preconfigured on the node to work.
                                           Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                          Must only be set if type is "Localhost".
+                                          Must be set if type is "Localhost". Must NOT be set for any other type.
                                         type: string
                                       type:
                                         description: |-
@@ -2064,12 +2044,9 @@ spec:
                                       hostProcess:
                                         description: |-
                                           HostProcess determines if a container should be run as a 'Host Process' container.
-                                          This field is alpha-level and will only be honored by components that enable the
-                                          WindowsHostProcessContainers feature flag. Setting this field without the feature
-                                          flag will result in errors when validating the Pod. All of a Pod's containers must
-                                          have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                                          containers and non-HostProcess containers).  In addition, if HostProcess is true
-                                          then HostNetwork must also be set to true.
+                                          All of a Pod's containers must have the same effective HostProcess value
+                                          (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                                          In addition, if HostProcess is true then HostNetwork must also be set to true.
                                         type: boolean
                                       runAsUserName:
                                         description: |-
@@ -3296,7 +3273,7 @@ spec:
                                             DynamicResourceAllocation feature gate.
 
 
-                                            This field is immutable.
+                                            This field is immutable. It can only be set for containers.
                                           items:
                                             description: ResourceClaim references
                                               one entry in PodSpec.ResourceClaims.
@@ -3335,7 +3312,7 @@ spec:
                                           description: |-
                                             Requests describes the minimum amount of compute resources required.
                                             If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                                            otherwise to an implementation-defined value.
+                                            otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                             More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                                           type: object
                                       type: object
@@ -3458,7 +3435,7 @@ spec:
                                                 localhostProfile indicates a profile defined in a file on the node should be used.
                                                 The profile must be preconfigured on the node to work.
                                                 Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                                Must only be set if type is "Localhost".
+                                                Must be set if type is "Localhost". Must NOT be set for any other type.
                                               type: string
                                             type:
                                               description: |-
@@ -3494,12 +3471,9 @@ spec:
                                             hostProcess:
                                               description: |-
                                                 HostProcess determines if a container should be run as a 'Host Process' container.
-                                                This field is alpha-level and will only be honored by components that enable the
-                                                WindowsHostProcessContainers feature flag. Setting this field without the feature
-                                                flag will result in errors when validating the Pod. All of a Pod's containers must
-                                                have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                                                containers and non-HostProcess containers).  In addition, if HostProcess is true
-                                                then HostNetwork must also be set to true.
+                                                All of a Pod's containers must have the same effective HostProcess value
+                                                (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                                                In addition, if HostProcess is true then HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
                                               description: |-
@@ -3787,7 +3761,7 @@ spec:
                                             DynamicResourceAllocation feature gate.
 
 
-                                            This field is immutable.
+                                            This field is immutable. It can only be set for containers.
                                           items:
                                             description: ResourceClaim references
                                               one entry in PodSpec.ResourceClaims.
@@ -3826,7 +3800,7 @@ spec:
                                           description: |-
                                             Requests describes the minimum amount of compute resources required.
                                             If Requests is omitted for a container, it defaults to Limits if that is explicitly specified,
-                                            otherwise to an implementation-defined value.
+                                            otherwise to an implementation-defined value. Requests cannot exceed Limits.
                                             More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/
                                           type: object
                                       type: object
@@ -3949,7 +3923,7 @@ spec:
                                                 localhostProfile indicates a profile defined in a file on the node should be used.
                                                 The profile must be preconfigured on the node to work.
                                                 Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                                Must only be set if type is "Localhost".
+                                                Must be set if type is "Localhost". Must NOT be set for any other type.
                                               type: string
                                             type:
                                               description: |-
@@ -3985,12 +3959,9 @@ spec:
                                             hostProcess:
                                               description: |-
                                                 HostProcess determines if a container should be run as a 'Host Process' container.
-                                                This field is alpha-level and will only be honored by components that enable the
-                                                WindowsHostProcessContainers feature flag. Setting this field without the feature
-                                                flag will result in errors when validating the Pod. All of a Pod's containers must
-                                                have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                                                containers and non-HostProcess containers).  In addition, if HostProcess is true
-                                                then HostNetwork must also be set to true.
+                                                All of a Pod's containers must have the same effective HostProcess value
+                                                (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                                                In addition, if HostProcess is true then HostNetwork must also be set to true.
                                               type: boolean
                                             runAsUserName:
                                               description: |-
@@ -4152,7 +4123,7 @@ spec:
                                           localhostProfile indicates a profile defined in a file on the node should be used.
                                           The profile must be preconfigured on the node to work.
                                           Must be a descending path, relative to the kubelet's configured seccomp profile location.
-                                          Must only be set if type is "Localhost".
+                                          Must be set if type is "Localhost". Must NOT be set for any other type.
                                         type: string
                                       type:
                                         description: |-
@@ -4220,12 +4191,9 @@ spec:
                                       hostProcess:
                                         description: |-
                                           HostProcess determines if a container should be run as a 'Host Process' container.
-                                          This field is alpha-level and will only be honored by components that enable the
-                                          WindowsHostProcessContainers feature flag. Setting this field without the feature
-                                          flag will result in errors when validating the Pod. All of a Pod's containers must
-                                          have the same effective HostProcess value (it is not allowed to have a mix of HostProcess
-                                          containers and non-HostProcess containers).  In addition, if HostProcess is true
-                                          then HostNetwork must also be set to true.
+                                          All of a Pod's containers must have the same effective HostProcess value
+                                          (it is not allowed to have a mix of HostProcess containers and non-HostProcess containers).
+                                          In addition, if HostProcess is true then HostNetwork must also be set to true.
                                         type: boolean
                                       runAsUserName:
                                         description: |-
@@ -4680,7 +4648,8 @@ spec:
             - workspaceName
             type: object
           status:
-            description: FlinkDeploymentStatus defines the observed state of ComputeFlinkDeployment
+            description: ComputeFlinkDeploymentStatus defines the observed state of
+              ComputeFlinkDeployment
             properties:
               conditions:
                 description: Conditions represent the latest available observations
