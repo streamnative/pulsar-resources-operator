@@ -1315,6 +1315,8 @@ github.com/apache/arrow/go/v14 v14.0.2 h1:N8OkaJEOfI3mEZt07BIkvo4sC6XDbL+48MBPWO
 github.com/apache/arrow/go/v14 v14.0.2/go.mod h1:u3fgh3EdgN/YQ8cVQRguVW3R+seMybFg8QBQ5LU+eBY=
 github.com/apache/pulsar-client-go v0.13.1 h1:XAAKXjF99du7LP6qu/nBII1HC2nS483/vQoQIWmm5Yg=
 github.com/apache/pulsar-client-go v0.13.1/go.mod h1:0X5UCs+Cv5w6Ds38EZebUMfyVUFIh+URF2BeipEVhIU=
+github.com/apache/pulsar-client-go v0.14.0 h1:P7yfAQhQ52OCAu8yVmtdbNQ81vV8bF54S2MLmCPJC9w=
+github.com/apache/pulsar-client-go v0.14.0/go.mod h1:PNUE29x9G1EHMvm41Bs2vcqwgv7N8AEjeej+nEVYbX8=
 github.com/apache/thrift v0.16.0 h1:qEy6UW60iVOlUy+b9ZR0d5WzUWYGOo4HfopoyBaNmoY=
 github.com/apache/thrift v0.16.0/go.mod h1:PHK3hniurgQaNMZYaCLEqXKsYK8upmhPbmdP2FXSqgU=
 github.com/ardielle/ardielle-tools v1.5.4 h1:2uL/7wZRUF4LGV7r2eTaaeyhkBoqdiqEitSXMd6k8F8=
