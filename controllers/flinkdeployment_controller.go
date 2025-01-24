@@ -18,10 +18,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
 	"sync"
 	"time"
+
+	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"

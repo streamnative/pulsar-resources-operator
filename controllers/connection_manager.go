@@ -17,9 +17,10 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"sync"
+
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
-	"sync"
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
