@@ -8,8 +8,8 @@ import (
 
 const (
 	// Finalizers for resources
-	FlinkDeploymentFinalizer = "resource.compute.streamnative.io/flinkdeployment-finalizer"
-	WorkspaceFinalizer       = "resource.compute.streamnative.io/workspace-finalizer"
+	FlinkDeploymentFinalizer = "resource.streamnative.io/flinkdeployment-finalizer"
+	WorkspaceFinalizer       = "resource.streamnative.io/workspace-finalizer"
 )
 
 // StatusHasChanged compares two slices of conditions to determine if there's a meaningful change
