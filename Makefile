@@ -120,7 +120,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: generate fmt vet license-fix ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
