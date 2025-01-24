@@ -22,8 +22,9 @@ on:
   pull_request:
     branches:
       - '*'
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-22.04

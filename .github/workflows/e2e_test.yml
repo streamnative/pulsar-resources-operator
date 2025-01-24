@@ -21,6 +21,8 @@ on:
     paths:
       - '**.go'
       - '.github/workflows/e2e_test.yml'
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   e2e-test:
     name: E2e tests for Operators

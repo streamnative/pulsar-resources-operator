@@ -25,6 +25,8 @@ permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   # pull-requests: read
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   golangci:
     name: lint

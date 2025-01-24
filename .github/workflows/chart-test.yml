@@ -23,6 +23,9 @@ on:
       - 'charts/**'
       - '.github/workflows/chart-test.yml'
 
+env:
+  GOPRIVATE: github.com/streamnative
+
 jobs:
   lint-test:
     runs-on: ubuntu-22.04

@@ -28,6 +28,8 @@ on:
         required: true
         default: alpha
 
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   operatorhub-prod:
     name: Create PR to the redhat
