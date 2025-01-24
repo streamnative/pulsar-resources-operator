@@ -15,6 +15,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	"reflect"
 
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -216,4 +217,142 @@ type CryptoConfig struct {
 type FunctionSecretKeyRef struct {
 	Path string `json:"path"`
 	Key  string `json:"key"`
+}
+
+// PodTemplate defines the pod template configuration
+type PodTemplate struct {
+	// Standard object's metadata.
+	// +optional
+	ObjectMeta ObjectMeta `json:"metadata,omitempty"`
+
+	// Specification of the desired behavior of the pod.
+	// +optional
+	Spec PodTemplateSpec `json:"spec,omitempty"`
+}
+
+// ObjectMeta is metadata that all persisted resources must have
+type ObjectMeta struct {
+	// Name of the resource
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// Namespace of the resource
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// Labels of the resource
+	// +optional
+	Labels map[string]string `json:"labels,omitempty"`
+
+	// Annotations of the resource
+	// +optional
+	Annotations map[string]string `json:"annotations,omitempty"`
+}
+
+// PodTemplateSpec describes the data a pod should have when created from a template
+type PodTemplateSpec struct {
+	// List of volumes that can be mounted by containers belonging to the pod.
+	// +optional
+	Volumes []Volume `json:"volumes,omitempty"`
+
+	// List of initialization containers belonging to the pod.
+	// +optional
+	InitContainers []Container `json:"initContainers,omitempty"`
+
+	// List of containers belonging to the pod.
+	// +optional
+	Containers []Container `json:"containers,omitempty"`
+
+	// ServiceAccountName is the name of the ServiceAccount to use to run this pod.
+	// +optional
+	ServiceAccountName string `json:"serviceAccountName,omitempty"`
+
+	// NodeSelector is a selector which must be true for the pod to fit on a node.
+	// +optional
+	NodeSelector map[string]string `json:"nodeSelector,omitempty"`
+
+	// SecurityContext holds pod-level security attributes and common container settings.
+	// +optional
+	SecurityContext *corev1.PodSecurityContext `json:"securityContext,omitempty"`
+
+	// ImagePullSecrets is an optional list of references to secrets in the same namespace to use for pulling any of the images used by this PodSpec.
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
+
+	// If specified, the pod's scheduling constraints
+	// +optional
+	Affinity *corev1.Affinity `json:"affinity,omitempty"`
+
+	// If specified, the pod's tolerations.
+	// +optional
+	Tolerations []corev1.Toleration `json:"tolerations,omitempty"`
+}
+
+// Container defines a single application container
+type Container struct {
+	// Name of the container specified as a DNS_LABEL.
+	// +optional
+	Name string `json:"name,omitempty"`
+
+	// Docker image name.
+	// +optional
+	Image string `json:"image,omitempty"`
+
+	// Entrypoint array. Not executed within a shell.
+	// +optional
+	Command []string `json:"command,omitempty"`
+
+	// Arguments to the entrypoint.
+	// +optional
+	Args []string `json:"args,omitempty"`
+
+	// Container's working directory.
+	// +optional
+	WorkingDir string `json:"workingDir,omitempty"`
+
+	// List of environment variables to set in the container.
+	// +optional
+	Env []corev1.EnvVar `json:"env,omitempty"`
+
+	// List of sources to populate environment variables in the container.
+	// +optional
+	EnvFrom []corev1.EnvFromSource `json:"envFrom,omitempty"`
+
+	// Compute Resources required by this container.
+	// +optional
+	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
+
+	// Pod volumes to mount into the container's filesystem.
+	// +optional
+	VolumeMounts []corev1.VolumeMount `json:"volumeMounts,omitempty"`
+
+	// Image pull policy.
+	// +optional
+	ImagePullPolicy corev1.PullPolicy `json:"imagePullPolicy,omitempty"`
+
+	// Security context at container level
+	// +optional
+	SecurityContext *corev1.SecurityContext `json:"securityContext,omitempty"`
+}
+
+// Volume represents a named volume in a pod
+type Volume struct {
+	// Volume's name.
+	// +required
+	Name string `json:"name"`
+
+	// VolumeSource represents the location and type of the mounted volume.
+	// +required
+	VolumeSource `json:",inline"`
+}
+
+// VolumeSource represents the source location of a volume to mount.
+type VolumeSource struct {
+	// ConfigMap represents a configMap that should populate this volume
+	// +optional
+	ConfigMap *corev1.ConfigMapVolumeSource `json:"configMap,omitempty"`
+
+	// Secret represents a secret that should populate this volume.
+	// +optional
+	Secret *corev1.SecretVolumeSource `json:"secret,omitempty"`
 }
