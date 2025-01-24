@@ -17,7 +17,7 @@ require (
 	k8s.io/component-base v0.26.0
 	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 	sigs.k8s.io/controller-runtime v0.14.0
-	github.com/streamnative/cloud-api-server v1.25.2-0.20250110052043-df94d8adecc9
+	github.com/streamnative/cloud-api-server v1.25.2-0.20250102073730-2589f39cb5f2
 )
 
 require (
