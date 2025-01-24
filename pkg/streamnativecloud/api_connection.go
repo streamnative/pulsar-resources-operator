@@ -66,7 +66,7 @@ func (c *APIConnection) connect() error {
 	}
 	// Get well-known configuration
 	wellKnownURL := fmt.Sprintf("%s/.well-known/openid-configuration", c.credentials.IssuerURL)
-	resp, err := http.Get(wellKnownURL)
+	resp, err := http.Get(wellKnownURL) //nolint:gosec
 	if err != nil {
 		return fmt.Errorf("failed to get well-known config: %w", err)
 	}
@@ -101,7 +101,7 @@ func (c *APIConnection) Test(ctx context.Context) error {
 	if c.client == nil {
 		return fmt.Errorf("waiting for client")
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", c.config.Spec.Server+"/healthz", nil)
+	req, err := http.NewRequestWithContext(ctx, "GET", c.config.Spec.Server+"/healthz", http.NoBody)
 	if err != nil {
 		return err
 	}

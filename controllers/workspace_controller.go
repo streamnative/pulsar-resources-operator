@@ -71,8 +71,7 @@ func (r *WorkspaceReconciler) handleWatchEvents(ctx context.Context, namespacedN
 				return
 			}
 
-			switch event.Type {
-			case watch.Modified:
+			if event.Type == watch.Modified {
 				remoteWorkspace, ok := event.Object.(*computeapi.Workspace)
 				if !ok {
 					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to Workspace")

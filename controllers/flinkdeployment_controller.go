@@ -72,8 +72,7 @@ func (r *FlinkDeploymentReconciler) handleWatchEvents(ctx context.Context, names
 				return
 			}
 
-			switch event.Type {
-			case watch.Modified:
+			if event.Type == watch.Modified {
 				remoteDeployment, ok := event.Object.(*computeapi.FlinkDeployment)
 				if !ok {
 					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to FlinkDeployment")

@@ -1,4 +1,4 @@
-// Copyright 2024 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -225,10 +225,10 @@ type Artifact struct {
 	Kind string `json:"kind,omitempty"`
 
 	// +optional
-	PythonArtifactUri string `json:"pythonArtifactUri,omitempty"`
+	PythonArtifactURI string `json:"pythonArtifactUri,omitempty"`
 
 	// +optional
-	SqlScript string `json:"sqlScript,omitempty"`
+	SQLScript string `json:"sqlScript,omitempty"`
 
 	// +optional
 	AdditionalDependencies []string `json:"additionalDependencies,omitempty"`
@@ -265,7 +265,7 @@ type Artifact struct {
 	MainArgs string `json:"mainArgs,omitempty"`
 
 	// +optional
-	Uri string `json:"uri,omitempty"`
+	URI string `json:"uri,omitempty"`
 }
 
 // VvpDeploymentStatus defines the deployment status
@@ -395,7 +395,7 @@ type VvpDeploymentKubernetesResources struct {
 type ResourceSpec struct {
 	// CPU represents the minimum amount of CPU required.
 	// +kubebuilder:validation:Required
-	Cpu string `json:"cpu"`
+	CPU string `json:"cpu"`
 
 	// Memory represents the minimum amount of memory required.
 	// +kubebuilder:validation:Required

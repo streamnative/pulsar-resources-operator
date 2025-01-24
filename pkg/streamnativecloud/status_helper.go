@@ -59,23 +59,23 @@ func StatusHasChanged(oldConditions, newConditions []metav1.Condition) bool {
 }
 
 // FlinkDeploymentStatusHasChanged compares two FlinkDeployment statuses to determine if there's a meaningful change
-func FlinkDeploymentStatusHasChanged(old, new *resourcev1alpha1.ComputeFlinkDeploymentStatus) bool {
+func FlinkDeploymentStatusHasChanged(oldStatus, newStatus *resourcev1alpha1.ComputeFlinkDeploymentStatus) bool {
 	// Compare conditions
-	if StatusHasChanged(old.Conditions, new.Conditions) {
+	if StatusHasChanged(oldStatus.Conditions, newStatus.Conditions) {
 		return true
 	}
 
 	// Compare DeploymentStatus
-	if old.DeploymentStatus == nil && new.DeploymentStatus == nil {
+	if oldStatus.DeploymentStatus == nil && newStatus.DeploymentStatus == nil {
 		return false
 	}
-	if (old.DeploymentStatus == nil && new.DeploymentStatus != nil) ||
-		(old.DeploymentStatus != nil && new.DeploymentStatus == nil) {
+	if (oldStatus.DeploymentStatus == nil && newStatus.DeploymentStatus != nil) ||
+		(oldStatus.DeploymentStatus != nil && newStatus.DeploymentStatus == nil) {
 		return true
 	}
 
 	// Compare the raw bytes of DeploymentStatus
-	return !bytes.Equal(old.DeploymentStatus.Raw, new.DeploymentStatus.Raw)
+	return !bytes.Equal(oldStatus.DeploymentStatus.Raw, newStatus.DeploymentStatus.Raw)
 }
 
 // ContainsString checks if a string is present in a slice

@@ -17,6 +17,7 @@ package controllers
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -69,7 +70,7 @@ func (r *APIServerConnectionReconciler) Reconcile(ctx context.Context, req ctrl.
 		if apierrors.IsNotFound(err) {
 			msg := fmt.Sprintf("Credentials secret %s/%s not found", connection.Namespace, connection.Spec.Auth.CredentialsRef.Name)
 			r.updateConnectionStatus(ctx, connection, err, "CredentialsNotFound", msg)
-			return ctrl.Result{}, fmt.Errorf(msg)
+			return ctrl.Result{}, errors.New(msg)
 		}
 		return ctrl.Result{}, err
 	}

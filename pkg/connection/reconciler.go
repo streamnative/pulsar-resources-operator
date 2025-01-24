@@ -1,4 +1,4 @@
-// Copyright 2024 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -281,7 +281,7 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 			return nil, err
 		}
 		if value, exists := secret.Data[ref.Key]; exists {
-			return pointer.String(string(value)), nil
+			return ptr.To(string(value)), nil
 		}
 	}
 	return nil, nil

@@ -131,7 +131,7 @@ func convertResourceSpec(spec *resourcev1alpha1.ResourceSpec) *computeapi.Resour
 		return nil
 	}
 	return &computeapi.ResourceSpec{
-		Cpu:    spec.Cpu,
+		Cpu:    spec.CPU,
 		Memory: spec.Memory,
 	}
 }
@@ -144,8 +144,8 @@ func convertArtifact(artifact *resourcev1alpha1.Artifact) *computeapi.Artifact {
 	return &computeapi.Artifact{
 		Kind:                   artifact.Kind,
 		JarUri:                 artifact.JarURI,
-		PythonArtifactUri:      artifact.PythonArtifactUri,
-		SqlScript:              artifact.SqlScript,
+		PythonArtifactUri:      artifact.PythonArtifactURI,
+		SqlScript:              artifact.SQLScript,
 		AdditionalDependencies: artifact.AdditionalDependencies,
 		EntryClass:             artifact.EntryClass,
 		MainArgs:               artifact.MainArgs,
@@ -153,6 +153,6 @@ func convertArtifact(artifact *resourcev1alpha1.Artifact) *computeapi.Artifact {
 		FlinkImageRegistry:     artifact.FlinkImageRegistry,
 		FlinkImageRepository:   artifact.FlinkImageRepository,
 		FlinkImageTag:          artifact.FlinkImageTag,
-		Uri:                    artifact.Uri,
+		Uri:                    artifact.URI,
 	}
 }

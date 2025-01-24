@@ -1,4 +1,4 @@
-// Copyright 2024 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
@@ -84,7 +84,7 @@ func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error
 // ApplyNamespace creates a namespace with policies
 func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams) error {
 	if params.Bundles == nil {
-		params.Bundles = pointer.Int32(4)
+		params.Bundles = ptr.To(int32(4))
 	}
 	err := p.adminClient.Namespaces().CreateNsWithPolices(name, utils.Policies{
 		Bundles: &utils.BundlesData{
@@ -804,7 +804,7 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 		}
 	}
 
-	if param.InputSpecs != nil && len(param.InputSpecs) > 0 {
+	if len(param.InputSpecs) > 0 {
 		inputSpecs := make(map[string]utils.ConsumerConfig)
 		for k, v := range param.InputSpecs {
 			iSpec := utils.ConsumerConfig{
@@ -873,7 +873,7 @@ func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, package
 		functionConfig.CustomRuntimeOptions = string(jByte)
 	}
 
-	if param.Secrets != nil && len(param.Secrets) > 0 {
+	if len(param.Secrets) > 0 {
 		secrets := make(map[string]interface{})
 		for k, v := range param.Secrets {
 			secrets[k] = v
@@ -966,7 +966,7 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		}
 	}
 
-	if param.InputSpecs != nil && len(param.InputSpecs) > 0 {
+	if len(param.InputSpecs) > 0 {
 		inputSpecs := make(map[string]utils.ConsumerConfig)
 		for k, v := range param.InputSpecs {
 			iSpec := utils.ConsumerConfig{
@@ -1008,7 +1008,7 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		sinkConfig.CustomRuntimeOptions = string(jByte)
 	}
 
-	if param.Secrets != nil && len(param.Secrets) > 0 {
+	if len(param.Secrets) > 0 {
 		secrets := make(map[string]interface{})
 		for k, v := range param.Secrets {
 			secrets[k] = v
@@ -1133,7 +1133,7 @@ func (p *PulsarAdminClient) ApplyPulsarSource(tenant, namespace, name, packageUR
 		}
 	}
 
-	if param.Secrets != nil && len(param.Secrets) > 0 {
+	if len(param.Secrets) > 0 {
 		secrets := make(map[string]interface{})
 		for k, v := range param.Secrets {
 			secrets[k] = v
