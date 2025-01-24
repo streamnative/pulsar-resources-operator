@@ -89,14 +89,6 @@ spec:
                 required:
                 - credentialsRef
                 type: object
-              certificateAuthorityData:
-                description: CertificateAuthorityData is the PEM-encoded certificate
-                  authority certificates
-                format: byte
-                type: string
-              insecureSkipTLSVerify:
-                description: InsecureSkipTLSVerify indicates whether to skip TLS verification
-                type: boolean
               logs:
                 description: Logs defines the logging service configuration
                 properties:

@@ -28,14 +28,6 @@ type StreamNativeCloudConnectionSpec struct {
 	// +required
 	Server string `json:"server"`
 
-	// CertificateAuthorityData is the PEM-encoded certificate authority certificates
-	// +optional
-	CertificateAuthorityData []byte `json:"certificateAuthorityData,omitempty"`
-
-	// InsecureSkipTLSVerify indicates whether to skip TLS verification
-	// +optional
-	InsecureSkipTLSVerify bool `json:"insecureSkipTLSVerify,omitempty"`
-
 	// Auth defines the authentication configuration
 	// +required
 	Auth AuthConfig `json:"auth"`

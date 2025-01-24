@@ -1,0 +1,68 @@
+# Copyright 2024 StreamNative
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+apiVersion: resource.streamnative.io/v1alpha1
+kind: ComputeFlinkDeployment
+metadata:
+  name: operator-test-v1
+  namespace: default
+spec:
+  apiServerRef:
+    name: test-connection
+  workspaceName: test-operator-workspace
+  template:
+    syncingMode: PATCH # below are crd from ververica platform
+    deployment:
+      userMetadata:
+        name: operator-test-v1
+        namespace: default # the flink namespace
+        displayName: operator-test-v1
+      spec:
+        state: RUNNING
+        deploymentTargetName: default # the flink deployment target, will need create first on ui
+        maxJobCreationAttempts: 99
+        template:
+          metadata:
+            annotations:
+              flink.queryable-state.enabled: 'false'
+              flink.security.ssl.enabled: 'false'
+          spec:
+            artifact:
+              jarUri: function://public/default/flink-operator-test-beam-pulsar-io@1.19-snapshot
+              mainArgs: --runner=FlinkRunner --attachedMode=false --checkpointingInterval=60000 --checkpointTimeoutMillis=100000 --minPauseBetweenCheckpoints=1000
+              entryClass: org.apache.beam.examples.WordCount
+              kind: JAR
+              flinkVersion: "1.18.1"
+              flinkImageTag: "1.18.1-stream3-scala_2.12-java17"
+            flinkConfiguration:
+              execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+              execution.checkpointing.interval: 1min
+              execution.checkpointing.timeout: 10min
+              high-availability.type: kubernetes
+              state.backend: filesystem
+              taskmanager.memory.managed.fraction: '0.2'
+            parallelism: 1
+            numberOfTaskManagers: 1
+            resources:
+              jobmanager:
+                cpu: "1"
+                memory: 2G
+              taskmanager:
+                cpu: "1"
+                memory: 2G
+            logging:
+              loggingProfile: default
+              log4jLoggers:
+                "": DEBUG
+                com.company: DEBUG
