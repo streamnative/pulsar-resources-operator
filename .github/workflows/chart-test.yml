@@ -50,7 +50,10 @@ jobs:
             diff config/crd/bases/resource.streamnative.io_pulsarsources.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsources.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsarpackages.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpackages.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsartopics.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartopics.yaml && \
-            diff config/crd/bases/resource.streamnative.io_pulsarnsisolationpolicies.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnsisolationpolicies.yaml
+            diff config/crd/bases/resource.streamnative.io_pulsarnsisolationpolicies.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnsisolationpolicies.yaml && \
+            diff config/crd/bases/resource.streamnative.io_streamnativecloudconnections.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_streamnativecloudconnections.yaml && \
+            diff config/crd/bases/resource.streamnative.io_computeworkspaces.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_computeworkspaces.yaml && \
+            diff config/crd/bases/resource.streamnative.io_computeflinkdeployments.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_computeflinkdeployments.yaml
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
