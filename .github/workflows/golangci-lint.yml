@@ -25,12 +25,14 @@ permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   # pull-requests: read
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   golangci:
     name: lint
     runs-on: ubuntu-22.04
     env:
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
       GOPRIVATE: github.com/streamnative
     steps:
       - name: Set up git token

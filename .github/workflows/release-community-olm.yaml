@@ -28,6 +28,8 @@ on:
         required: true
         default: alpha
 
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   operatorhub:
     name: Create PR to the operatorhub
@@ -35,7 +37,7 @@ jobs:
     env:
       GITHUB_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
       GOPRIVATE: github.com/streamnative
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
     steps:
       - name: Sync up the upstream
         run: |

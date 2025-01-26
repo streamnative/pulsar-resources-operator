@@ -1,4 +1,4 @@
-// Copyright 2024 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 package admin
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -256,7 +255,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	}
 
 	if conf.Key != "" {
-		keyFile, err = ioutil.TempFile("", "oauth2-key-")
+		keyFile, err = os.CreateTemp("", "oauth2-key-")
 		if err != nil {
 			return nil, err
 		}

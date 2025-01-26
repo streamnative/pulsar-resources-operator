@@ -22,13 +22,14 @@ on:
   pull_request:
     branches:
       - '*'
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
-
   build:
     name: Build
     runs-on: ubuntu-22.04
     env:
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
       GOPRIVATE: github.com/streamnative
     steps:
     - name: Set up Go 1.21

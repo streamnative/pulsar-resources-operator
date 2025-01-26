@@ -1,4 +1,4 @@
-// Copyright 2024 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -296,12 +296,12 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {
 	if params.Persistent == nil {
 		// by default create persistent topic
-		params.Persistent = pointer.Bool(true)
+		params.Persistent = ptr.To(true)
 	}
 
 	if params.Partitions == nil {
 		// by default create non-partitioned topic
-		params.Partitions = pointer.Int32(0)
+		params.Partitions = ptr.To(int32(0))
 	}
 }
 

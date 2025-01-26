@@ -120,7 +120,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: generate fmt vet license-fix ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
@@ -129,7 +129,7 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build -t ${IMG} . --build-arg ACCESS_TOKEN=${ACCESS_TOKEN}
 
 # Build image for redhat certification
 .PHONY: docker-build-redhat

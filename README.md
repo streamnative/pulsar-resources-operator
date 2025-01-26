@@ -130,6 +130,9 @@ In this tutorial, a Kubernetes namespace called `test` is used for examples, whi
 - [PulsarSource](docs/pulsar_source.md)
 - [PulsarGeoReplication](docs/pulsar_geo_replication.md)
 - [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
+- [StreamNativeCloudConnection](docs/streamnative_cloud_connection.md)
+- [ComputeWorkspace](docs/compute_workspace.md)
+- [ComputeFlinkDeployment](docs/compute_flink_deployment.md)
 
 # Contributing
 
