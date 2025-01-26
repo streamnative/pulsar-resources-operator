@@ -1,4 +1,4 @@
-// Copyright 2024 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -224,47 +224,46 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.PulsarConnection{}).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarTenant{}},
+		Watches(&resourcev1alpha1.PulsarTenant{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarNamespace{}},
+		Watches(&resourcev1alpha1.PulsarNamespace{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarTopic{}},
+		Watches(&resourcev1alpha1.PulsarTopic{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarPermission{}},
+		Watches(&resourcev1alpha1.PulsarPermission{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarGeoReplication{}},
+		Watches(&resourcev1alpha1.PulsarGeoReplication{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarPackage{}},
+		Watches(&resourcev1alpha1.PulsarPackage{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarFunction{}},
+		Watches(&resourcev1alpha1.PulsarFunction{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarNSIsolationPolicy{}},
+		Watches(&resourcev1alpha1.PulsarNSIsolationPolicy{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSink{}},
+		Watches(&resourcev1alpha1.PulsarSink{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &resourcev1alpha1.PulsarSource{}},
+		Watches(&resourcev1alpha1.PulsarSource{},
 			handler.EnqueueRequestsFromMapFunc(ConnectionRefMapper),
 			builder.WithPredicates(predicate.GenerationChangedPredicate{})).
-		Watches(&source.Kind{Type: &corev1.Secret{}},
+		Watches(&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findSecretsForConnection),
 			builder.WithPredicates(secretPredicate())).
-		Watches(&source.Channel{Source: r.Retryer.Source()}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(&source.Channel{Source: r.Retryer.Source()}, &handler.EnqueueRequestForObject{}).
 		WithOptions(options).
 		Complete(r)
 
 }
 
-func (r *PulsarConnectionReconciler) findSecretsForConnection(secret client.Object) []reconcile.Request {
-	ctx := context.Background()
+func (r *PulsarConnectionReconciler) findSecretsForConnection(ctx context.Context, secret client.Object) []reconcile.Request {
 	conns := &resourcev1alpha1.PulsarConnectionList{}
 	err := r.List(ctx, conns, client.InNamespace(secret.GetNamespace()))
 	if err != nil {

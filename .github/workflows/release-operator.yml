@@ -19,13 +19,15 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+-?*'
 
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   build:
     name: Build image and bundle
     runs-on: ubuntu-22.04
     env:
       GOPRIVATE: github.com/streamnative
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
       IMAGE_TAG_BASE: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
       IMAGE_TAG_BASE_QUAY: quay.io/streamnativeio/pulsar-resources-operator
       IMAGE_TAG_BASE_DOCKERHUB: docker.io/streamnative/pulsar-resources-operator
