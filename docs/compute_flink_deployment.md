@@ -8,7 +8,7 @@ The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative
 
 | Field                | Description                                                                                | Required |
 |----------------------|--------------------------------------------------------------------------------------------|----------|
-| `apiServerRef`       | Reference to the StreamNativeCloudConnection resource for API server access                | Yes      |
+| `apiServerRef`       | Reference to the StreamNativeCloudConnection resource for API server access. If not specified, the APIServerRef from the referenced ComputeWorkspace will be used. | No       |
 | `workspaceName`      | Name of the ComputeWorkspace where the Flink deployment will run                           | Yes      |
 | `labels`             | Labels to add to the deployment                                                             | No       |
 | `annotations`        | Annotations to add to the deployment                                                        | No       |
@@ -17,6 +17,19 @@ The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative
 | `defaultPulsarCluster`| Default Pulsar cluster to use for the deployment                                          | No       |
 
 *Note: Either `template` or `communityTemplate` must be specified, but not both.
+
+## APIServerRef Inheritance
+
+The `ComputeFlinkDeployment` resource can inherit the `APIServerRef` from its referenced `ComputeWorkspace`. This simplifies configuration and reduces duplication. Here's how it works:
+
+1. If `apiServerRef` is specified in the `ComputeFlinkDeployment`, that value will be used.
+2. If `apiServerRef` is not specified, the operator will use the `APIServerRef` from the referenced `ComputeWorkspace`.
+3. The `workspaceName` field is required and must reference a valid `ComputeWorkspace` in the same namespace.
+
+This inheritance mechanism allows you to:
+- Reduce configuration duplication
+- Centralize API server configuration at the workspace level
+- Easily change API server configuration for multiple deployments by updating the workspace
 
 ### VVP Deployment Template
 
@@ -97,7 +110,7 @@ The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative
 
 ## Example
 
-1. Create a ComputeFlinkDeployment with VVP template:
+1. Create a ComputeFlinkDeployment with explicit APIServerRef:
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -173,6 +186,63 @@ The deployment is ready when the Ready condition is True:
 ```shell
 NAME             READY   AGE
 operator-test-v1 True    1m
+```
+
+2. Create a ComputeFlinkDeployment using Workspace's APIServerRef:
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: ComputeFlinkDeployment
+metadata:
+  name: operator-test-v2
+  namespace: default
+spec:
+  workspaceName: test-operator-workspace  # Will use APIServerRef from this workspace
+  template:
+    syncingMode: PATCH
+    deployment:
+      userMetadata:
+        name: operator-test-v2
+        namespace: default
+        displayName: operator-test-v2
+      spec:
+        state: RUNNING
+        deploymentTargetName: default
+        maxJobCreationAttempts: 99
+        template:
+          metadata:
+            annotations:
+              flink.queryable-state.enabled: 'false'
+              flink.security.ssl.enabled: 'false'
+          spec:
+            artifact:
+              jarUri: function://public/default/flink-operator-test-beam-pulsar-io@1.19-snapshot
+              mainArgs: --runner=FlinkRunner --attachedMode=false --checkpointingInterval=60000
+              entryClass: org.apache.beam.examples.WordCount
+              kind: JAR
+              flinkVersion: "1.18.1"
+              flinkImageTag: "1.18.1-stream3-scala_2.12-java17"
+            flinkConfiguration:
+              execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+              execution.checkpointing.interval: 1min
+              execution.checkpointing.timeout: 10min
+              high-availability.type: kubernetes
+              state.backend: filesystem
+              taskmanager.memory.managed.fraction: '0.2'
+            parallelism: 1
+            numberOfTaskManagers: 1
+            resources:
+              jobmanager:
+                cpu: "1"
+                memory: 2G
+              taskmanager:
+                cpu: "1"
+                memory: 2G
+            logging:
+              loggingProfile: default
+              log4jLoggers:
+                "": DEBUG
+                com.company: DEBUG
 ```
 
 ## Update Deployment
