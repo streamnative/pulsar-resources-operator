@@ -52,6 +52,7 @@ type FlinkDeploymentReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeflinkdeployments/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeflinkdeployments/finalizers,verbs=update
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces,verbs=get;list;watch
 
 // handleWatchEvents processes events from the watch interface
 func (r *FlinkDeploymentReconciler) handleWatchEvents(ctx context.Context, namespacedName types.NamespacedName, watcher watch.Interface) {
@@ -167,11 +168,27 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
+	// Get APIServerRef from ComputeWorkspace if not specified in FlinkDeployment
+	apiServerRef := deployment.Spec.APIServerRef
+	if apiServerRef.Name == "" {
+		// Get the ComputeWorkspace
+		workspace := &resourcev1alpha1.ComputeWorkspace{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Namespace: req.Namespace,
+			Name:      deployment.Spec.WorkspaceName,
+		}, workspace); err != nil {
+			r.updateDeploymentStatus(ctx, deployment, err, "GetWorkspaceFailed",
+				fmt.Sprintf("Failed to get ComputeWorkspace: %v", err))
+			return ctrl.Result{}, err
+		}
+		apiServerRef = workspace.Spec.APIServerRef
+	}
+
 	// Get the APIServerConnection
 	apiConn := &resourcev1alpha1.StreamNativeCloudConnection{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
-		Name:      deployment.Spec.APIServerRef.Name,
+		Name:      apiServerRef.Name,
 	}, apiConn); err != nil {
 		r.updateDeploymentStatus(ctx, deployment, err, "GetAPIServerConnectionFailed",
 			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
