@@ -318,3 +318,81 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - computeflinkdeployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - computeflinkdeployments/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - computeflinkdeployments/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - computeworkspaces
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - computeworkspaces/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - computeworkspaces/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - streamnativecloudconnections
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - streamnativecloudconnections/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - streamnativecloudconnections/status
+  verbs:
+  - get
+  - patch
+  - update
