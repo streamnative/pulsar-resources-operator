@@ -66,3 +66,58 @@ spec:
               log4jLoggers:
                 "": DEBUG
                 com.company: DEBUG
+
+---
+# Example 2: Using Workspace's APIServerRef
+apiVersion: resource.streamnative.io/v1alpha1
+kind: ComputeFlinkDeployment
+metadata:
+  name: operator-test-v2
+  namespace: default
+spec:
+  workspaceName: test-operator-workspace  # Will use APIServerRef from this workspace
+  template:
+    syncingMode: PATCH
+    deployment:
+      userMetadata:
+        name: operator-test-v2
+        namespace: default
+        displayName: operator-test-v2
+      spec:
+        state: RUNNING
+        deploymentTargetName: default
+        maxJobCreationAttempts: 99
+        template:
+          metadata:
+            annotations:
+              flink.queryable-state.enabled: 'false'
+              flink.security.ssl.enabled: 'false'
+          spec:
+            artifact:
+              jarUri: function://public/default/flink-operator-test-beam-pulsar-io@1.19-snapshot
+              mainArgs: --runner=FlinkRunner --attachedMode=false --checkpointingInterval=60000
+              entryClass: org.apache.beam.examples.WordCount
+              kind: JAR
+              flinkVersion: "1.18.1"
+              flinkImageTag: "1.18.1-stream3-scala_2.12-java17"
+            flinkConfiguration:
+              execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+              execution.checkpointing.interval: 1min
+              execution.checkpointing.timeout: 10min
+              high-availability.type: kubernetes
+              state.backend: filesystem
+              taskmanager.memory.managed.fraction: '0.2'
+            parallelism: 1
+            numberOfTaskManagers: 1
+            resources:
+              jobmanager:
+                cpu: "1"
+                memory: 2G
+              taskmanager:
+                cpu: "1"
+                memory: 2G
+            logging:
+              loggingProfile: default
+              log4jLoggers:
+                "": DEBUG
+                com.company: DEBUG
