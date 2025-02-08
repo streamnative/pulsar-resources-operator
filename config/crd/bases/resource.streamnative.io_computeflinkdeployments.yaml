@@ -70,7 +70,9 @@ spec:
                 description: Annotations to add to the deployment
                 type: object
               apiServerRef:
-                description: APIServerRef is the reference to the StreamNativeCloudConnection
+                description: |-
+                  APIServerRef is the reference to the StreamNativeCloudConnection.
+                  If not specified, the APIServerRef from the referenced ComputeWorkspace will be used.
                 properties:
                   name:
                     description: |-
@@ -4658,7 +4660,6 @@ spec:
                   is required
                 type: string
             required:
-            - apiServerRef
             - workspaceName
             type: object
           status:
