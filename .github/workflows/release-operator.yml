@@ -115,7 +115,13 @@ jobs:
     name: Create PR to the operatorhub
     needs: build
     runs-on: ubuntu-22.04
+    env:
+      GOPRIVATE: github.com/streamnative
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
     steps:
+      - name: Set up Git token
+        run: |
+          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
       - name: Sync up the upstream
         env:
           GITHUB_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
