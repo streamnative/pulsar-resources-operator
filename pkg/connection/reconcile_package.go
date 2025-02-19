@@ -126,12 +126,30 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 		return nil
 	}
 
-	filePath, err := createTmpFile(pkg.Spec.FileURL)
+	parsedFileURL, err := url.Parse(pkg.Spec.FileURL)
 	if err != nil {
-		log.Error(err, "Failed to download the package file")
-		return err
+		return fmt.Errorf("invalid FileURL: %v", err)
 	}
-	defer os.Remove(filePath)
+	if !isSupportedScheme(parsedFileURL.Scheme) {
+		return fmt.Errorf("unsupported scheme: %s", parsedFileURL.Scheme)
+	}
+
+	filePath := ""
+	switch parsedFileURL.Scheme {
+	case "http", "https":
+		filePath, err = createTmpFile(pkg.Spec.FileURL)
+		if err != nil {
+			log.Error(err, "Failed to download the package file")
+			return err
+		}
+		defer os.Remove(filePath)
+	case "file":
+		// check parsedFileUrl.Path is a valid file path
+		if _, err := os.Stat(parsedFileURL.Path); err != nil {
+			return fmt.Errorf("invalid file path: %s", parsedFileURL.Path)
+		}
+		filePath = parsedFileURL.Path
+	}
 
 	updated := false
 	if exist, err := pulsarAdmin.CheckPulsarPackageExist(pkg.Spec.PackageURL); err != nil {
@@ -197,4 +215,8 @@ func createTmpFile(fileURL string) (string, error) {
 	}
 
 	return tmpFile.Name(), nil
+}
+
+func isSupportedScheme(scheme string) bool {
+	return scheme == "http" || scheme == "https" || scheme == "file"
 }
