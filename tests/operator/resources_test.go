@@ -89,6 +89,7 @@ var _ = Describe("Resources", func() {
 		psource                *v1alphav1.PulsarSource
 		pnsisolationpolicy     *v1alphav1.PulsarNSIsolationPolicy
 		psourcepackageurl      string = "builtin://data-generator"
+		invalidFileURL         string = "file://invalid-file-path"
 	)
 
 	BeforeEach(func() {
@@ -493,6 +494,24 @@ var _ = Describe("Resources", func() {
 					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarPackage operation with invalid file URL", func() {
+			It("should create the pulsarpackage failed with invalid file URL", func() {
+				ppackage.Spec.FileURL = invalidFileURL
+				ppackage.Spec.PackageURL = "function://public/default/file@invalid"
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err != nil).Should(BeTrue())
+			})
+		})
+
+		Context("PulsarPackage operation with valid file URL", func() {
+			It("should create the pulsarpackage successfully with valid file URL", func() {
+				ppackage.Spec.FileURL = "file:///manager" // we use the manager binary as the file URL
+				ppackage.Spec.PackageURL = "function://public/default/file@valid"
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 		})
 
