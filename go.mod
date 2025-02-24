@@ -120,7 +120,7 @@ require (
 	github.com/prometheus/procfs v0.12.0 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	github.com/stoewer/go-strcase v1.2.0 // indirect
+	github.com/stoewer/go-strcase v1.3.0 // indirect
 	github.com/stripe/stripe-go/v74 v74.5.0 // indirect
 	go.etcd.io/etcd/api/v3 v3.5.9 // indirect
 	go.etcd.io/etcd/client/pkg/v3 v3.5.9 // indirect
@@ -137,7 +137,7 @@ require (
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/exp v0.0.0-20230713183714-613f0c0eb8a1 // indirect
+	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.28.0 // indirect
@@ -201,7 +201,8 @@ replace (
 	go.etcd.io/etcd/api/v3 => go.etcd.io/etcd/api/v3 v3.5.9
 	go.etcd.io/etcd/client/pkg/v3 => go.etcd.io/etcd/client/pkg/v3 v3.5.9
 	go.etcd.io/etcd/client/v3 => go.etcd.io/etcd/client/v3 v3.5.9
-	google.golang.org/grpc => google.golang.org/grpc v1.56.3
+	google.golang.org/grpc => google.golang.org/grpc v1.63.2
+	google.golang.org/protobuf => google.golang.org/protobuf v1.34.2
 	k8s.io/api => k8s.io/api v0.28.15
 	k8s.io/apiextensions-apiserver => k8s.io/apiextensions-apiserver v0.28.15
 	k8s.io/apimachinery => k8s.io/apimachinery v0.28.15
