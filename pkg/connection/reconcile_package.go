@@ -248,15 +248,3 @@ func downloadHTTP(fileURL string) (string, error) {
 
 	return tmpFile.Name(), nil
 }
-
-func isSupportedScheme(scheme string) bool {
-	supportedSchemes := map[string]bool{
-		"http":   true,
-		"https":  true,
-		"file":   true,
-		"s3":     true,
-		"gs":     true,
-		"azblob": true,
-	}
-	return supportedSchemes[scheme]
-}
