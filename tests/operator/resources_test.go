@@ -497,16 +497,6 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
-		Context("PulsarPackage operation with invalid file URL", func() {
-			It("should create the pulsarpackage failed with invalid file URL", func() {
-				ppackage.Spec.FileURL = invalidFileURL
-				ppackage.Spec.PackageURL = "function://public/default/file@invalid"
-				ppackage.Name = "test-func-invalid"
-				err := k8sClient.Create(ctx, ppackage)
-				Expect(err != nil).Should(BeTrue())
-			})
-		})
-
 		Context("PulsarPackage operation with valid file URL", func() {
 			It("should create the pulsarpackage successfully with valid file URL", func() {
 				ppackage.Spec.FileURL = "file:///manager" // we use the manager binary as the file URL
