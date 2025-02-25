@@ -89,7 +89,6 @@ var _ = Describe("Resources", func() {
 		psource                *v1alphav1.PulsarSource
 		pnsisolationpolicy     *v1alphav1.PulsarNSIsolationPolicy
 		psourcepackageurl      string = "builtin://data-generator"
-		invalidFileURL         string = "file://invalid-file-path"
 	)
 
 	BeforeEach(func() {
