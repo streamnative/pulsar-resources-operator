@@ -52,6 +52,7 @@ type SecretSpec struct {
 	// +optional
 	PoolMemberName *string `json:"poolMemberName,omitempty"`
 
+	// Toleration is the toleration for the secret.
 	// +optional
 	// +listType=atomic
 	Tolerations []Toleration `json:"tolerations,omitempty"`
@@ -109,7 +110,7 @@ func (r KubernetesSecretReference) ToNamespacedName() types.NamespacedName {
 	}
 }
 
-// The workload this Toleration is attached to tolerates any taint that matches
+// Toleration The workload this Toleration is attached to tolerates any taint that matches
 // the triple <key,value,effect> using the matching operator <operator>.
 type Toleration struct {
 	// Key is the taint key that the toleration applies to. Empty means match all taint keys.
