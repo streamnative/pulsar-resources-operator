@@ -16,7 +16,6 @@ package connection
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -32,6 +31,11 @@ import (
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
+
+	"gocloud.dev/blob"
+	_ "gocloud.dev/blob/azureblob" // Azure support
+	_ "gocloud.dev/blob/gcsblob"   // GCS support
+	_ "gocloud.dev/blob/s3blob"    // S3 support
 )
 
 // PulsarPackageReconciler reconciles a PulsarPackage object
@@ -126,7 +130,7 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 		return nil
 	}
 
-	filePath, err := createTmpFile(pkg.Spec.FileURL)
+	filePath, err := downloadToTempFile(ctx, pkg.Spec.FileURL)
 	if err != nil {
 		log.Error(err, "Failed to download the package file")
 		return err
@@ -161,25 +165,76 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	return nil
 }
 
-func createTmpFile(fileURL string) (string, error) {
-	// get the file from the url and save it to a temp file
+// downloadToTempFile downloads file from various sources (http/https/cloud storage) to a temp file
+func downloadToTempFile(ctx context.Context, fileURL string) (string, error) {
 	parsedURL, err := url.Parse(fileURL)
 	if err != nil {
 		return "", fmt.Errorf("invalid URL: %v", err)
 	}
 
-	if parsedURL.Scheme != "http" && parsedURL.Scheme != "https" {
-		return "", errors.New("URL must be HTTP or HTTPS")
-	}
-
-	// create a temporary file
+	// Create a temporary file
 	tmpFile, err := os.CreateTemp("/tmp", "downloaded-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %v", err)
 	}
 	defer tmpFile.Close()
 
-	// make HTTP GET request to the URL
+	switch parsedURL.Scheme {
+	case "http", "https":
+		return downloadHTTP(fileURL)
+	case "file":
+		return parsedURL.Path, nil
+	case "s3", "gs", "azblob":
+		return downloadCloudStorage(ctx, fileURL, tmpFile)
+	default:
+		return "", fmt.Errorf("unsupported scheme: %s", parsedURL.Scheme)
+	}
+}
+
+func downloadCloudStorage(ctx context.Context, fileURL string, tmpFile *os.File) (string, error) {
+	// Open a connection to the blob
+	bucket, err := blob.OpenBucket(ctx, fileURL)
+	if err != nil {
+		return "", fmt.Errorf("failed to open bucket: %v", err)
+	}
+	defer bucket.Close()
+
+	// Parse the URL to get the key (path in the bucket)
+	parsedURL, err := url.Parse(fileURL)
+	if err != nil {
+		return "", fmt.Errorf("invalid URL: %v", err)
+	}
+
+	objectKey := parsedURL.Path
+	if len(objectKey) > 0 && objectKey[0] == '/' {
+		objectKey = objectKey[1:] // Remove the leading slash
+	}
+
+	// Get the object
+	reader, err := bucket.NewReader(ctx, objectKey, nil)
+	if err != nil {
+		return "", fmt.Errorf("failed to create reader: %v", err)
+	}
+	defer reader.Close()
+
+	// Copy the content to the temp file
+	if _, err := io.Copy(tmpFile, reader); err != nil {
+		return "", fmt.Errorf("failed to copy content to temp file: %v", err)
+	}
+
+	return tmpFile.Name(), nil
+}
+
+// downloadHTTP downloads file from http/https URL to a temp file
+func downloadHTTP(fileURL string) (string, error) {
+	// Create a temporary file
+	tmpFile, err := os.CreateTemp("/tmp", "downloaded-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp file: %v", err)
+	}
+	defer tmpFile.Close()
+
+	// Make HTTP GET request to the URL
 	resp, err := http.Get(fileURL) //nolint:gosec
 	if err != nil {
 		return "", fmt.Errorf("failed to download file: %v", err)
@@ -190,7 +245,7 @@ func createTmpFile(fileURL string) (string, error) {
 		return "", fmt.Errorf("download failed with status: %v", resp.Status)
 	}
 
-	// copy the response body to the temp file
+	// Copy the response body to the temp file
 	_, err = io.Copy(tmpFile, resp.Body)
 	if err != nil {
 		return "", fmt.Errorf("failed to write to temp file: %v", err)
