@@ -24,41 +24,11 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// SecretSpec defines the desired state of Workspace
+// SecretSpec defines the desired state of StreamNative Cloud Secret
 type SecretSpec struct {
 	// APIServerRef is the reference to the StreamNativeCloudConnection
 	// +required
 	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
-}
-
-// SecretStatus defines the observed state of Workspace
-type SecretStatus struct {
-	// Conditions represent the latest available observations of an object's state
-	// +optional
-	Conditions []metav1.Condition `json:"conditions,omitempty"`
-
-	// ObservedGeneration is the last observed generation.
-	// +optional
-	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
-
-	// WorkspaceID is the ID of the workspace in the API server
-	// +optional
-	WorkspaceID string `json:"workspaceId,omitempty"`
-}
-
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
-//+kubebuilder:resource:scope=Namespaced,categories={streamnative,all}
-//+kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
-//+kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
-
-// Secret is the Schema for the workspaces API
-type Secret struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
-
-	Spec   SecretSpec   `json:"spec,omitempty"`
-	Status SecretStatus `json:"status,omitempty"`
 
 	// InstanceName is the name of the instance this secret is for (e.g. pulsar-instance)
 	// +optional
@@ -69,16 +39,48 @@ type Secret struct {
 	Location string `json:"location"`
 
 	// the value should be base64 encoded
+	// +optional
 	Data map[string]string `json:"data,omitempty"`
 
-	// PoolMemberRef is the pool member to deploy the secret.
-	// admission controller will infer this information automatically
+	// SecretRef is the reference to the kubernetes secret
+	// When SecretRef is set, it will be used to fetch the secret data.
+	// Data will be ignored.
 	// +optional
-	PoolMemberRef *PoolMemberReference `json:"poolMemberRef,omitempty"`
+	SecretRef *KubernetesSecretReference `json:"secretRef,omitempty"`
+
+	// PoolMemberName is the pool member to deploy the secret.
+	// +optional
+	PoolMemberName *string `json:"poolMemberName,omitempty"`
 
 	// +optional
 	// +listType=atomic
 	Tolerations []Toleration `json:"tolerations,omitempty"`
+}
+
+// SecretStatus defines the observed state of StreamNative Cloud Secret
+type SecretStatus struct {
+	// Conditions represent the latest available observations of an object's state
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
+
+	// ObservedGeneration is the last observed generation.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+}
+
+//+kubebuilder:object:root=true
+//+kubebuilder:subresource:status
+//+kubebuilder:resource:scope=Namespaced,categories={streamnative,all}
+//+kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
+//+kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status"
+
+// Secret is the Schema for the StreamNative Cloud Secret API
+type Secret struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   SecretSpec   `json:"spec,omitempty"`
+	Status SecretStatus `json:"status,omitempty"`
 }
 
 // PoolMemberReference is a reference to a pool member with a given name.
@@ -88,6 +90,19 @@ type PoolMemberReference struct {
 }
 
 func (r PoolMemberReference) ToNamespacedName() types.NamespacedName {
+	return types.NamespacedName{
+		Namespace: r.Namespace,
+		Name:      r.Name,
+	}
+}
+
+// KubernetesSecretReference is a reference to a Kubernetes Secret with a given name.
+type KubernetesSecretReference struct {
+	Namespace string `json:"namespace" protobuf:"bytes,1,opt,name=namespace"`
+	Name      string `json:"name" protobuf:"bytes,2,opt,name=name"`
+}
+
+func (r KubernetesSecretReference) ToNamespacedName() types.NamespacedName {
 	return types.NamespacedName{
 		Namespace: r.Namespace,
 		Name:      r.Name,
