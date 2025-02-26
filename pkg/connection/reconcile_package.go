@@ -205,8 +205,13 @@ func downloadCloudStorage(ctx context.Context, fileURL string, tmpFile *os.File)
 		return "", fmt.Errorf("invalid URL: %v", err)
 	}
 
+	objectKey := parsedURL.Path
+	if len(objectKey) > 0 && objectKey[0] == '/' {
+		objectKey = objectKey[1:] // Remove the leading slash
+	}
+
 	// Get the object
-	reader, err := bucket.NewReader(ctx, parsedURL.Path, nil)
+	reader, err := bucket.NewReader(ctx, objectKey, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create reader: %v", err)
 	}
