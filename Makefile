@@ -308,4 +308,7 @@ license-fix: license-eye
 .PHONY: copy-crds
 copy-crds: 
 	cp -r config/crd/bases/* charts/pulsar-resources-operator/crds
+	# Sync rules from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml
+	@echo "Syncing rules section from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml"
+	@./scripts/sync_rules.py config/rbac/role.yaml charts/pulsar-resources-operator/templates/role.yaml
 
