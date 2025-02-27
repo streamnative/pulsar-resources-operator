@@ -83,7 +83,6 @@ linters-settings:
         alias: ctrl
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     require-specific: true
   gosec:
     excludes:
@@ -112,6 +111,10 @@ issues:
   # We are disabling default golangci exclusions because we want to help reviewers to focus on reviewing the most relevant
   # changes in PRs and avoid nitpicking.
   exclude-use-default: false
+  exclude-files:
+  - "zz_generated.*\\.go$"
+  exclude-dirs:
+  - third_party
   exclude-rules:
   - linters:
     - revive
@@ -201,9 +204,5 @@ run:
   build-tags:
   - tools
   - e2e
-  exclude-files:
-  - "zz_generated.*\\.go$"
-  exclude-dirs:
-  - third_party
   allow-parallel-runners: true
   go: "1.22"
