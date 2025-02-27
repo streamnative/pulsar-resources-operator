@@ -22,7 +22,7 @@ linters:
   # - depguard
   - dogsled
   - errcheck
-  - exportloopref
+  - copyloopvar
   # - gci
   - gocritic
 #   - gocyclo
@@ -61,7 +61,8 @@ linters-settings:
     - '^ \+.*'
     - '^ ANCHOR.*'
   gci:
-    local-prefixes: "github.com/streamnative"
+    sections:
+    - prefix(github.com/streamnative)
 
   importas:
     no-unaliased: true
@@ -84,10 +85,6 @@ linters-settings:
     allow-unused: false
     allow-leading-space: false
     require-specific: true
-  staticcheck:
-    go: "1.17"
-  stylecheck:
-    go: "1.17"
   gosec:
     excludes:
     - G307 # Deferring unsafe method "Close" on type "\*os.File"
@@ -204,8 +201,9 @@ run:
   build-tags:
   - tools
   - e2e
-  skip-files:
+  exclude-files:
   - "zz_generated.*\\.go$"
-  skip-dirs:
+  exclude-dirs:
   - third_party
   allow-parallel-runners: true
+  go: "1.22"

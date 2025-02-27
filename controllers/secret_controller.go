@@ -129,7 +129,7 @@ func (r *SecretReconciler) setupWatch(ctx context.Context, secret *resourcev1alp
 // getSecretData obtains the Secret data either from direct Data field or from SecretRef
 func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1alpha1.Secret) (map[string]string, *corev1.SecretType, error) {
 	// If direct data is provided, use it
-	if secret.Spec.Data != nil && len(secret.Spec.Data) > 0 {
+	if len(secret.Spec.Data) > 0 {
 		return secret.Spec.Data, secret.Spec.Type, nil
 	}
 
@@ -259,7 +259,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Update the secret's Data field with the fetched data if SecretRef was used
-	if secret.Spec.SecretRef != nil && (secret.Spec.Data == nil || len(secret.Spec.Data) == 0) {
+	if secret.Spec.SecretRef != nil && len(secret.Spec.Data) == 0 {
 		secret.Spec.Data = secretData
 		if secret.Spec.Type == nil || *secret.Spec.Type == "" {
 			secret.Spec.Type = secretType

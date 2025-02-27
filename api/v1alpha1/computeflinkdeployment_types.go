@@ -444,7 +444,7 @@ type Configuration struct {
 	// +optional
 	Envs []EnvVar `json:"envs,omitempty" protobuf:"bytes,1,opt,name=envs"`
 
-	//Secrets is the list of secrets referenced to deploy with the Flink deployment.
+	// Secrets is the list of secrets referenced to deploy with the Flink deployment.
 	// +optional
 	Secrets []SecretReference `json:"secrets,omitempty" protobuf:"bytes,2,opt,name=secrets"`
 }
