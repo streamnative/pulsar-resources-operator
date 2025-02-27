@@ -102,6 +102,9 @@ func convertToCloudSecret(secret *resourcev1alpha1.Secret) *cloudapi.Secret {
 	if secret.Spec.PoolMemberName != nil && *secret.Spec.PoolMemberName != "" {
 		cloudSecret.PoolMemberRef = &cloudapi.PoolMemberReference{Namespace: secret.Namespace, Name: *secret.Spec.PoolMemberName}
 	}
+	if secret.Spec.Type != nil && *secret.Spec.Type != "" {
+		cloudSecret.Type = secret.Spec.Type
+	}
 
 	// Convert tolerations if they exist
 	if len(secret.Spec.Tolerations) > 0 {

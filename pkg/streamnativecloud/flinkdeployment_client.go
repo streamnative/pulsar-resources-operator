@@ -85,13 +85,14 @@ func (c *FlinkDeploymentClient) CreateFlinkDeployment(ctx context.Context, deplo
 		Spec: computeapi.FlinkDeploymentSpec{
 			WorkspaceName:        deployment.Spec.WorkspaceName,
 			DefaultPulsarCluster: deployment.Spec.DefaultPulsarCluster,
+			Configuration:        convertDeploymentConfiguration(deployment.Spec.Configuration),
 		},
 	}
 
 	if deployment.Spec.Template != nil {
 		cloudDeployment.Spec.Template = &computeapi.VvpDeploymentTemplate{
 			SyncingMode: deployment.Spec.Template.SyncingMode,
-			Deployment:  convertVvpDeploymentTemplateSpec(deployment.Spec.Template.Deployment),
+			Deployment:  convertVvpDeploymentTemplateSpec(deployment, deployment.Spec.Template.Deployment),
 		}
 	}
 
@@ -114,7 +115,7 @@ func (c *FlinkDeploymentClient) UpdateFlinkDeployment(ctx context.Context, deplo
 	if deployment.Spec.Template != nil {
 		existing.Spec.Template = &computeapi.VvpDeploymentTemplate{
 			SyncingMode: deployment.Spec.Template.SyncingMode,
-			Deployment:  convertVvpDeploymentTemplateSpec(deployment.Spec.Template.Deployment),
+			Deployment:  convertVvpDeploymentTemplateSpec(deployment, deployment.Spec.Template.Deployment),
 		}
 	} else {
 		existing.Spec.Template = nil

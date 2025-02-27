@@ -127,10 +127,10 @@ func (r *SecretReconciler) setupWatch(ctx context.Context, secret *resourcev1alp
 }
 
 // getSecretData obtains the Secret data either from direct Data field or from SecretRef
-func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1alpha1.Secret) (map[string]string, error) {
+func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1alpha1.Secret) (map[string]string, *corev1.SecretType, error) {
 	// If direct data is provided, use it
 	if secret.Spec.Data != nil && len(secret.Spec.Data) > 0 {
-		return secret.Spec.Data, nil
+		return secret.Spec.Data, secret.Spec.Type, nil
 	}
 
 	// If SecretRef is provided, fetch from the referenced Kubernetes Secret
@@ -139,7 +139,7 @@ func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1
 		nsName := secret.Spec.SecretRef.ToNamespacedName()
 		k8sSecret := &corev1.Secret{}
 		if err := r.Get(ctx, nsName, k8sSecret); err != nil {
-			return nil, fmt.Errorf("failed to get referenced Secret %s/%s: %w", nsName.Namespace, nsName.Name, err)
+			return nil, nil, fmt.Errorf("failed to get referenced Secret %s/%s: %w", nsName.Namespace, nsName.Name, err)
 		}
 
 		// Convert the binary data to string data
@@ -147,11 +147,11 @@ func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1
 		for k, v := range k8sSecret.Data {
 			stringData[k] = string(v)
 		}
-		return stringData, nil
+		return stringData, &k8sSecret.Type, nil
 	}
 
 	// Neither Data nor SecretRef is provided
-	return nil, fmt.Errorf("neither Data nor SecretRef is specified in the Secret spec")
+	return nil, nil, fmt.Errorf("neither Data nor SecretRef is specified in the Secret spec")
 }
 
 // Reconcile handles the reconciliation of Secret objects
@@ -251,7 +251,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	// Get secret data (either from direct Data field or from SecretRef)
-	secretData, err := r.getSecretData(ctx, secret)
+	secretData, secretType, err := r.getSecretData(ctx, secret)
 	if err != nil {
 		r.updateSecretStatus(ctx, secret, err, "GetSecretDataFailed",
 			fmt.Sprintf("Failed to get secret data: %v", err))
@@ -261,6 +261,9 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Update the secret's Data field with the fetched data if SecretRef was used
 	if secret.Spec.SecretRef != nil && (secret.Spec.Data == nil || len(secret.Spec.Data) == 0) {
 		secret.Spec.Data = secretData
+		if secret.Spec.Type == nil || *secret.Spec.Type == "" {
+			secret.Spec.Type = secretType
+		}
 		if err := r.Update(ctx, secret); err != nil {
 			r.updateSecretStatus(ctx, secret, err, "UpdateSecretFailed",
 				fmt.Sprintf("Failed to update secret with data from referenced Secret: %v", err))

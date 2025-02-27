@@ -56,6 +56,10 @@ type SecretSpec struct {
 	// +optional
 	// +listType=atomic
 	Tolerations []Toleration `json:"tolerations,omitempty"`
+
+	// Type Used to facilitate programmatic handling of secret data.
+	// +optional
+	Type *corev1.SecretType `json:"type,omitempty"`
 }
 
 // SecretStatus defines the observed state of StreamNative Cloud Secret
