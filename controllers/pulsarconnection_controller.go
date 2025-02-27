@@ -20,6 +20,10 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
+	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/connection"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,11 +38,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
-
-	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
-	"github.com/streamnative/pulsar-resources-operator/pkg/connection"
-	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
@@ -257,7 +256,7 @@ func (r *PulsarConnectionReconciler) SetupWithManager(mgr ctrl.Manager, options 
 		Watches(&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(r.findSecretsForConnection),
 			builder.WithPredicates(secretPredicate())).
-		WatchesRawSource(&source.Channel{Source: r.Retryer.Source()}, &handler.EnqueueRequestForObject{}).
+		WatchesRawSource(source.Channel(r.Retryer.Source(), &handler.EnqueueRequestForObject{})).
 		WithOptions(options).
 		Complete(r)
 

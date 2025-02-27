@@ -24,7 +24,10 @@ import (
 const (
 	// Finalizers for resources
 	FlinkDeploymentFinalizer = "resource.streamnative.io/flinkdeployment-finalizer"
-	WorkspaceFinalizer       = "resource.streamnative.io/workspace-finalizer"
+	// WorkspaceFinalizer is the finalizer added to Workspace resources
+	WorkspaceFinalizer = "resource.streamnative.io/workspace-finalizer"
+	// SecretFinalizer is the finalizer added to Secret resources
+	SecretFinalizer = "resource.streamnative.io/secret-finalizer"
 )
 
 // StatusHasChanged compares two slices of conditions to determine if there's a meaningful change

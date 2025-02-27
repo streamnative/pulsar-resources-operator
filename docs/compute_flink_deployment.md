@@ -15,6 +15,8 @@ The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative
 | `template`           | VVP deployment template configuration                                                       | No*      |
 | `communityTemplate`  | Community deployment template configuration                                                 | No*      |
 | `defaultPulsarCluster`| Default Pulsar cluster to use for the deployment                                          | No       |
+| `configuration`      | Additional configuration for the Flink deployment, including environment variables and secrets | No       |
+| `imagePullSecrets`   | List of image pull secrets to use for the deployment                                       | No       |
 
 *Note: Either `template` or `communityTemplate` must be specified, but not both.
 
@@ -30,6 +32,27 @@ This inheritance mechanism allows you to:
 - Reduce configuration duplication
 - Centralize API server configuration at the workspace level
 - Easily change API server configuration for multiple deployments by updating the workspace
+
+### Configuration Structure
+
+| Field     | Description                                                                                | Required |
+|-----------|--------------------------------------------------------------------------------------------|----------|
+| `envs`    | List of environment variables to set in the Flink deployment                               | No       |
+| `secrets` | List of secrets referenced to deploy with the Flink deployment                             | No       |
+
+#### EnvVar Structure
+
+| Field   | Description                                                                                | Required |
+|---------|--------------------------------------------------------------------------------------------|----------|
+| `name`  | Name of the environment variable                                                           | Yes      |
+| `value` | Value of the environment variable                                                          | Yes      |
+
+#### SecretReference Structure
+
+| Field       | Description                                                                                | Required |
+|-------------|--------------------------------------------------------------------------------------------|----------|
+| `name`      | Name of the ENV variable                                                                   | Yes      |
+| `valueFrom` | References a secret in the same namespace                                                  | Yes      |
 
 ### VVP Deployment Template
 
@@ -169,13 +192,84 @@ spec:
                 com.company: DEBUG
 ```
 
-2. Apply the YAML file:
+2. Create a ComputeFlinkDeployment with configuration and imagePullSecrets:
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: ComputeFlinkDeployment
+metadata:
+  name: resource-operator-v4
+  namespace: default
+spec:
+  apiServerRef:
+    name: test-connection
+  workspaceName: o-nn5f0-vvp
+  configuration:
+    envs:
+    - name: ENV_TEST
+      value: "test"
+    secrets:
+    - name: SECRET_PASSWORD
+      valueFrom:
+        name: my-secret
+        key: password
+  imagePullSecrets:
+  - name: resource-operator-secret-docker-hub
+  template:
+    syncingMode: PATCH
+    deployment:
+      userMetadata:
+        name: resource-operator-v4
+        namespace: default
+        displayName: resource-operator-v4
+      spec:
+        state: RUNNING
+        deploymentTargetName: o-nn5f0
+        maxJobCreationAttempts: 99
+        template:
+          metadata:
+            annotations:
+              flink.queryable-state.enabled: 'false'
+              flink.security.ssl.enabled: 'false'
+          spec:
+            artifact:
+              mainArgs: --runner=FlinkRunner --pulsarCluster=wstest --attachedMode=false
+              entryClass: com.example.DataTransformer
+              kind: JAR
+              flinkVersion: "1.18.1"
+              flinkImageTag: "1.18.1-stream3-scala_2.12-java17"
+              artifactImage: example/private:latest
+            flinkConfiguration:
+              classloader.resolve-order: parent-first
+              execution.checkpointing.externalized-checkpoint-retention: RETAIN_ON_CANCELLATION
+              execution.checkpointing.interval: 1min
+              execution.checkpointing.timeout: 10min
+              high-availability.type: kubernetes
+              state.backend: filesystem
+              taskmanager.memory.managed.fraction: '0.2'
+            parallelism: 1
+            numberOfTaskManagers: 1
+            resources:
+              jobmanager:
+                cpu: "1"
+                memory: 2G
+              taskmanager:
+                cpu: "1"
+                memory: 2G
+            logging:
+              loggingProfile: default
+              log4jLoggers:
+                "": DEBUG
+                com.company: DEBUG
+```
+
+3. Apply the YAML file:
 
 ```shell
 kubectl apply -f deployment.yaml
 ```
 
-3. Check the deployment status:
+4. Check the deployment status:
 
 ```shell
 kubectl get computeflinkdeployment operator-test-v1
@@ -188,7 +282,7 @@ NAME             READY   AGE
 operator-test-v1 True    1m
 ```
 
-2. Create a ComputeFlinkDeployment using Workspace's APIServerRef:
+5. Create a ComputeFlinkDeployment using Workspace's APIServerRef:
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -253,6 +347,8 @@ You can update the deployment by modifying the YAML file and reapplying it. Most
 - Parallelism
 - Logging settings
 - Artifact configuration
+- Environment variables and secrets
+- Image pull secrets
 
 After applying changes, verify the status to ensure the deployment is updated properly.
 
