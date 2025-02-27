@@ -145,6 +145,10 @@ jobs:
           node_image: kindest/node:v1.26.6
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
       - name: Run chart-testing (install)
         run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
@@ -218,6 +222,10 @@ jobs:
         uses: helm/kind-action@v1.8.0
         with:
           node_image: kindest/node:v1.27.13
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Run chart-testing (install)
@@ -295,6 +303,10 @@ jobs:
           node_image: kindest/node:v1.28.9
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
       - name: Run chart-testing (install)
         run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
@@ -368,6 +380,10 @@ jobs:
         uses: helm/kind-action@v1.8.0
         with:
           node_image: kindest/node:v1.29.4
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Run chart-testing (install)
