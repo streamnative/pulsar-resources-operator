@@ -20,10 +20,10 @@ import (
 )
 
 // convertVvpDeploymentTemplateSpec converts VvpDeploymentTemplateSpec
-func convertVvpDeploymentTemplateSpec(spec resourcev1alpha1.VvpDeploymentTemplateSpec) computeapi.VvpDeploymentTemplateSpec {
+func convertVvpDeploymentTemplateSpec(deployment *resourcev1alpha1.ComputeFlinkDeployment, spec resourcev1alpha1.VvpDeploymentTemplateSpec) computeapi.VvpDeploymentTemplateSpec {
 	return computeapi.VvpDeploymentTemplateSpec{
 		UserMetadata: convertUserMetadata(spec.UserMetadata),
-		Spec:         convertVvpDeploymentDetails(spec.Spec),
+		Spec:         convertVvpDeploymentDetails(deployment, spec.Spec),
 	}
 }
 
@@ -39,7 +39,7 @@ func convertUserMetadata(metadata resourcev1alpha1.UserMetadata) *computeapi.Use
 }
 
 // convertVvpDeploymentDetails converts VvpDeploymentDetails
-func convertVvpDeploymentDetails(details resourcev1alpha1.VvpDeploymentDetails) computeapi.VvpDeploymentDetails {
+func convertVvpDeploymentDetails(deployment *resourcev1alpha1.ComputeFlinkDeployment, details resourcev1alpha1.VvpDeploymentDetails) computeapi.VvpDeploymentDetails {
 	return computeapi.VvpDeploymentDetails{
 		DeploymentTargetName:         details.DeploymentTargetName,
 		JobFailureExpirationTime:     details.JobFailureExpirationTime,
@@ -48,7 +48,7 @@ func convertVvpDeploymentDetails(details resourcev1alpha1.VvpDeploymentDetails) 
 		RestoreStrategy:              convertRestoreStrategy(details.RestoreStrategy),
 		SessionClusterName:           details.SessionClusterName,
 		State:                        details.State,
-		Template:                     convertVvpDeploymentDetailsTemplate(details.Template),
+		Template:                     convertVvpDeploymentDetailsTemplate(deployment, details.Template),
 	}
 }
 
@@ -64,10 +64,10 @@ func convertRestoreStrategy(strategy *resourcev1alpha1.VvpRestoreStrategy) *comp
 }
 
 // convertVvpDeploymentDetailsTemplate converts VvpDeploymentDetailsTemplate
-func convertVvpDeploymentDetailsTemplate(template resourcev1alpha1.VvpDeploymentDetailsTemplate) computeapi.VvpDeploymentDetailsTemplate {
+func convertVvpDeploymentDetailsTemplate(deployment *resourcev1alpha1.ComputeFlinkDeployment, template resourcev1alpha1.VvpDeploymentDetailsTemplate) computeapi.VvpDeploymentDetailsTemplate {
 	return computeapi.VvpDeploymentDetailsTemplate{
 		Metadata: convertVvpDeploymentDetailsTemplateMetadata(template.Metadata),
-		Spec:     convertVvpDeploymentDetailsTemplateSpec(template.Spec),
+		Spec:     convertVvpDeploymentDetailsTemplateSpec(deployment, template.Spec),
 	}
 }
 
@@ -79,11 +79,11 @@ func convertVvpDeploymentDetailsTemplateMetadata(metadata resourcev1alpha1.VvpDe
 }
 
 // convertVvpDeploymentDetailsTemplateSpec converts VvpDeploymentDetailsTemplateSpec
-func convertVvpDeploymentDetailsTemplateSpec(spec resourcev1alpha1.VvpDeploymentDetailsTemplateSpec) computeapi.VvpDeploymentDetailsTemplateSpec {
+func convertVvpDeploymentDetailsTemplateSpec(deployment *resourcev1alpha1.ComputeFlinkDeployment, spec resourcev1alpha1.VvpDeploymentDetailsTemplateSpec) computeapi.VvpDeploymentDetailsTemplateSpec {
 	return computeapi.VvpDeploymentDetailsTemplateSpec{
 		Artifact:                      convertArtifact(spec.Artifact),
 		FlinkConfiguration:            spec.FlinkConfiguration,
-		Kubernetes:                    convertKubernetes(spec.Kubernetes),
+		Kubernetes:                    convertKubernetes(deployment, spec.Kubernetes),
 		LatestCheckpointFetchInterval: spec.LatestCheckpointFetchInterval,
 		Logging:                       convertLogging(spec.Logging),
 		NumberOfTaskManagers:          spec.NumberOfTaskManagers,
@@ -93,13 +93,27 @@ func convertVvpDeploymentDetailsTemplateSpec(spec resourcev1alpha1.VvpDeployment
 }
 
 // convertKubernetes converts VvpDeploymentDetailsTemplateSpecKubernetesSpec
-func convertKubernetes(k *resourcev1alpha1.VvpDeploymentDetailsTemplateSpecKubernetesSpec) *computeapi.VvpDeploymentDetailsTemplateSpecKubernetesSpec {
-	if k == nil {
+func convertKubernetes(deployment *resourcev1alpha1.ComputeFlinkDeployment, k *resourcev1alpha1.VvpDeploymentDetailsTemplateSpecKubernetesSpec) *computeapi.VvpDeploymentDetailsTemplateSpecKubernetesSpec {
+	if k == nil && len(deployment.Spec.ImagePullSecrets) == 0 {
 		return nil
 	}
-	return &computeapi.VvpDeploymentDetailsTemplateSpecKubernetesSpec{
-		Labels: k.Labels,
+	kubernetesSpec := computeapi.VvpDeploymentDetailsTemplateSpecKubernetesSpec{}
+	if len(deployment.Spec.ImagePullSecrets) > 0 {
+		kubernetesSpec.JobManagerPodTemplate = &computeapi.PodTemplate{
+			Spec: computeapi.PodTemplateSpec{
+				ImagePullSecrets: deployment.Spec.ImagePullSecrets,
+			},
+		}
+		kubernetesSpec.TaskManagerPodTemplate = &computeapi.PodTemplate{
+			Spec: computeapi.PodTemplateSpec{
+				ImagePullSecrets: deployment.Spec.ImagePullSecrets,
+			},
+		}
 	}
+	if k != nil {
+		kubernetesSpec.Labels = k.Labels
+	}
+	return &kubernetesSpec
 }
 
 // convertLogging converts Logging
@@ -154,5 +168,32 @@ func convertArtifact(artifact *resourcev1alpha1.Artifact) *computeapi.Artifact {
 		FlinkImageRepository:   artifact.FlinkImageRepository,
 		FlinkImageTag:          artifact.FlinkImageTag,
 		Uri:                    artifact.URI,
+		ArtifactImage:          artifact.ArtifactImage,
+	}
+}
+
+// convertDeploymentConfiguration converts DeploymentConfiguration
+func convertDeploymentConfiguration(config *resourcev1alpha1.Configuration) *computeapi.Configuration {
+	if config == nil || (len(config.Envs) == 0 && len(config.Secrets) == 0) {
+		return nil
+	}
+
+	envs := make([]computeapi.EnvVar, 0)
+	secrets := make([]computeapi.SecretReference, 0)
+	for _, env := range config.Envs {
+		envs = append(envs, computeapi.EnvVar{
+			Name:  env.Name,
+			Value: env.Value,
+		})
+	}
+	for _, secret := range config.Secrets {
+		secrets = append(secrets, computeapi.SecretReference{
+			Name:      secret.Name,
+			ValueFrom: secret.ValueFrom,
+		})
+	}
+	return &computeapi.Configuration{
+		Envs:    envs,
+		Secrets: secrets,
 	}
 }

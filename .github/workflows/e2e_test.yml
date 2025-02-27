@@ -29,7 +29,7 @@ jobs:
     strategy:
       matrix:
         alwaysUpdatePulsar: [ "true", "false" ]
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
       GOPRIVATE: github.com/streamnative
@@ -37,19 +37,28 @@ jobs:
       IMAGE: streamnative/sn-platform:2.10.4.3
       WATCH_CERT_MANAGER_CRDS: "false"
     steps:
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
+      - name: Free Disk Space (Ubuntu)
+        uses: jlumbroso/free-disk-space@v1.3.0
+        with:
+          # this might remove tools that are actually needed,
+          # if set to "true" but frees about 6 GB
+          tool-cache: false
+          # all of these default to true, but feel free to set to
+          # "false" if necessary for your workflow
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
 
-      - name: Set up Go 1.22.7
+      - name: Cleanup disk
+        run: sudo rm -rf /usr/local/.ghcup
+
+      - name: Set up Go 1.22.11
         uses: actions/setup-go@v3
         with:
-          go-version: '1.22.7'
+          go-version: '1.22.11'
         id: go
 
       - name: Set up Git token

@@ -21,4 +21,12 @@ resources:
 - resource_v1alpha1_pulsarpermission.yaml
 - resource_v1alpha1_pulsargeoreplication.yaml
 - resource_v1alpha1_pulsarpackage.yaml
+- resource_v1alpha1_pulsarfunction.yaml
+- resource_v1alpha1_pulsarsink.yaml
+- resource_v1alpha1_pulsarsource.yaml
+- resource_v1alpha1_pulsarnsisolationpolicy.yaml
+- resource_v1alpha1_streamnativecloudconnection.yaml
+- resource_v1alpha1_computeworkspace.yaml
+- resource_v1alpha1_computeflinkdeployment.yaml
+- resource_v1alpha1_secret.yaml
 #+kubebuilder:scaffold:manifestskustomizesamples

@@ -54,6 +54,14 @@ type ComputeFlinkDeploymentSpec struct {
 	// DefaultPulsarCluster is the default pulsar cluster to use
 	// +optional
 	DefaultPulsarCluster *string `json:"defaultPulsarCluster,omitempty"`
+
+	// Configuration is the list of configurations to deploy with the Flink deployment.
+	// +optional
+	Configuration *Configuration `json:"configuration,omitempty"`
+
+	// ImagePullSecrets is the list of image pull secrets to use for the deployment.
+	// +optional
+	ImagePullSecrets []corev1.LocalObjectReference `json:"imagePullSecrets,omitempty"`
 }
 
 // ComputeFlinkDeploymentStatus defines the observed state of ComputeFlinkDeployment
@@ -267,6 +275,9 @@ type Artifact struct {
 
 	// +optional
 	URI string `json:"uri,omitempty"`
+
+	// +optional
+	ArtifactImage string `json:"artifactImage,omitempty"`
 }
 
 // VvpDeploymentStatus defines the deployment status
@@ -407,6 +418,35 @@ type ResourceSpec struct {
 type VvpDeploymentDetailsTemplateSpecKubernetesSpec struct {
 	// +optional
 	Labels map[string]string `json:"labels,omitempty"`
+}
+
+// SecretReference references a StreamNative Cloud secret.
+type SecretReference struct {
+	// Name of the ENV variable.
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// ValueFrom references a secret in the same namespace.
+	ValueFrom *corev1.SecretKeySelector `json:"valueFrom,omitempty" protobuf:"bytes,2,opt,name=valueFrom"`
+}
+
+// EnvVar defines an environment variable.
+type EnvVar struct {
+	// Name of the environment variable.
+	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
+
+	// Value of the environment variable.
+	Value string `json:"value" protobuf:"bytes,2,opt,name=value"`
+}
+
+// Configuration defines the additional configuration for the Flink deployment
+type Configuration struct {
+	// Envs is the list of environment variables to set in the Flink deployment.
+	// +optional
+	Envs []EnvVar `json:"envs,omitempty" protobuf:"bytes,1,opt,name=envs"`
+
+	// Secrets is the list of secrets referenced to deploy with the Flink deployment.
+	// +optional
+	Secrets []SecretReference `json:"secrets,omitempty" protobuf:"bytes,2,opt,name=secrets"`
 }
 
 func init() {
