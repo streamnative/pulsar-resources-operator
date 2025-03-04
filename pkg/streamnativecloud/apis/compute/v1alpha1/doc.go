@@ -12,10 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
- * Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
- */
-
 // Api versions allow the api contract for a resource to be changed while keeping
 // backward compatibility by support multiple concurrent versions
 // of the same resource
@@ -30,4 +26,6 @@
 // +k8s:defaulter-gen=TypeMeta
 // +k8s:protobuf-gen=package
 // +groupName=compute.streamnative.io
+//
+//nolint:stylecheck
 package v1alpha1 // import "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/compute/v1alpha1"

@@ -1,5 +1,3 @@
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
-
 // Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");

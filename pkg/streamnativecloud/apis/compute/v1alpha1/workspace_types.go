@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
-
 package v1alpha1
 
 import (
@@ -24,7 +22,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Workspace
+// Workspace is the Schema for the workspaces API
 // +k8s:openapi-gen=true
 // +resource:path=workspaces,strategy=WorkspaceStrategy
 // +kubebuilder:categories=all,compute
@@ -63,7 +61,7 @@ type WorkspaceSpec struct {
 
 	// FlinkBlobStorageCredentials is the credentials for the Flink blob storage.
 	// +optional
-	//FlinkBlobStorageCredentials *FlinkBlobStorageCredentials `json:"flinkBlobStorageCredentials,omitempty" protobuf:"bytes,5,opt,name=flinkBlobStorageCredentials"`
+	// FlinkBlobStorageCredentials *FlinkBlobStorageCredentials `json:"flinkBlobStorageCredentials,omitempty" protobuf:"bytes,5,opt,name=flinkBlobStorageCredentials"`
 }
 
 // FlinkBlobStorage defines the configuration for the Flink blob storage.
@@ -77,11 +75,11 @@ type FlinkBlobStorage struct {
 
 	// S3 is the configuration for the S3 blob storage.
 	// +optional
-	//S3 *FlinkBlobStorageS3Config `json:"s3" protobuf:"bytes,3,opt,name=s3"`
+	// S3 *FlinkBlobStorageS3Config `json:"s3" protobuf:"bytes,3,opt,name=s3"`
 
 	// OSS is the configuration for the OSS blob storage.
 	// +optional
-	//OSS *FlinkBlobStorageOSSConfig `json:"oss" protobuf:"bytes,4,opt,name=oss"`
+	// OSS *FlinkBlobStorageOSSConfig `json:"oss" protobuf:"bytes,4,opt,name=oss"`
 }
 
 // FlinkBlobStorageS3Config defines the configuration for the S3 blob storage.

@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
-
 package v1alpha1
 
 import (
@@ -24,7 +22,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// FlinkDeployment
+// FlinkDeployment is the Schema for the flinkdeployments API
 // +k8s:openapi-gen=true
 // +resource:path=flinkdeployments,strategy=FlinkDeploymentStrategy
 // +kubebuilder:categories=all,compute
@@ -114,7 +112,7 @@ type CommunityDeploymentTemplate struct {
 	// TODO: dummy
 }
 
-// VvpDeploymentDetails
+// VvpDeploymentDetails defines the desired state of VvpDeploymentDetails
 type VvpDeploymentDetails struct {
 	DeploymentTargetName     *string `json:"deploymentTargetName,omitempty" protobuf:"bytes,1,opt,name=deploymentTargetName"`
 	JobFailureExpirationTime *string `json:"jobFailureExpirationTime,omitempty" protobuf:"bytes,2,opt,name=jobFailureExpirationTime"`
@@ -150,7 +148,7 @@ type VvpDeploymentDetailsTemplate struct {
 	Spec VvpDeploymentDetailsTemplateSpec `json:"spec" protobuf:"bytes,2,req,name=spec"`
 }
 
-// VvpDeploymentDetailsTemplate defines the desired state of VvpDeploymentDetails
+// VvpDeploymentDetailsTemplateMetadata defines the desired state of VvpDeploymentDetailsTemplateMetadata
 type VvpDeploymentDetailsTemplateMetadata struct {
 	Annotations map[string]string `json:"annotations,omitempty" protobuf:"bytes,1,rep,name=annotations"`
 }
@@ -215,6 +213,7 @@ type UserMetadata struct {
 // Artifact is the artifact configs to deploy.
 type Artifact struct {
 	// +optional
+	//nolint:stylecheck
 	JarUri string `json:"jarUri,omitempty" protobuf:"bytes,1,opt,name=jarUri"`
 
 	// +kubebuilder:validation:Enum=JAR;PYTHON;sqlscript
@@ -222,9 +221,11 @@ type Artifact struct {
 	Kind string `json:"kind,omitempty" protobuf:"bytes,2,req,name=kind"`
 
 	// +optional
+	//nolint:stylecheck
 	PythonArtifactUri string `json:"pythonArtifactUri,omitempty" protobuf:"bytes,3,opt,name=pythonArtifactUri"`
 
 	// +optional
+	//nolint:stylecheck
 	SqlScript string `json:"sqlScript,omitempty" protobuf:"bytes,4,opt,name=sqlScript"`
 
 	// +optional
@@ -262,6 +263,7 @@ type Artifact struct {
 	MainArgs string `json:"mainArgs,omitempty" protobuf:"bytes,15,opt,name=mainArgs"`
 
 	// +optional
+	//nolint:stylecheck
 	Uri string `json:"uri,omitempty" protobuf:"bytes,16,opt,name=uri"`
 
 	// +optional
@@ -293,6 +295,7 @@ type VvpDeploymentKubernetesResources struct {
 type ResourceSpec struct {
 	// CPU represents the minimum amount of CPU required.
 	// +kubebuilder:validation:Required
+	//nolint:stylecheck
 	Cpu string `json:"cpu" protobuf:"bytes,1,req,name=cpu"`
 
 	// Memory represents the minimum amount of memory required.
@@ -341,8 +344,9 @@ type VvpDeploymentStatus struct {
 type VvpCustomResourceStatus struct {
 	// +kubebuilder:validation:Enum=SYNCING;IDLING;DELETING;REF_ENTITY_MANAGED_BY_ANOTHER_CR;SYNCING_MODE_INCONSISTENT;REF_NAMESPACE_UNAVAILABLE;CONCURRENT_RECONCILIATION;ERROR
 	CustomResourceState VvpDeploymentCustomResourceState `json:"customResourceState,omitempty" protobuf:"bytes,1,opt,name=customResourceState"`
-	DeploymentId        string                           `json:"deploymentId,omitempty" protobuf:"bytes,2,opt,name=deploymentId"`
-	ObservedSpecState   string                           `json:"observedSpecState,omitempty" protobuf:"bytes,3,opt,name=observedSpecState"`
+	//nolint:stylecheck
+	DeploymentId      string `json:"deploymentId,omitempty" protobuf:"bytes,2,opt,name=deploymentId"`
+	ObservedSpecState string `json:"observedSpecState,omitempty" protobuf:"bytes,3,opt,name=observedSpecState"`
 	// +kubebuilder:validation:Enum=RUNNING;SUSPENDED;CANCELLED;TRANSITIONING;FAILED;FINISHED
 	StatusState         VvpDeploymentStatusState `json:"statusState,omitempty" protobuf:"bytes,4,opt,name=statusState"`
 	DeploymentNamespace string                   `json:"deploymentNamespace,omitempty" protobuf:"bytes,5,opt,name=deploymentNamespace"`
@@ -379,6 +383,7 @@ type VvpDeploymentStatusDeploymentStatus struct {
 
 // VvpDeploymentRunningStatus defines the observed state of VvpDeployment
 type VvpDeploymentRunningStatus struct {
+	//nolint:stylecheck
 	JobId          string      `json:"jobId,omitempty" protobuf:"bytes,1,opt,name=jobId"`
 	TransitionTime metav1.Time `json:"transitionTime,omitempty" protobuf:"bytes,2,opt,name=transitionTime"`
 	// Conditions is an array of current observed conditions.
@@ -413,6 +418,7 @@ type VvpDeploymentSystemMetadata struct {
 	Labels map[string]string `json:"labels,omitempty" protobuf:"bytes,2,opt,name=labels"`
 
 	// +optional
+	//nolint:stylecheck
 	Id string `json:"name,omitempty" protobuf:"bytes,3,opt,name=name"`
 
 	// +optional
@@ -455,7 +461,7 @@ type Configuration struct {
 	// +optional
 	Envs []EnvVar `json:"envs,omitempty" protobuf:"bytes,1,opt,name=envs"`
 
-	//Secrets is the list of secrets referenced to deploy with the Flink deployment.
+	// Secrets is the list of secrets referenced to deploy with the Flink deployment.
 	// +optional
 	Secrets []SecretReference `json:"secrets,omitempty" protobuf:"bytes,2,opt,name=secrets"`
 }

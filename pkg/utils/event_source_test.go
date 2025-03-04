@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
-
 package utils
 
 import (

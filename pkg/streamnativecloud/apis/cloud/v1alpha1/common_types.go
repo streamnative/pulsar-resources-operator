@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
 package v1alpha1
 
 import "k8s.io/apimachinery/pkg/types"
@@ -170,6 +169,7 @@ type ProtocolsConfig struct {
 
 	// Amqp controls whether to enable Amqp protocol in brokers
 	// +optional
+	//nolint:stylecheck
 	Amqp *AmqpConfig `json:"amqp,omitempty" protobuf:"bytes,2,opt,name=amqp"`
 
 	// Mqtt controls whether to enable mqtt protocol in brokers
@@ -180,6 +180,7 @@ type ProtocolsConfig struct {
 type KafkaConfig struct {
 }
 
+//nolint:stylecheck
 type AmqpConfig struct {
 }
 
@@ -228,6 +229,7 @@ type LakehouseStorageConfig struct {
 	CatalogCredentials string `json:"catalogCredentials" protobuf:"bytes,3,opt,name=catalogCredentials"`
 
 	// +kubebuilder:validation:Required
+	//nolint:stylecheck
 	CatalogConnectionUrl string `json:"catalogConnectionUrl" protobuf:"bytes,4,opt,name=catalogConnectionUrl"`
 
 	// +kubebuilder:validation:Required
@@ -235,16 +237,22 @@ type LakehouseStorageConfig struct {
 }
 
 type AWSCloudConnection struct {
+	//nolint:stylecheck
 	AccountId string `json:"accountId" protobuf:"bytes,1,name=accountId"`
 }
 
 type GCPCloudConnection struct {
+	//nolint:stylecheck
 	ProjectId string `json:"projectId" protobuf:"bytes,1,name=projectId"`
 }
 
 type AzureConnection struct {
-	SubscriptionId  string `json:"subscriptionId" protobuf:"bytes,1,name=subscriptionId"`
-	TenantId        string `json:"tenantId" protobuf:"bytes,2,name=tenantId"`
-	ClientId        string `json:"clientId" protobuf:"bytes,3,name=clientId"`
+	//nolint:stylecheck
+	SubscriptionId string `json:"subscriptionId" protobuf:"bytes,1,name=subscriptionId"`
+	//nolint:stylecheck
+	TenantId string `json:"tenantId" protobuf:"bytes,2,name=tenantId"`
+	//nolint:stylecheck
+	ClientId string `json:"clientId" protobuf:"bytes,3,name=clientId"`
+	//nolint:stylecheck
 	SupportClientId string `json:"supportClientId" protobuf:"bytes,4,name=supportClientId"`
 }

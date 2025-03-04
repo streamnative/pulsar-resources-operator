@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
-
 package v1alpha1
 
 import (
@@ -24,7 +22,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// Secret
+// Secret is the Schema for the secrets API
 // +k8s:openapi-gen=true
 // +resource:path=secrets,strategy=SecretStrategy
 // +kubebuilder:categories=all

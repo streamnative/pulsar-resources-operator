@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Copyright (c) 2020 StreamNative, Inc.. All Rights Reserved.
-
 package v1alpha1
 
 import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,7 +55,7 @@ const (
 	TaintEffectNoConnect TaintEffect = "NoConnect"
 )
 
-// The workload this Toleration is attached to tolerates any taint that matches
+// Toleration The workload this Toleration is attached to tolerates any taint that matches
 // the triple <key,value,effect> using the matching operator <operator>.
 type Toleration struct {
 	// Key is the taint key that the toleration applies to. Empty means match all taint keys.
@@ -80,7 +78,7 @@ type Toleration struct {
 	Effect TaintEffect `json:"effect,omitempty" protobuf:"bytes,4,opt,name=effect,casttype=TaintEffect"`
 }
 
-// A toleration operator is the set of operators that can be used in a toleration.
+// TolerationOperator A toleration operator is the set of operators that can be used in a toleration.
 type TolerationOperator string
 
 const (

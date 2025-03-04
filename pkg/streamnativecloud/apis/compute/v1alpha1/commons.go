@@ -33,7 +33,7 @@ type Volume struct {
 	VolumeSource `json:",inline" protobuf:"bytes,2,opt,name=volumeSource"`
 }
 
-// Represents the source of a volume to mount.
+// VolumeSource Represents the source of a volume to mount.
 // Only one of its members may be specified.
 type VolumeSource struct {
 	// ConfigMap represents a configMap that should populate this volume
@@ -45,7 +45,7 @@ type VolumeSource struct {
 	Secret *corev1.SecretVolumeSource `json:"secret,omitempty" protobuf:"bytes,2,opt,name=secret"`
 }
 
-// A single application container that you want to run within a pod.
+// Container A single application container that you want to run within a pod.
 // The Container API from the core group is not used directly to avoid unneeded fields
 // and reduce the size of the CRD. New fields could be added as needed.
 type Container struct {
