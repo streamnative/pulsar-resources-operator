@@ -6,9 +6,3 @@ use (
 	.
 	tests
 )
-
-replace github.com/streamnative/sn-operator/api => github.com/streamnative/sn-operator/api v0.9.0-rc.14
-
-replace github.com/streamnative/sn-operator/api/commons => github.com/streamnative/sn-operator/api/commons v0.9.0-rc.14
-
-replace github.com/streamnative/sn-operator/pkg/commons => github.com/streamnative/sn-operator/pkg/commons v0.9.0-rc.14

@@ -15,8 +15,8 @@
 package streamnativecloud
 
 import (
-	computeapi "github.com/streamnative/cloud-api-server/pkg/apis/compute/v1alpha1"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	computeapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/compute/v1alpha1"
 )
 
 // convertVvpDeploymentTemplateSpec converts VvpDeploymentTemplateSpec

@@ -33,7 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	computeapi "github.com/streamnative/cloud-api-server/pkg/apis/compute/v1alpha1"
+	computeapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/compute/v1alpha1"
 )
 
 // WorkspaceReconciler reconciles a Workspace object
