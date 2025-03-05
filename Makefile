@@ -75,6 +75,8 @@ endif
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
 
+CODE_GENERATOR_VERSION = v0.30.9
+
 .PHONY: all
 all: build
 
@@ -105,6 +107,11 @@ manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and Cust
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
+.PHONY: generate-internal
+generate-internal: code-generator
+	$(CONTROLLER_GEN)  object:headerFile="hack/boilerplate.go.txt" paths="./pkg/streamnativecloud/apis/..."
+	./hack/update-codegen.sh
+
 .PHONY: fmt
 fmt: ## Run go fmt against code.
 	go fmt ./...
@@ -114,17 +121,17 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
+test: manifests generate generate-internal fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --arch=${ENVTEST_ARCH} -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet license-fix ## Build manager binary.
+build: generate generate-internal fmt vet license-fix ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate generate-internal fmt vet ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
@@ -195,6 +202,10 @@ ENVTEST = $(shell pwd)/bin/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
 	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc7486e6)
+
+CLIENT_GEN = $(shell pwd)/bin/client-gen
+client-gen:
+	$(call go-get-tool,$(CLIENT_GEN),k8s.io/code-generator/cmd/client-gen@$(CODE_GENERATOR_VERSION))
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -312,3 +323,6 @@ copy-crds:
 	@echo "Syncing rules section from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml"
 	@./scripts/sync_rules.py config/rbac/role.yaml charts/pulsar-resources-operator/templates/role.yaml
 
+.PHONY: code-generator
+code-generator:
+	git submodule update --init

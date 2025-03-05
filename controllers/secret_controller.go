@@ -34,7 +34,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
-	cloudapi "github.com/streamnative/cloud-api-server/pkg/apis/cloud/v1alpha1"
+	cloudapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/cloud/v1alpha1"
 )
 
 // SecretReconciler reconciles a StreamNative Cloud Secret object
