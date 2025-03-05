@@ -50,3 +50,4 @@ node_modules/
 .chart-index/
 .chart-packages/
 
+.cursor

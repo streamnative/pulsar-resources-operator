@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	"github.com/streamnative/cloud-api-server/pkg/apis/cloud/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -126,7 +125,7 @@ type Toleration struct {
 	// Exists is equivalent to wildcard for value, so that a workload can
 	// tolerate all taints of a particular category.
 	// +optional
-	Operator v1alpha1.TolerationOperator `json:"operator,omitempty" protobuf:"bytes,2,opt,name=operator,casttype=TolerationOperator"`
+	Operator TolerationOperator `json:"operator,omitempty" protobuf:"bytes,2,opt,name=operator,casttype=TolerationOperator"`
 	// Value is the taint value the toleration matches to.
 	// If the operator is Exists, the value should be empty, otherwise just a regular string.
 	// +optional
@@ -134,8 +133,37 @@ type Toleration struct {
 	// Effect indicates the taint effect to match. Empty means match all taint effects.
 	// When specified, allowed values are NoSchedule and PreferNoSchedule.
 	// +optional
-	Effect v1alpha1.TaintEffect `json:"effect,omitempty" protobuf:"bytes,4,opt,name=effect,casttype=TaintEffect"`
+	Effect TaintEffect `json:"effect,omitempty" protobuf:"bytes,4,opt,name=effect,casttype=TaintEffect"`
 }
+
+type TolerationOperator string
+
+const (
+	TolerationOpExists TolerationOperator = "Exists"
+	TolerationOpEqual  TolerationOperator = "Equal"
+)
+
+type TaintEffect string
+
+const (
+	// TaintEffectNoSchedule has the effect of not scheduling new workloads onto the workload cluster
+	// unless they tolerate the taint.
+	// Enforced by the scheduler.
+	TaintEffectNoSchedule TaintEffect = "NoSchedule"
+
+	// TaintEffectPreferNoSchedule is Like TaintEffectNoSchedule, but the scheduler tries not to schedule
+	// new workloads onto the workload cluster, rather than prohibiting it entirely.
+	// Enforced by the scheduler.
+	TaintEffectPreferNoSchedule TaintEffect = "PreferNoSchedule"
+
+	// TaintEffectNoCleanup has the effect of skipping any cleanup of workload objects.
+	// Set this effect to allow for API object finalization, which normally requires
+	// the workload cluster to be ready, to proceed without normal cleanups.
+	TaintEffectNoCleanup TaintEffect = "NoCleanup"
+
+	// TaintEffectNoConnect has the effect of skipping any attempts to connect to the workload cluster.
+	TaintEffectNoConnect TaintEffect = "NoConnect"
+)
 
 //+kubebuilder:object:root=true
 

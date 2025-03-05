@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 
-	computeapi "github.com/streamnative/cloud-api-server/pkg/apis/compute/v1alpha1"
-	cloudclient "github.com/streamnative/cloud-api-server/pkg/client/clientset_generated/clientset"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	computeapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/compute/v1alpha1"
+	cloudclient "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/client/clientset_generated/clientset"
 )
 
 // FlinkDeploymentClient handles FlinkDeployment operations with the API server

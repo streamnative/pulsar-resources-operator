@@ -22,9 +22,9 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/rest"
 
-	cloudapi "github.com/streamnative/cloud-api-server/pkg/apis/cloud/v1alpha1"
-	cloudclient "github.com/streamnative/cloud-api-server/pkg/client/clientset_generated/clientset"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	cloudapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/cloud/v1alpha1"
+	cloudclient "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/client/clientset_generated/clientset"
 )
 
 // SecretClient handles Secret operations with the API server
@@ -112,9 +112,9 @@ func convertToCloudSecret(secret *resourcev1alpha1.Secret) *cloudapi.Secret {
 		for _, t := range secret.Spec.Tolerations {
 			cloudSecret.Tolerations = append(cloudSecret.Tolerations, cloudapi.Toleration{
 				Key:      t.Key,
-				Operator: t.Operator,
+				Operator: cloudapi.TolerationOperator(t.Operator),
 				Value:    t.Value,
-				Effect:   t.Effect,
+				Effect:   cloudapi.TaintEffect(t.Effect),
 			})
 		}
 	}
