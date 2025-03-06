@@ -108,29 +108,29 @@ func (r *PulsarPackageReconciler) shouldSyncPackage(
 	if effectivePolicy == "" {
 		// Default to Always if @latest tag is used, or IfNotPresent otherwise
 		if isLatestTag(pkg.Spec.PackageURL) {
-			effectivePolicy = resourcev1alpha1.PullAlways
+			effectivePolicy = resourcev1alpha1.PulsarPackageSyncAlways
 		} else {
-			effectivePolicy = resourcev1alpha1.PullIfNotPresent
+			effectivePolicy = resourcev1alpha1.PulsarPackageSyncIfNotPresent
 		}
 	}
 
 	// If package doesn't exist, we need to sync unless the policy is Never
 	if !exists {
-		return effectivePolicy != resourcev1alpha1.PullNever
+		return effectivePolicy != resourcev1alpha1.PulsarPackageSyncNever
 	}
 
 	// For Never policy, we don't sync if package exists
-	if effectivePolicy == resourcev1alpha1.PullNever {
+	if effectivePolicy == resourcev1alpha1.PulsarPackageSyncNever {
 		return false
 	}
 
 	// For IfNotPresent policy, we don't sync if package exists
-	if effectivePolicy == resourcev1alpha1.PullIfNotPresent {
+	if effectivePolicy == resourcev1alpha1.PulsarPackageSyncIfNotPresent {
 		return false
 	}
 
 	// For Always policy or if the package is managed by operator, check the checksum
-	if effectivePolicy == resourcev1alpha1.PullAlways || IsManagedByOperator(currentProps) {
+	if effectivePolicy == resourcev1alpha1.PulsarPackageSyncAlways || IsManagedByOperator(currentProps) {
 		currentChecksum := currentProps[PropertyFileChecksum]
 		return currentChecksum != newProps.FileChecksum
 	}
@@ -188,7 +188,7 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	if resourcev1alpha1.IsPulsarResourceReady(pkg) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
 		// Download and check properties only if sync policy is Always
-		if pkg.Spec.SyncPolicy != resourcev1alpha1.PullAlways {
+		if pkg.Spec.SyncPolicy != resourcev1alpha1.PulsarPackageSyncAlways {
 			log.Info("Skip reconcile, package resource is ready")
 			return nil
 		}

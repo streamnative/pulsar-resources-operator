@@ -109,12 +109,12 @@ type PulsarPackageList struct {
 type PulsarPackageSyncPolicy string
 
 const (
-	// PullAlways means that kubelet always attempts to pull the latest image. Container will fail If the pull fails.
-	PullAlways PulsarPackageSyncPolicy = "Always"
-	// PullNever means that kubelet never pulls an image, but only uses a local image. Container will fail if the image isn't present
-	PullNever PulsarPackageSyncPolicy = "Never"
-	// PullIfNotPresent means that kubelet pulls if the image isn't present on disk. Container will fail if the image isn't present and the pull fails.
-	PullIfNotPresent PulsarPackageSyncPolicy = "IfNotPresent"
+	// PulsarPackageSyncAlways means that kubelet always attempts to pull the latest image. Container will fail If the pull fails.
+	PulsarPackageSyncAlways PulsarPackageSyncPolicy = "Always"
+	// PulsarPackageSyncNever means that kubelet never pulls an image, but only uses a local image. Container will fail if the image isn't present
+	PulsarPackageSyncNever PulsarPackageSyncPolicy = "Never"
+	// PulsarPackageSyncIfNotPresent means that kubelet pulls if the image isn't present on disk. Container will fail if the image isn't present and the pull fails.
+	PulsarPackageSyncIfNotPresent PulsarPackageSyncPolicy = "IfNotPresent"
 )
 
 func init() {
