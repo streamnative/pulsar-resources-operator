@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
@@ -90,6 +91,53 @@ func (r *PulsarPackageReconciler) Reconcile(ctx context.Context) error {
 	return nil
 }
 
+// isLatestTag checks if the package URL contains @latest tag
+func isLatestTag(packageURL string) bool {
+	return strings.Contains(packageURL, "@latest")
+}
+
+// shouldSyncPackage determines if the package should be synced based on sync policy and current state
+func (r *PulsarPackageReconciler) shouldSyncPackage(
+	pkg *resourcev1alpha1.PulsarPackage,
+	exists bool,
+	currentProps map[string]string,
+	newProps *PackageProperties) bool {
+
+	// Determine the effective sync policy
+	effectivePolicy := pkg.Spec.SyncPolicy
+	if effectivePolicy == "" {
+		// Default to Always if @latest tag is used, or IfNotPresent otherwise
+		if isLatestTag(pkg.Spec.PackageURL) {
+			effectivePolicy = resourcev1alpha1.PullAlways
+		} else {
+			effectivePolicy = resourcev1alpha1.PullIfNotPresent
+		}
+	}
+
+	// If package doesn't exist, we need to sync unless the policy is Never
+	if !exists {
+		return effectivePolicy != resourcev1alpha1.PullNever
+	}
+
+	// For Never policy, we don't sync if package exists
+	if effectivePolicy == resourcev1alpha1.PullNever {
+		return false
+	}
+
+	// For IfNotPresent policy, we don't sync if package exists
+	if effectivePolicy == resourcev1alpha1.PullIfNotPresent {
+		return false
+	}
+
+	// For Always policy or if the package is managed by operator, check the checksum
+	if effectivePolicy == resourcev1alpha1.PullAlways || IsManagedByOperator(currentProps) {
+		currentChecksum := currentProps[PropertyFileChecksum]
+		return currentChecksum != newProps.FileChecksum
+	}
+
+	return false
+}
+
 // ReconcilePackage move the current state of the package closer to the desired state
 func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	pkg *resourcev1alpha1.PulsarPackage) error {
@@ -106,7 +154,6 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 			}
 		}
 
-		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.RemoveFinalizer(pkg, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, pkg); err != nil {
 			log.Error(err, "Failed to remove finalizer")
@@ -116,7 +163,6 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	}
 
 	if pkg.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
-		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 		controllerutil.AddFinalizer(pkg, resourcev1alpha1.FinalizerName)
 		if err := r.conn.client.Update(ctx, pkg); err != nil {
 			log.Error(err, "Failed to add finalizer")
@@ -124,29 +170,69 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 		}
 	}
 
-	if resourcev1alpha1.IsPulsarResourceReady(pkg) &&
-		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		log.Info("Skip reconcile, package resource is ready")
-		return nil
+	// Check if package exists and get current properties
+	exists := false
+	var currentProps map[string]string
+	if existingPkg, err := pulsarAdmin.GetPulsarPackageMetadata(pkg.Spec.PackageURL); err != nil {
+		if !admin.IsNotFound(err) {
+			log.Error(err, "Failed to get pulsar package")
+			meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, fmt.Sprintf("failed to get pulsar package: %s", err.Error())))
+			return err
+		}
+	} else {
+		exists = true
+		currentProps = existingPkg.Properties
 	}
 
+	// Skip if resource is ready and no sync is needed
+	if resourcev1alpha1.IsPulsarResourceReady(pkg) &&
+		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
+		// Download and check properties only if sync policy is Always
+		if pkg.Spec.SyncPolicy != resourcev1alpha1.PullAlways {
+			log.Info("Skip reconcile, package resource is ready")
+			return nil
+		}
+	}
+
+	// Download the file
 	filePath, err := downloadToTempFile(ctx, pkg.Spec.FileURL)
 	if err != nil {
 		log.Error(err, "Failed to download the package file")
+		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, fmt.Sprintf("failed to download package file: %s", err.Error())))
 		return err
 	}
-	defer os.Remove(filePath)
+	defer func() {
+		err = os.Remove(filePath)
+		if err != nil {
+			fmt.Printf("failed to remove temp file: %v", err)
+		}
+	}()
 
-	updated := false
-	if exist, err := pulsarAdmin.CheckPulsarPackageExist(pkg.Spec.PackageURL); err != nil {
-		log.Error(err, "Failed to check pulsar package existence")
-		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, fmt.Sprintf("failed to check pulsar package existence: %s", err.Error())))
+	// Generate new properties
+	newProps, err := GeneratePackageProperties(pkg, filePath, r.conn.connection.Name)
+	if err != nil {
+		log.Error(err, "Failed to generate package properties")
+		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, fmt.Sprintf("failed to generate package properties: %s", err.Error())))
 		return err
-	} else if exist {
-		updated = true
 	}
 
-	if err := pulsarAdmin.ApplyPulsarPackage(pkg.Spec.PackageURL, filePath, pkg.Spec.Description, pkg.Spec.Contact, pkg.Spec.Properties, updated); err != nil {
+	// Check if we should sync the package
+	if !r.shouldSyncPackage(pkg, exists, currentProps, newProps) {
+		log.Info("Skip sync based on policy and state", "SyncPolicy", pkg.Spec.SyncPolicy)
+		pkg.Status.ObservedGeneration = pkg.Generation
+		meta.SetStatusCondition(&pkg.Status.Conditions, *NewReadyCondition(pkg.Generation))
+		if err := r.conn.client.Status().Update(ctx, pkg); err != nil {
+			log.Error(err, "Failed to update the package status")
+			return err
+		}
+		return nil
+	}
+
+	// Merge properties
+	mergedProps := MergeProperties(newProps, pkg.Spec.Properties)
+
+	// Apply the package
+	if err := pulsarAdmin.ApplyPulsarPackage(pkg.Spec.PackageURL, filePath, pkg.Spec.Description, pkg.Spec.Contact, mergedProps, exists); err != nil {
 		meta.SetStatusCondition(&pkg.Status.Conditions, *NewErrorCondition(pkg.Generation, err.Error()))
 		log.Error(err, "Failed to apply package")
 		if err := r.conn.client.Status().Update(ctx, pkg); err != nil {
@@ -162,6 +248,8 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 		log.Error(err, "Failed to update the package status")
 		return err
 	}
+
+	log.Info("Successfully reconciled package", "SyncPolicy", pkg.Spec.SyncPolicy)
 	return nil
 }
 
@@ -173,11 +261,16 @@ func downloadToTempFile(ctx context.Context, fileURL string) (string, error) {
 	}
 
 	// Create a temporary file
-	tmpFile, err := os.CreateTemp("/tmp", "downloaded-*")
+	tmpFile, err := os.CreateTemp("/tmp/packages", "downloaded-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %v", err)
 	}
-	defer tmpFile.Close()
+	defer func() {
+		err = tmpFile.Close()
+		if err != nil {
+			fmt.Printf("failed to close temp file: %v", err)
+		}
+	}()
 
 	switch parsedURL.Scheme {
 	case "http", "https":

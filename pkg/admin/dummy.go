@@ -28,6 +28,10 @@ func NewDummyPulsarAdmin(PulsarAdminConfig) (PulsarAdmin, error) {
 type DummyPulsarAdmin struct {
 }
 
+func (d *DummyPulsarAdmin) GetPulsarPackageMetadata(packageURL string) (*utils.PackageMetadata, error) {
+	return nil, nil
+}
+
 func (d *DummyPulsarAdmin) GetNSIsolationPolicy(policyName, clusterName string) (*utils.NamespaceIsolationData, error) {
 	return nil, nil
 }
