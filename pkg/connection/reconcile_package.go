@@ -261,6 +261,16 @@ func downloadToTempFile(ctx context.Context, fileURL string) (string, error) {
 	}
 
 	// Create a temporary file
+	// First check if `/tmp/packages` directory exists
+	if _, err := os.Stat("/tmp/packages"); os.IsNotExist(err) {
+		if err := os.MkdirAll("/tmp/packages", 0755); err != nil {
+			return "", fmt.Errorf("failed to create temp directory: %v", err)
+		}
+	} else {
+		if err != nil {
+			return "", fmt.Errorf("failed to check temp directory: %v", err)
+		}
+	}
 	tmpFile, err := os.CreateTemp("/tmp/packages", "downloaded-*")
 	if err != nil {
 		return "", fmt.Errorf("failed to create temp file: %v", err)
