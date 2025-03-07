@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 )
@@ -82,28 +83,6 @@ func (p *PackageProperties) ToMap() map[string]string {
 	}
 }
 
-// FromMap creates PackageProperties from a map of Pulsar package properties
-func FromMap(props map[string]string) *PackageProperties {
-	if props == nil {
-		return nil
-	}
-
-	// Convert file size string to int64, default to 0 if invalid
-	var fileSize int64
-	if sizeStr := props[PropertyFileSize]; sizeStr != "" {
-		fmt.Sscanf(sizeStr, "%d", &fileSize)
-	}
-
-	return &PackageProperties{
-		FileChecksum: props[PropertyFileChecksum],
-		FileSize:     fileSize,
-		Namespace:    props[PropertyResourceNS],
-		Name:         props[PropertyResourceName],
-		UID:          props[PropertyResourceUID],
-		Cluster:      props[PropertyCluster],
-	}
-}
-
 // IsManagedByOperator checks if the package is managed by this operator
 func IsManagedByOperator(props map[string]string) bool {
 	return props[PropertyManagedBy] == ValueManagedBy
@@ -111,14 +90,14 @@ func IsManagedByOperator(props map[string]string) bool {
 
 // calculateFileChecksumAndSize calculates SHA256 checksum and size of a file
 func calculateFileChecksumAndSize(filePath string) (string, int64, error) {
-	file, err := os.Open(filePath)
+	fd, err := os.Open(filepath.Clean(filePath))
 	if err != nil {
 		return "", 0, err
 	}
-	defer file.Close()
+	defer fd.Close()
 
 	hash := sha256.New()
-	size, err := io.Copy(hash, file)
+	size, err := io.Copy(hash, fd)
 	if err != nil {
 		return "", 0, err
 	}

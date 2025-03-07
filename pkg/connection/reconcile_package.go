@@ -299,7 +299,7 @@ func downloadCloudStorage(ctx context.Context, fileURL string, tmpFile *os.File)
 	}
 
 	objectKey := parsedURL.Path
-	if len(objectKey) > 0 && objectKey[0] == '/' {
+	if objectKey != "" && objectKey[0] == '/' {
 		objectKey = objectKey[1:] // Remove the leading slash
 	}
 
