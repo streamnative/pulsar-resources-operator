@@ -206,6 +206,9 @@ type PulsarAdmin interface {
 
 	// DeleteNSIsolationPolicy delete the ns-isolation-policy
 	DeleteNSIsolationPolicy(policyName, clusterName string) error
+
+	// GetPulsarPackageMetadata retrieves package information
+	GetPulsarPackageMetadata(packageURL string) (*utils2.PackageMetadata, error)
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config

@@ -32,6 +32,7 @@ type PulsarPackageSpec struct {
 	PackageURL string `json:"packageURL"`
 
 	// FileURL is the download-able URL of the package from http or https protocol
+	// Support cloud storage providers: AWS S3 (s3://), Google Cloud Storage (gs://), Azure Blob Storage (azblob://)
 	// +kubebuilder:validation:Required
 	FileURL string `json:"fileURL"`
 
@@ -50,6 +51,12 @@ type PulsarPackageSpec struct {
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
+
+	// SyncPolicy represents the sync policy of the package, including Always, IfNotPresent, Never
+	// Defaults to Always if @latest tag is used in the package URL, or IfNotPresent otherwise
+	// +kubebuilder:validation:Enum=Always;IfNotPresent;Never
+	// +optional
+	SyncPolicy PulsarPackageSyncPolicy `json:"syncPolicy,omitempty"`
 }
 
 // PulsarPackageStatus defines the observed state of PulsarPackage
@@ -96,6 +103,19 @@ type PulsarPackageList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []PulsarPackage `json:"items"`
 }
+
+// PulsarPackageSyncPolicy represents the sync policy of the package, including Always, IfNotPresent, Never
+// +enum
+type PulsarPackageSyncPolicy string
+
+const (
+	// PulsarPackageSyncAlways means that kubelet always attempts to pull the latest image. Container will fail If the pull fails.
+	PulsarPackageSyncAlways PulsarPackageSyncPolicy = "Always"
+	// PulsarPackageSyncNever means that kubelet never pulls an image, but only uses a local image. Container will fail if the image isn't present
+	PulsarPackageSyncNever PulsarPackageSyncPolicy = "Never"
+	// PulsarPackageSyncIfNotPresent means that kubelet pulls if the image isn't present on disk. Container will fail if the image isn't present and the pull fails.
+	PulsarPackageSyncIfNotPresent PulsarPackageSyncPolicy = "IfNotPresent"
+)
 
 func init() {
 	SchemeBuilder.Register(&PulsarPackage{}, &PulsarPackageList{})
