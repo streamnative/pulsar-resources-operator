@@ -496,6 +496,16 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
+		Context("PulsarPackage operation with valid file URL", func() {
+			It("should create the pulsarpackage successfully with valid file URL", func() {
+				ppackage.Spec.FileURL = "file:///manager" // we use the manager binary as the file URL
+				ppackage.Spec.PackageURL = "function://public/default/file@valid"
+				ppackage.Name = "test-func-valid"
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+		})
+
 		AfterAll(func() {
 			Eventually(func(g Gomega) {
 				t := &v1alphav1.PulsarTopic{}

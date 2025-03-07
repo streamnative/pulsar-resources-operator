@@ -109,3 +109,64 @@ affinity: {}
 
 # -- The period seconds that pod will be termiated gracefully
 terminationGracePeriodSeconds: 10
+
+# -- Cloud storage providers configuration
+# -- Allow to sync files as Pulsar Packages to Pulsar Packages Management Service
+cloudStorage:
+  # -- AWS S3 configuration
+  s3:
+    # -- Enable AWS S3 support
+    enabled: false
+    # -- AWS region
+    region: ""
+    # -- AWS credentials secret configuration
+    credentials:
+      # -- Create a new secret for AWS credentials
+      create: false
+      # -- Existing secret name
+      secretName: "aws-credentials"
+      # -- AWS access key ID (only used if create is true)
+      accessKeyId: ""
+      # -- AWS secret access key (only used if create is true)
+      secretAccessKey: ""
+
+  # -- Google Cloud Storage configuration
+  gcs:
+    # -- Enable Google Cloud Storage support
+    enabled: false
+    # -- Service account configuration
+    serviceAccount:
+      # -- Use GCP Workload Identity (recommended for GKE)
+      useWorkloadIdentity: false
+      # -- GCP service account email for Workload Identity
+      # Format: GSA_NAME@PROJECT_ID.iam.gserviceaccount.com
+      name: ""
+      # -- Service account key configuration (only used if useWorkloadIdentity is false)
+      key:
+        # -- Create a new secret for service account key
+        create: false
+        # -- Existing secret name containing the service account key
+        secretName: "gcs-credentials"
+        # -- Service account key JSON content (only used if create is true)
+        json: ""
+        # -- Mount path of the service account key file
+        mountPath: "/var/secrets/google"
+
+  # -- Azure Blob Storage configuration
+  azure:
+    # -- Enable Azure Blob Storage support
+    enabled: false
+    # -- Azure storage account name
+    accountName: ""
+    # -- Azure credentials configuration
+    credentials:
+      # -- Create a new secret for Azure credentials
+      create: false
+      # -- Existing secret name
+      secretName: "azure-credentials"
+      # -- Storage account key (only used if create is true)
+      accountKey: ""
+      # -- SAS token (only used if create is true)
+      sasToken: ""
+      # -- Use account key for authentication (if false, will use SAS token)
+      useAccountKey: true
