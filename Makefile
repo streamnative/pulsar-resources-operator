@@ -101,14 +101,14 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./api/..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..."
 
 .PHONY: generate-internal
-generate-internal: code-generator
+generate-internal: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
 	$(CONTROLLER_GEN)  object:headerFile="hack/boilerplate.go.txt" paths="./pkg/streamnativecloud/apis/..."
 	./hack/update-codegen.sh
 
@@ -131,7 +131,7 @@ build: generate generate-internal fmt vet license-fix ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate generate-internal fmt vet ## Run a controller from your host.
+run: manifests generate generate-internal fmt vet license-fix ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
@@ -322,7 +322,3 @@ copy-crds:
 	# Sync rules from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml
 	@echo "Syncing rules section from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml"
 	@./scripts/sync_rules.py config/rbac/role.yaml charts/pulsar-resources-operator/templates/role.yaml
-
-.PHONY: code-generator
-code-generator:
-	git submodule update --init
