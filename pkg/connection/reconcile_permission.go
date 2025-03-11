@@ -17,15 +17,17 @@ package connection
 import (
 	"context"
 	"fmt"
+	"slices"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/go-logr/logr"
-	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
 
@@ -122,16 +124,64 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		return nil
 	}
 
-	log.V(1).Info("Granting permission", "ResourceName", permission.Spec.ResourceName,
+	log.Info("Updating permission", "ResourceName", permission.Spec.ResourceName,
 		"ResourceType", permission.Spec.ResoureType, "Roles", permission.Spec.Roles, "Actions", permission.Spec.Actions)
-	if err := pulsarAdmin.GrantPermissions(per); err != nil {
-		log.Error(err, "Grant permission failed")
+
+	var currentPermissions map[string][]utils.AuthAction
+	var err error
+
+	if permission.Spec.ResoureType == resourcev1alpha1.PulsarResourceTypeTopic {
+		currentPermissions, err = pulsarAdmin.GetTopicPermissions(permission.Spec.ResourceName)
+	} else {
+		currentPermissions, err = pulsarAdmin.GetNamespacePermissions(permission.Spec.ResourceName)
+	}
+
+	if err != nil {
+		log.Error(err, "Failed to get current permissions")
 		meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
 		if err := r.conn.client.Status().Update(ctx, permission); err != nil {
 			log.Error(err, "Failed to update permission status")
-			return err
 		}
 		return err
+	}
+
+	currentRoles := []string{}
+	incomingRoles := permission.Spec.Roles
+
+	for role, _ := range currentPermissions {
+		currentRoles = append(currentRoles, role)
+	}
+
+	// revoking roles
+	for _, role := range currentRoles {
+		if !slices.Contains(incomingRoles, role) {
+			permission.Spec.Roles = []string{role}
+			per := GetPermissioner(permission)
+			if err := pulsarAdmin.RevokePermissions(per); err != nil {
+				log.Error(err, "Revoke permission failed")
+				meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
+				if err := r.conn.client.Status().Update(ctx, permission); err != nil {
+					log.Error(err, "Failed to update permission status")
+					return err
+				}
+				return err
+			}
+		}
+	}
+
+	// granting roles
+	for _, role := range incomingRoles {
+		permission.Spec.Roles = []string{role}
+		per := GetPermissioner(permission)
+		if err := pulsarAdmin.GrantPermissions(per); err != nil {
+			log.Error(err, "Grant permission failed")
+			meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
+			if err := r.conn.client.Status().Update(ctx, permission); err != nil {
+				log.Error(err, "Failed to update permission status")
+				return err
+			}
+			return err
+		}
 	}
 
 	permission.Status.ObservedGeneration = permission.Generation

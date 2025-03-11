@@ -133,6 +133,12 @@ type PulsarAdmin interface {
 	// it will revoke all actions which granted to a role on a namespace or topic
 	RevokePermissions(p Permissioner) error
 
+	// GetNamespacePermissions get permissions by namespace
+	GetNamespacePermissions(namespace string) (map[string][]utils2.AuthAction, error)
+
+	// GetTopicPermissions get permissions by topic
+	GetTopicPermissions(topic string) (map[string][]utils2.AuthAction, error)
+
 	// Close releases the connection with pulsar admin
 	Close() error
 
