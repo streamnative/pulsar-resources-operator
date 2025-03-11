@@ -1,6 +1,6 @@
 module github.com/streamnative/pulsar-resources-operator
 
-go 1.22.11
+go 1.22.12
 
 toolchain go1.24.0
 
