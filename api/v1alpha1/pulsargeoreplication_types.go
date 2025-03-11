@@ -28,7 +28,7 @@ type PulsarGeoReplicationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// ConnectionRef is the reference to the source PulsarConnection
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 
 	// DestinationConnectionRef is the connection reference to the remote cluster
 	DestinationConnectionRef corev1.LocalObjectReference `json:"destinationConnectionRef"`
@@ -87,5 +87,5 @@ type ClusterInfo struct {
 	// Name is the pulsar cluster name
 	Name string `json:"name,omitempty"`
 	// ConnectionRef is the connection reference that can connect to the pulsar cluster
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 }

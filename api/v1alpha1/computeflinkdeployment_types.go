@@ -28,7 +28,7 @@ type ComputeFlinkDeploymentSpec struct {
 	// APIServerRef is the reference to the StreamNativeCloudConnection.
 	// If not specified, the APIServerRef from the referenced ComputeWorkspace will be used.
 	// +optional
-	APIServerRef corev1.LocalObjectReference `json:"apiServerRef,omitempty"`
+	APIServerRef StreamNativeCloudConnectionRef `json:"apiServerRef,omitempty"`
 
 	// WorkspaceName is the reference to the workspace, and is required
 	// +kubebuilder:validation:Required

@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -26,7 +25,7 @@ import (
 type ComputeWorkspaceSpec struct {
 	// APIServerRef is the reference to the StreamNativeCloudConnection
 	// +required
-	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
+	APIServerRef StreamNativeCloudConnectionRef `json:"apiServerRef"`
 
 	// PulsarClusterNames is the list of Pulsar clusters that the workspace will have access to.
 	// +optional

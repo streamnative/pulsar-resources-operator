@@ -357,3 +357,21 @@ type VolumeSource struct {
 	// +optional
 	Secret *corev1.SecretVolumeSource `json:"secret,omitempty"`
 }
+
+// PulsarConnectionRef indicates the connection reference
+type PulsarConnectionRef struct {
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// +required
+	Name string `json:"name"`
+}
+
+// StreamNativeCloudConnectionRef indicates the connection reference
+type StreamNativeCloudConnectionRef struct {
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// +required
+	Name string `json:"name"`
+}

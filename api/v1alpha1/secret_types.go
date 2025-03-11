@@ -27,7 +27,7 @@ import (
 type SecretSpec struct {
 	// APIServerRef is the reference to the StreamNativeCloudConnection
 	// +required
-	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
+	APIServerRef StreamNativeCloudConnectionRef `json:"apiServerRef"`
 
 	// InstanceName is the name of the instance this secret is for (e.g. pulsar-instance)
 	// +optional
