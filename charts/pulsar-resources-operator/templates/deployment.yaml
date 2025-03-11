@@ -38,6 +38,14 @@ spec:
         {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
+      {{- if or .Values.cloudStorage.gcs.enabled .Values.cloudStorage.s3.enabled .Values.cloudStorage.azure.enabled }}
+      volumes:
+        {{- if and .Values.cloudStorage.gcs.enabled (not .Values.cloudStorage.gcs.serviceAccount.useWorkloadIdentity) }}
+        - name: gcs-credentials
+          secret:
+            secretName: {{ .Values.cloudStorage.gcs.serviceAccount.key.secretName }}
+        {{- end }}
+      {{- end }}
       imagePullSecrets:
         {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       serviceAccountName: {{ include "pulsar-resources-operator.serviceAccountName" . }}
@@ -52,16 +60,57 @@ spec:
         - --retry-count={{ .Values.features.retryCount | default 5 }}
         command:
         - /manager
-        {{- if .Values.features.alwaysUpdatePulsarResource }}
         env:
+        {{- if .Values.features.alwaysUpdatePulsarResource }}
         - name: ALWAYS_UPDATE_PULSAR_RESOURCE
           value: "true"
+        {{- end }}
+        {{- if .Values.cloudStorage.s3.enabled }}
+        - name: AWS_REGION
+          value: {{ .Values.cloudStorage.s3.region | quote }}
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.cloudStorage.s3.credentials.secretName }}
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.cloudStorage.s3.credentials.secretName }}
+              key: secret-access-key
+        {{- end }}
+        {{- if and .Values.cloudStorage.gcs.enabled (not .Values.cloudStorage.gcs.serviceAccount.useWorkloadIdentity) }}
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: {{ printf "%s/key.json" .Values.cloudStorage.gcs.serviceAccount.key.mountPath }}
+        {{- end }}
+        {{- if .Values.cloudStorage.azure.enabled }}
+        - name: AZURE_STORAGE_ACCOUNT
+          value: {{ .Values.cloudStorage.azure.accountName | quote }}
+        {{- if .Values.cloudStorage.azure.credentials.useAccountKey }}
+        - name: AZURE_STORAGE_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.cloudStorage.azure.credentials.secretName }}
+              key: storage-key
+        {{- else }}
+        - name: AZURE_STORAGE_SAS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Values.cloudStorage.azure.credentials.secretName }}
+              key: sas-token
+        {{- end }}
         {{- end }}
         name: manager
         securityContext:
           {{- toYaml .Values.securityContext | nindent 10 }}
         image: "{{ .Values.image.manager.registry }}/{{ .Values.image.manager.repository }}:{{ .Values.image.manager.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        {{- if and .Values.cloudStorage.gcs.enabled (not .Values.cloudStorage.gcs.serviceAccount.useWorkloadIdentity) }}
+        volumeMounts:
+        - name: gcs-credentials
+          mountPath: {{ .Values.cloudStorage.gcs.serviceAccount.key.mountPath }}
+          readOnly: true
+        {{- end }}
         livenessProbe:
           httpGet:
             path: /healthz

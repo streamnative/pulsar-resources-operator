@@ -94,8 +94,9 @@ spec:
               description:
                 type: string
               fileURL:
-                description: FileURL is the download-able URL of the package from
-                  http or https protocol
+                description: |-
+                  FileURL is the download-able URL of the package from http or https protocol
+                  Support cloud storage providers: AWS S3 (s3://), Google Cloud Storage (gs://), Azure Blob Storage (azblob://)
                 type: string
               lifecyclePolicy:
                 description: |-
@@ -114,6 +115,15 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              syncPolicy:
+                description: |-
+                  SyncPolicy represents the sync policy of the package, including Always, IfNotPresent, Never
+                  Defaults to Always if @latest tag is used in the package URL, or IfNotPresent otherwise
+                enum:
+                - Always
+                - IfNotPresent
+                - Never
+                type: string
             required:
             - connectionRef
             - fileURL

@@ -1275,3 +1275,13 @@ func (p *PulsarAdminClient) DeleteNSIsolationPolicy(policyName, clusterName stri
 
 	return nil
 }
+
+// GetPulsarPackageMetadata retrieves package information
+func (p *PulsarAdminClient) GetPulsarPackageMetadata(packageURL string) (*utils.PackageMetadata, error) {
+	pkg, err := p.adminClient.Packages().GetMetadata(packageURL)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pkg, nil
+}
