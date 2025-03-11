@@ -186,10 +186,7 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 
 	// Get the APIServerConnection
 	apiConn := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      apiServerRef.Name,
-	}, apiConn); err != nil {
+	if err := r.Get(ctx, apiServerRef.ToNamespacedName(req.Namespace), apiConn); err != nil {
 		r.updateDeploymentStatus(ctx, deployment, err, "GetAPIServerConnectionFailed",
 			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
 		return ctrl.Result{}, err

@@ -84,14 +84,11 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 		r.log.V(1).Info("Reconcile Geo")
 		geoReplication := &r.conn.geoReplications[i]
 		pulsarAdmin := r.conn.pulsarAdmin
-		if geoReplication.Spec.ConnectionRef.Name != r.conn.connection.Name {
+		geoReplicationNamespacedName := geoReplication.Spec.ConnectionRef.ToNamespacedName(geoReplication.Namespace)
+		if geoReplicationNamespacedName.Name != r.conn.connection.Name || geoReplicationNamespacedName.Namespace != r.conn.connection.Namespace {
 			// If the connectionRef is the remote connection, we need to create a new pulsarAdmin for it
 			localConnection := &resourcev1alpha1.PulsarConnection{}
-			namespacedName := types.NamespacedName{
-				Name:      geoReplication.Spec.ConnectionRef.Name,
-				Namespace: geoReplication.Namespace,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, localConnection); err != nil {
+			if err := r.conn.client.Get(ctx, geoReplicationNamespacedName, localConnection); err != nil {
 				return fmt.Errorf("get local pulsarConnection [%w]", err)
 			}
 			cfg, err := MakePulsarAdminConfig(ctx, localConnection, r.conn.client)
@@ -121,10 +118,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	log.Info("Start Reconcile")
 
 	destConnection := &resourcev1alpha1.PulsarConnection{}
-	namespacedName := types.NamespacedName{
-		Name:      geoReplication.Spec.DestinationConnectionRef.Name,
-		Namespace: geoReplication.Namespace,
-	}
+	namespacedName := geoReplication.Spec.DestinationConnectionRef.ToNamespacedName(geoReplication.Namespace)
 	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
 		log.Error(err, "Failed to get destination connection for geo replication")
 		return err

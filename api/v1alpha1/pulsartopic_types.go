@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -119,7 +118,7 @@ type PulsarTopicSpec struct {
 	// This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication
 	// between two Pulsar instances.
 	// +optional
-	GeoReplicationRefs []*corev1.LocalObjectReference `json:"geoReplicationRefs,omitempty"`
+	GeoReplicationRefs []*PulsarConnectionRef `json:"geoReplicationRefs,omitempty"`
 
 	// ReplicationClusters is the list of clusters to which the topic is replicated
 	// This is **ONLY** used if you are replicating clusters within the same Pulsar instance.

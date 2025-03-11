@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -31,7 +30,7 @@ type PulsarGeoReplicationSpec struct {
 	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 
 	// DestinationConnectionRef is the connection reference to the remote cluster
-	DestinationConnectionRef corev1.LocalObjectReference `json:"destinationConnectionRef"`
+	DestinationConnectionRef PulsarConnectionRef `json:"destinationConnectionRef"`
 
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional

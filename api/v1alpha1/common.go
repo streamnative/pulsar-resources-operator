@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -374,4 +375,28 @@ type StreamNativeCloudConnectionRef struct {
 
 	// +required
 	Name string `json:"name"`
+}
+
+// ToNamespacedName converts the connection reference to a namespaced name
+func (r PulsarConnectionRef) ToNamespacedName(defaultNamespace string) types.NamespacedName {
+	ns := defaultNamespace
+	if r.Namespace != "" {
+		ns = r.Namespace
+	}
+	return types.NamespacedName{
+		Namespace: ns,
+		Name:      r.Name,
+	}
+}
+
+// ToNamespacedName converts the connection reference to a namespaced name
+func (r StreamNativeCloudConnectionRef) ToNamespacedName(defaultNamespace string) types.NamespacedName {
+	ns := defaultNamespace
+	if r.Namespace != "" {
+		ns = r.Namespace
+	}
+	return types.NamespacedName{
+		Namespace: ns,
+		Name:      r.Name,
+	}
 }

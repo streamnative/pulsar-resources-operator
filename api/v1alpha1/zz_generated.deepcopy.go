@@ -2427,11 +2427,11 @@ func (in *PulsarTopicSpec) DeepCopyInto(out *PulsarTopicSpec) {
 	}
 	if in.GeoReplicationRefs != nil {
 		in, out := &in.GeoReplicationRefs, &out.GeoReplicationRefs
-		*out = make([]*v1.LocalObjectReference, len(*in))
+		*out = make([]*PulsarConnectionRef, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {
 				in, out := &(*in)[i], &(*out)[i]
-				*out = new(v1.LocalObjectReference)
+				*out = new(PulsarConnectionRef)
 				**out = **in
 			}
 		}
