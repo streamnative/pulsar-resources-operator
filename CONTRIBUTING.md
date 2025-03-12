@@ -56,3 +56,14 @@ Please read through below conventions before contributions.
   - Package directories should generally avoid using separators as much as possible. When package names are multiple words, they usually should be in nested subdirectories.
 - Document directories and filenames should use dashes rather than underscores.
 - All source files should add a license at the beginning.
+
+
+### How to work locally
+
+1. Clones this repo
+2. Create the cluster `minikube start --memory=8192 --cpus=4`
+3. [Deploy Apache Pulsar Standalone](https://pulsar.apache.org/docs/4.0.x/getting-started-helm/#step-1-install-pulsar-helm-chart)
+4. Open the minikube tunnel in another terminal `minikube tunnel -c`
+5. Apply operator's crds `make install`
+6. Executes `go run .` in order to run the operator locally rather than inside the cluster
+7. Run tests `~/go/bin/ginkgo ./operator`

@@ -111,6 +111,16 @@ func (d *DummyPulsarAdmin) RevokePermissions(Permissioner) error {
 	return nil
 }
 
+// GetTopicPermissions is a fake implements of GetTopicPermissions
+func (d *DummyPulsarAdmin) GetTopicPermissions(string) (map[string][]utils.AuthAction, error) {
+	return map[string][]utils.AuthAction{}, nil
+}
+
+// GetNamespacePermissions is a fake implements of GetNamespacePermissions
+func (d *DummyPulsarAdmin) GetNamespacePermissions(string) (map[string][]utils.AuthAction, error) {
+	return map[string][]utils.AuthAction{}, nil
+}
+
 // GetSchema is a fake implements of GetSchema
 func (d *DummyPulsarAdmin) GetSchema(string) (*v1alpha1.SchemaInfo, error) {
 	return nil, nil
