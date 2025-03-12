@@ -148,7 +148,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	currentRoles := []string{}
 	incomingRoles := permission.Spec.Roles
 
-	for role, _ := range currentPermissions {
+	for role := range currentPermissions {
 		currentRoles = append(currentRoles, role)
 	}
 
