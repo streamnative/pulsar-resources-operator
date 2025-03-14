@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -101,7 +100,7 @@ type PulsarSourceSpec struct {
 	BatchBuilder string `json:"batchBuilder,omitempty"`
 
 	// ConnectionRef is the reference to the PulsarConnection resource
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional

@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,7 +26,7 @@ type PulsarPermissionSpec struct {
 
 	// ConnectionRef is the reference to the PulsarConnection resource
 	// used to connect to the Pulsar cluster for this permission.
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 
 	// ResourceName is the name of the target resource (namespace or topic)
 	// to which the permissions will be granted.

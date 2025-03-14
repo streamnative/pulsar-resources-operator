@@ -17,7 +17,6 @@ package utils
 import (
 	"encoding/json"
 
-	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -49,7 +48,7 @@ func MakePulsarTenant(namespace, name, tenantName, connectionName string, adminR
 		},
 		Spec: v1alpha1.PulsarTenantSpec{
 			Name: tenantName,
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			AdminRoles:      adminRoles,
@@ -73,7 +72,7 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 		},
 		Spec: v1alpha1.PulsarNamespaceSpec{
 			Name: namespaceName,
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			BacklogQuotaLimitTime: limitTime,
@@ -92,7 +91,7 @@ func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarTopicSpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			Name: topicName,
@@ -109,7 +108,7 @@ func MakePulsarPermission(namespace, name, resourceName, connectionName string, 
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarPermissionSpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			ResourceName: resourceName,
@@ -128,7 +127,7 @@ func MakePulsarPackage(namespace, name, packageURL, connectionName string, polic
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarPackageSpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			PackageURL:      packageURL,
@@ -147,7 +146,7 @@ func MakePulsarFunction(namespace, name, functionPackageUrl, connectionName stri
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarFunctionSpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			LifecyclePolicy:              policy,
@@ -193,7 +192,7 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarSinkSpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			LifecyclePolicy:            policy,
@@ -254,7 +253,7 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarSourceSpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			LifecyclePolicy:      policy,
@@ -294,7 +293,7 @@ func MakeNSIsolationPolicy(namespace, name, clusterName, connectionName string, 
 			Name:      name,
 		},
 		Spec: v1alpha1.PulsarNSIsolationPolicySpec{
-			ConnectionRef: corev1.LocalObjectReference{
+			ConnectionRef: v1alpha1.PulsarConnectionRef{
 				Name: connectionName,
 			},
 			Name:                     name,

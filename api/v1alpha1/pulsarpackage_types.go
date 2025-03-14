@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,7 +36,7 @@ type PulsarPackageSpec struct {
 	FileURL string `json:"fileURL"`
 
 	// ConnectionRef is the reference to the PulsarConnection resource
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 
 	// +optional
 	Description string `json:"description,omitempty"`
