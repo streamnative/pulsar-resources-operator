@@ -504,6 +504,24 @@ func (p *PulsarAdminClient) RevokePermissions(permission Permissioner) error {
 	return nil
 }
 
+// GetTopicPermissions retrieve permission by name
+func (p *PulsarAdminClient) GetTopicPermissions(topic string) (map[string][]utils.AuthAction, error) {
+	topicName, err := utils.GetTopicName(topic)
+	if err != nil {
+		return nil, err
+	}
+	return p.adminClient.Topics().GetPermissions(*topicName)
+}
+
+// GetNamespacePermissions retrieve permission by name
+func (p *PulsarAdminClient) GetNamespacePermissions(namespaceName string) (map[string][]utils.AuthAction, error) {
+	namespace, err := utils.GetNamespaceName(namespaceName)
+	if err != nil {
+		return nil, err
+	}
+	return p.adminClient.Namespaces().GetNamespacePermissions(*namespace)
+}
+
 // convertActions converts actions type from string to common.AuthAction
 func convertActions(actions []string) ([]utils.AuthAction, error) {
 	r := make([]utils.AuthAction, 0)
