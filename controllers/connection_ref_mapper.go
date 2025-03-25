@@ -17,7 +17,6 @@ package controllers
 import (
 	"context"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -35,10 +34,14 @@ func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Reques
 	if ref == nil {
 		return nil
 	}
+	namespace := object.GetNamespace()
+	if ref.Namespace != "" {
+		namespace = ref.Namespace
+	}
 	return []reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
-				Namespace: object.GetNamespace(),
+				Namespace: namespace,
 				Name:      ref.Name,
 			},
 		},
@@ -53,17 +56,21 @@ func ConnectionRefMapper(ctx context.Context, object client.Object) []reconcile.
 	if ref == nil {
 		return nil
 	}
+	namespace := object.GetNamespace()
+	if ref.Namespace != "" {
+		namespace = ref.Namespace
+	}
 	return []reconcile.Request{
 		{
 			NamespacedName: types.NamespacedName{
-				Namespace: object.GetNamespace(),
+				Namespace: namespace,
 				Name:      ref.Name,
 			},
 		},
 	}
 }
 
-func getConnectionRef(object client.Object) *corev1.LocalObjectReference {
+func getConnectionRef(object client.Object) *pulsarv1alpha1.PulsarConnectionRef {
 	switch v := object.(type) {
 	case *pulsarv1alpha1.PulsarTenant:
 		return &v.Spec.ConnectionRef

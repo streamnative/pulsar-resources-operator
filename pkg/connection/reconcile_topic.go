@@ -23,7 +23,6 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -306,7 +305,7 @@ func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {
 }
 
 func (r *PulsarTopicReconciler) applyGeo(ctx context.Context, params *admin.TopicParams,
-	ref *corev1.LocalObjectReference, topic *resourcev1alpha1.PulsarTopic) error {
+	ref *resourcev1alpha1.PulsarConnectionRef, topic *resourcev1alpha1.PulsarTopic) error {
 	geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
 	if err := r.conn.client.Get(ctx, types.NamespacedName{
 		Namespace: topic.Namespace,
@@ -316,10 +315,8 @@ func (r *PulsarTopicReconciler) applyGeo(ctx context.Context, params *admin.Topi
 	}
 	r.log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
 	destConnection := &resourcev1alpha1.PulsarConnection{}
-	if err := r.conn.client.Get(ctx, types.NamespacedName{
-		Name:      geoReplication.Spec.DestinationConnectionRef.Name,
-		Namespace: geoReplication.Namespace,
-	}, destConnection); err != nil {
+	namespacedName := geoReplication.Spec.DestinationConnectionRef.ToNamespacedName(geoReplication.Namespace)
+	if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
 		return err
 	}
 
