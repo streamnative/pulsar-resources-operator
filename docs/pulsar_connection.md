@@ -177,6 +177,183 @@ spec:
 ### TLS Connection
 
 To create a TLS connection, you need to set the `adminServiceSecureURL`, `brokerServiceSecureURL`, and `clusterName` fields.
+## Overview
+
+The `PulsarConnection` resource defines the connection details for a Pulsar cluster. It can be used to configure various connection parameters including service URLs, authentication methods, and cluster information.
+
+## Specifications
+
+| Field | Description | Required | Version |
+|-------|-------------|----------|---------|
+| `adminServiceURL` | The admin service URL of the Pulsar cluster (e.g., `http://cluster-broker.test.svc.cluster.local:8080`). | No | All |
+| `adminServiceSecureURL` | The admin service URL for secure connection (HTTPS) to the Pulsar cluster (e.g., `https://cluster-broker.test.svc.cluster.local:443`). | No | ≥ 0.3.0 |
+| `brokerServiceURL` | The broker service URL of the Pulsar cluster (e.g., `pulsar://cluster-broker.test.svc.cluster.local:6650`). | No | ≥ 0.3.0 |
+| `brokerServiceSecureURL` | The broker service URL for secure connection (TLS) to the Pulsar cluster (e.g., `pulsar+ssl://cluster-broker.test.svc.cluster.local:6651`). | No | ≥ 0.3.0 |
+| `clusterName` | The Pulsar cluster name. Use `pulsar-admin clusters list` to retrieve. Required for configuring Geo-Replication. | No | ≥ 0.3.0 |
+| `authentication` | Authentication configuration. Required when authentication is enabled for the Pulsar cluster. Supports JWT Token and OAuth2 methods. | No | All |
+| `brokerClientTrustCertsFilePath` | The file path to the trusted TLS certificate for outgoing connections to Pulsar brokers. Used for TLS verification. | No | ≥ 0.3.0 |
+
+Note: Fields marked with version ≥ 0.3.0 are only available in that version and above.
+ 
+## Authentication Methods
+
+The `authentication` field supports two methods: JWT Token and OAuth2. Each method can use either a Kubernetes Secret reference or a direct value.
+
+### Specification
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `token` | JWT Token authentication configuration | `ValueOrSecretRef` | No |
+| `oauth2` | OAuth2 authentication configuration | `PulsarAuthenticationOAuth2` | No |
+
+#### ValueOrSecretRef
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `value` | Direct string value | `*string` | No |
+| `secretRef` | Reference to a Kubernetes Secret | `*SecretKeyRef` | No |
+
+#### SecretKeyRef
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `name` | Name of the Kubernetes Secret | `string` | Yes |
+| `key` | Key in the Kubernetes Secret | `string` | Yes |
+
+#### PulsarAuthenticationOAuth2
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `issuerEndpoint` | URL of the OAuth2 authorization server | `string` | Yes |
+| `clientID` | OAuth2 client identifier | `string` | Yes |
+| `audience` | Intended recipient of the token | `string` | Yes |
+| `key` | Client secret or path to JSON credentials file | `ValueOrSecretRef` | Yes |
+| `scope` | Requested permissions from the OAuth2 server | `string` | No |
+
+Note: Only one authentication method (either `token` or `oauth2`) should be specified at a time.
+
+### JWT Token Authentication
+
+JWT Token authentication can be configured using either a direct value or a Kubernetes Secret reference.
+
+#### Using a direct value
+
+To use JWT Token authentication with a direct value, you can set the `token` field to the base64-encoded JWT token.
+
+```yaml
+authentication:
+  token:
+    value: <base64-encoded JWT token>
+``` 
+
+#### Using a Kubernetes Secret reference
+
+To use JWT Token authentication with a Kubernetes Secret reference, you need to create a Kubernetes Secret containing the JWT token. The secret should have the following structure:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <secret-name>
+type: Opaque
+stringData:
+  <key-name>: <base64-encoded JWT token>
+```
+
+The `<key-name>` can be any name. It will be referenced in the `PulsarConnection` resource with the `token.secretRef` field.
+
+```yaml
+authentication:
+  token:
+    secretRef:
+      name: <secret-name>
+      key: <key-name>
+```
+
+### OAuth2 Authentication
+
+OAuth2 authentication can be configured using either a direct value or a Kubernetes Secret reference.
+
+#### Using a direct value
+
+To use OAuth2 authentication with a direct value, you can set the `issuerEndpoint`, `clientID`, `audience`, and `key` fields to the OAuth2 configuration.
+
+```yaml
+authentication:
+  oauth2:
+    issuerEndpoint: https://auth.streamnative.cloud
+    clientID: <client-id>
+    audience: urn:sn:pulsar:sndev:us-west
+    key:
+      value: |
+        {
+          "type":"sn_service_account",
+          "client_id":"<client-id>",
+          "grant_type":"client_credentials",
+          "client_secret":"<client-secret>",
+          "issuer_url":"https://auth.streamnative.cloud"
+        }
+    scope: <scope>
+```
+
+#### Using a Kubernetes Secret reference
+
+To use OAuth2 authentication with a Kubernetes Secret reference, you need to create a Kubernetes Secret containing the OAuth2 configuration. The secret should have the following structure:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: <secret-name>
+type: Opaque
+stringData:
+  <key-name>: |
+    {
+      "type":"sn_service_account",
+      "client_id":"<client-id>",
+      "grant_type":"client_credentials",
+      "client_secret":"<client-secret>",
+      "issuer_url":"https://auth.streamnative.cloud"
+    } 
+```
+
+The `<key-name>` should contain the OAuth2 configuration.
+
+```yaml
+authentication:
+  oauth2:
+    issuerEndpoint: https://auth.streamnative.cloud
+    clientID: <client-id>
+    audience: urn:sn:pulsar:sndev:us-west
+    key:
+      secretRef:
+        name: <secret-name>
+        key: <key-name> 
+    scope: <scope>
+```
+
+## PlainText Connection vs TLS Connection
+
+The `PulsarConnection` resource supports both plaintext and TLS connections. Plaintext connections are used for non-secure connections to the Pulsar cluster, while TLS connections are used for secure connections with TLS enabled.
+
+### Plaintext Connection
+
+To create a plaintext connection, you need to set the `adminServiceURL`, `brokerServiceURL`, and `clusterName` fields.  
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarConnection
+metadata:
+  name: pulsar-connection
+spec:
+  adminServiceURL: http://pulsar-sn-platform-broker.test.svc.cluster.local:8080
+  brokerServiceURL: pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650
+  clusterName: pulsar-cluster
+```
+
+### TLS Connection
+
+To create a TLS connection, you need to set the `adminServiceSecureURL`, `brokerServiceSecureURL`, and `clusterName` fields.
 
 ```yaml 
 apiVersion: resource.streamnative.io/v1alpha1
