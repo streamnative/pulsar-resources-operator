@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,15 @@ resources:
 - bases/resource.streamnative.io_pulsartopics.yaml
 - bases/resource.streamnative.io_pulsarpermissions.yaml
 - bases/resource.streamnative.io_pulsargeoreplications.yaml
+- bases/resource.streamnative.io_pulsarfunctions.yaml
+- bases/resource.streamnative.io_pulsarpackages.yaml
+- bases/resource.streamnative.io_pulsarsinks.yaml
+- bases/resource.streamnative.io_pulsarsources.yaml
+- bases/resource.streamnative.io_pulsarnsisolationpolicies.yaml
+- bases/resource.streamnative.io_streamnativecloudconnections.yaml
+- bases/resource.streamnative.io_computeworkspaces.yaml
+- bases/resource.streamnative.io_computeflinkdeployments.yaml
+- bases/resource.streamnative.io_secrets.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

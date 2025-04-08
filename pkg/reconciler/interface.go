@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -38,12 +38,12 @@ type Dummy struct {
 }
 
 // Observe is a fake implements of Observe
-func (d *Dummy) Observe(ctx context.Context) error {
+func (d *Dummy) Observe(context.Context) error {
 	return nil
 }
 
 // Reconcile is a fake implements of Reconcile
-func (d *Dummy) Reconcile(ctx context.Context) error {
+func (d *Dummy) Reconcile(context.Context) error {
 	return nil
 }
 

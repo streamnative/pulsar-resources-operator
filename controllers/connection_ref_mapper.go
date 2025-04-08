@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
 package controllers
 
 import (
+	"context"
+
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -46,7 +48,7 @@ func (p *PulsarConnectionRefMapper) Map(object client.Object) []reconcile.Reques
 // var _ handler.Mapper = &PulsarConnectionRefMapper{}
 
 // ConnectionRefMapper maps resource object to PulsarConnection request
-func ConnectionRefMapper(object client.Object) []reconcile.Request {
+func ConnectionRefMapper(ctx context.Context, object client.Object) []reconcile.Request {
 	ref := getConnectionRef(object)
 	if ref == nil {
 		return nil
@@ -72,6 +74,16 @@ func getConnectionRef(object client.Object) *corev1.LocalObjectReference {
 	case *pulsarv1alpha1.PulsarPermission:
 		return &v.Spec.ConnectionRef
 	case *pulsarv1alpha1.PulsarGeoReplication:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarFunction:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarSource:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarSink:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarPackage:
+		return &v.Spec.ConnectionRef
+	case *pulsarv1alpha1.PulsarNSIsolationPolicy:
 		return &v.Spec.ConnectionRef
 	default:
 		return nil

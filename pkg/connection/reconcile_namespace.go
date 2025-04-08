@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package connection
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
@@ -39,7 +41,7 @@ type PulsarNamespaceReconciler struct {
 func makeNamespacesReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarNamespaceReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarNamespace"),
+		log:  makeSubResourceLog(r, "PulsarNamespace"),
 	}
 }
 
@@ -57,12 +59,9 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 	r.log.V(1).Info("Observed namespace items", "Count", len(namespaceList.Items))
 
 	r.conn.namespaces = namespaceList.Items
-	if !r.conn.hasUnreadyResource() {
-		for i := range r.conn.namespaces {
-			if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
-				r.conn.addUnreadyResource(&r.conn.namespaces[i])
-				break
-			}
+	for i := range r.conn.namespaces {
+		if !resourcev1alpha1.IsPulsarResourceReady(&r.conn.namespaces[i]) {
+			r.conn.addUnreadyResource(&r.conn.namespaces[i])
 		}
 	}
 
@@ -72,11 +71,15 @@ func (r *PulsarNamespaceReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all namespaces
 func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.namespaces {
 		namespace := &r.conn.namespaces[i]
 		if err := r.ReconcileNamespace(ctx, r.conn.pulsarAdmin, namespace); err != nil {
-			return fmt.Errorf("reconcile namespace [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile namespaces error: [%v]", errs)
 	}
 	return nil
 }
@@ -84,8 +87,8 @@ func (r *PulsarNamespaceReconciler) Reconcile(ctx context.Context) error {
 // ReconcileNamespace move the current state of the toic closer to the desired state
 func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	namespace *resourcev1alpha1.PulsarNamespace) error {
-	log := r.log.WithValues("pulsarnamespace", namespace.Name, "namespace", namespace.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", namespace.Name, "namespace", namespace.Namespace)
+	log.Info("Start Reconcile")
 
 	if !namespace.DeletionTimestamp.IsZero() {
 		log.Info("Deleting namespace", "LifecyclePolicy", namespace.Spec.LifecyclePolicy)
@@ -95,20 +98,28 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		if namespace.Status.GeoReplicationEnabled {
 			log.Info("GeoReplication is enabled. Reset namespace cluster", "LifecyclePolicy", namespace.Spec.LifecyclePolicy, "ClusterName", r.conn.connection.Spec.ClusterName)
 			if err := pulsarAdmin.SetNamespaceClusters(namespace.Spec.Name, []string{r.conn.connection.Spec.ClusterName}); err != nil {
-				log.Error(err, "Failed to reset the cluster for namespace")
-				return err
+				if admin.IsNoSuchHostError(err) {
+					log.Info("Pulsar cluster has been deleted")
+				} else {
+					log.Error(err, "Failed to reset the cluster for namespace")
+					return err
+				}
 			}
 		}
 
 		if namespace.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteNamespace(namespace.Spec.Name); err != nil && !admin.IsNotFound(err) {
-				log.Error(err, "Failed to delete namespace")
-				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
-				if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
-					log.Error(err, "Failed to update the geo replication status")
+				if admin.IsNoSuchHostError(err) {
+					log.Info("Pulsar cluster has been deleted")
+				} else {
+					log.Error(err, "Failed to delete namespace")
+					meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+					if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+						log.Error(err, "Failed to update the geo replication status")
+						return err
+					}
 					return err
 				}
-				return err
 			}
 		}
 
@@ -133,7 +144,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 
 	if resourcev1alpha1.IsPulsarResourceReady(namespace) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, namespace resource is ready")
 		return nil
 	}
 
@@ -149,34 +160,78 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaLimitSize:       namespace.Spec.BacklogQuotaLimitSize,
 		BacklogQuotaRetentionPolicy: namespace.Spec.BacklogQuotaRetentionPolicy,
 		BacklogQuotaType:            namespace.Spec.BacklogQuotaType,
+		OffloadThresholdTime:        namespace.Spec.OffloadThresholdTime,
+		OffloadThresholdSize:        namespace.Spec.OffloadThresholdSize,
+		Deduplication:               namespace.Spec.Deduplication,
+		BookieAffinityGroup:         namespace.Spec.BookieAffinityGroup,
 	}
 
-	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 {
-		for _, ref := range refs {
-			geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
-			namespacedName := types.NamespacedName{
-				Namespace: namespace.Namespace,
-				Name:      ref.Name,
+	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 || len(namespace.Spec.ReplicationClusters) > 0 {
+		if len(refs) > 0 && len(namespace.Spec.ReplicationClusters) > 0 {
+			return fmt.Errorf("GeoReplicationRefs and ReplicationClusters cannot be set at the same time")
+		}
+		if len(refs) > 0 {
+			for _, ref := range refs {
+				geoReplication := &resourcev1alpha1.PulsarGeoReplication{}
+				namespacedName := types.NamespacedName{
+					Namespace: namespace.Namespace,
+					Name:      ref.Name,
+				}
+				if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+					return err
+				}
+				log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
+				destConnection := &resourcev1alpha1.PulsarConnection{}
+				namespacedName = types.NamespacedName{
+					Name:      geoReplication.Spec.DestinationConnectionRef.Name,
+					Namespace: geoReplication.Namespace,
+				}
+				if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
+					log.Error(err, "Failed to get destination connection for geo replication")
+					return err
+				}
+				params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
+				params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
 			}
-			if err := r.conn.client.Get(ctx, namespacedName, geoReplication); err != nil {
+		} else if len(namespace.Spec.ReplicationClusters) > 0 {
+			parts := strings.Split(namespace.Spec.Name, "/")
+			if len(parts) != 2 {
+				err := fmt.Errorf("invalid namespace name %s", namespace.Spec.Name)
+				meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+				log.Error(err, "Failed to apply namespace")
+				if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+					log.Error(err, "Failed to update the namespace status")
+					return err
+				}
 				return err
 			}
-			log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
-			destConnection := &resourcev1alpha1.PulsarConnection{}
-			namespacedName = types.NamespacedName{
-				Name:      geoReplication.Spec.DestinationConnectionRef.Name,
-				Namespace: geoReplication.Namespace,
-			}
-			if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
-				log.Error(err, "Failed to get destination connection for geo replication")
+			tenantName := parts[0]
+			allowedClusters, err := pulsarAdmin.GetTenantAllowedClusters(tenantName)
+			if err != nil {
 				return err
 			}
-			params.ReplicationClusters = append(params.ReplicationClusters, destConnection.Spec.ClusterName)
-			params.ReplicationClusters = append(params.ReplicationClusters, r.conn.connection.Spec.ClusterName)
+
+			if len(allowedClusters) > 0 {
+				for _, cluster := range namespace.Spec.ReplicationClusters {
+					if !slices.Contains(allowedClusters, cluster) {
+						err := fmt.Errorf("cluster %s is not allowed in tenant %s", cluster, tenantName)
+						meta.SetStatusCondition(&namespace.Status.Conditions, *NewErrorCondition(namespace.Generation, err.Error()))
+						log.Error(err, "Failed to apply namespace")
+						if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
+							log.Error(err, "Failed to update the namespace status")
+							return err
+						}
+						return err
+					}
+					params.ReplicationClusters = append(params.ReplicationClusters, namespace.Spec.ReplicationClusters...)
+				}
+			}
 		}
 
-		log.Info("apply namespace with extra replication clusters", "clusters", params.ReplicationClusters)
-		namespace.Status.GeoReplicationEnabled = true
+		if len(params.ReplicationClusters) > 0 {
+			log.Info("apply namespace with extra replication clusters", "clusters", params.ReplicationClusters)
+			namespace.Status.GeoReplicationEnabled = true
+		}
 	} else if namespace.Status.GeoReplicationEnabled {
 		// when GeoReplicationRefs is removed, it should reset the namespace clusters
 		// to the default local cluster
@@ -190,7 +245,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		log.Error(err, "Failed to apply namespace")
 		if err := r.conn.client.Status().Update(ctx, namespace); err != nil {
 			log.Error(err, "Failed to update the namespace status")
-			return nil
+			return err
 		}
 		return err
 	}

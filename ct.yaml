@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,11 @@ target-branch: main
 # parameters for ct lint
 charts:
   - charts/pulsar-resources-operator
+
+# 添加固定的命名配置
+namespace: chart-testing
+release-label: app.kubernetes.io/instance
+release-name: pulsar-resources-operator
 
 # Additional commands to run per chart.
 # Commands will be executed in the same order as provided in the list and will

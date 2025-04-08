@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,12 +13,13 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.20-alpine as builder
+FROM golang:1.22.12-alpine3.20 as builder
 
 ARG ACCESS_TOKEN="none"
 
 RUN go env -w GOPRIVATE=github.com/streamnative \
-    && apk add --no-cache ca-certificates git
+    && apk add --no-cache ca-certificates git \
+    && git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -39,7 +40,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM gcr.io/distroless/static:nonroot
+FROM alpine:3.20
+
+# Upgrade all packages to get latest versions with security fixes
+RUN apk upgrade --no-cache
+
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532

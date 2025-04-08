@@ -1,4 +1,4 @@
-# Copyright 2023 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,19 @@ kind: ClusterServiceVersion
 metadata:
   annotations:
     alm-examples: '[]'
-    capabilities: Basic Install
+    capabilities: Auto Pilot
+    categories: Streaming & Messaging
+    features.operators.openshift.io/disconnected: "true"
+    features.operators.openshift.io/fips-compliant: "false"
+    features.operators.openshift.io/proxy-aware: "false"
+    features.operators.openshift.io/tls-profiles: "false"
+    features.operators.openshift.io/token-auth-aws: "false"
+    features.operators.openshift.io/token-auth-azure: "false"
+    features.operators.openshift.io/token-auth-gcp: "false"
+    features.operators.openshift.io/cnf: "false"
+    features.operators.openshift.io/cni: "false"
+    features.operators.openshift.io/csi: "false"
+    operators.openshift.io/valid-subscription: '["StreamNative Private Cloud License"]'
   name: pulsar-resources-operator.v0.0.0
   namespace: placeholder
 spec:
@@ -28,12 +40,6 @@ spec:
       displayName: Pulsar Connection
       kind: PulsarConnection
       name: pulsarconnections.resource.streamnative.io
-      version: v1alpha1
-    - description: PulsarGeoReplication is the Schema for the pulsargeoreplications
-        API
-      displayName: Pulsar Geo Replication
-      kind: PulsarGeoReplication
-      name: pulsargeoreplications.resource.streamnative.io
       version: v1alpha1
     - description: PulsarNamespace is the Schema for the pulsarnamespaces API
       displayName: Pulsar Namespace
@@ -54,6 +60,31 @@ spec:
       displayName: Pulsar Topic
       kind: PulsarTopic
       name: pulsartopics.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarGeoReplication is the Schema for the pulsargeoreplications API
+      displayName: Pulsar GeoReplication
+      kind: PulsarGeoReplication
+      name: pulsargeoreplications.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarFunction is the Schema for the pulsarfunctions API
+      displayName: Pulsar Function
+      kind: PulsarFunction
+      name: pulsarfunctions.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarPackage is the Schema for the pulsarpackages API
+      displayName: Pulsar Package
+      kind: PulsarPackage
+      name: pulsarpackages.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarSink is the Schema for the pulsarsinks API
+      displayName: Pulsar Sink
+      kind: PulsarSink
+      name: pulsarsinks.resource.streamnative.io
+      version: v1alpha1
+    - description: PulsarSource is the Schema for the pulsarsources API
+      displayName: Pulsar Source
+      kind: PulsarSource
+      name: pulsarsources.resource.streamnative.io
       version: v1alpha1
   description: pulsar resources operator
   displayName: Pulsar Resources Operator

@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,13 +18,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
+
 	"github.com/go-logr/logr"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
@@ -35,31 +37,40 @@ import (
 
 // PulsarConnectionReconciler reconciles a PulsarConnection object
 type PulsarConnectionReconciler struct {
-	connection       *resourcev1alpha1.PulsarConnection
-	log              logr.Logger
-	client           client.Client
-	creator          admin.PulsarAdminCreator
-	tenants          []resourcev1alpha1.PulsarTenant
-	namespaces       []resourcev1alpha1.PulsarNamespace
-	topics           []resourcev1alpha1.PulsarTopic
-	permissions      []resourcev1alpha1.PulsarPermission
-	geoReplications  []resourcev1alpha1.PulsarGeoReplication
-	unreadyResources []string
+	connection          *resourcev1alpha1.PulsarConnection
+	log                 logr.Logger
+	client              client.Client
+	creator             admin.PulsarAdminCreator
+	tenants             []resourcev1alpha1.PulsarTenant
+	namespaces          []resourcev1alpha1.PulsarNamespace
+	topics              []resourcev1alpha1.PulsarTopic
+	permissions         []resourcev1alpha1.PulsarPermission
+	geoReplications     []resourcev1alpha1.PulsarGeoReplication
+	packages            []resourcev1alpha1.PulsarPackage
+	sinks               []resourcev1alpha1.PulsarSink
+	sources             []resourcev1alpha1.PulsarSource
+	functions           []resourcev1alpha1.PulsarFunction
+	nsIsolationPolicies []resourcev1alpha1.PulsarNSIsolationPolicy
+	unreadyResources    []string
 
-	pulsarAdmin admin.PulsarAdmin
-	reconcilers []reconciler.Interface
+	pulsarAdmin   admin.PulsarAdmin
+	pulsarAdminV3 admin.PulsarAdmin
+	reconcilers   []reconciler.Interface
+
+	retryer *utils.ReconcileRetryer
 }
 
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
 func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
-	connection *resourcev1alpha1.PulsarConnection) reconciler.Interface {
+	connection *resourcev1alpha1.PulsarConnection, retryer *utils.ReconcileRetryer) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:        log,
 		connection: connection,
 		creator:    creator,
 		client:     k8sClient,
+		retryer:    retryer,
 	}
 	r.reconcilers = []reconciler.Interface{
 		makeGeoReplicationReconciler(r),
@@ -67,16 +78,32 @@ func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.Puls
 		makeNamespacesReconciler(r),
 		makeTopicsReconciler(r),
 		makePermissionsReconciler(r),
+		makePackagesReconciler(r),
+		makeFunctionsReconciler(r),
+		makeSinksReconciler(r),
+		makeSourcesReconciler(r),
+		makeNSIsolationPoliciesReconciler(r),
 	}
 	return r
 }
 
+func makeSubResourceLog(r *PulsarConnectionReconciler, name string) logr.Logger {
+	return r.log.WithName(name).WithValues("connectionRef",
+		fmt.Sprintf("%s/%s", r.connection.Namespace, r.connection.Name))
+}
+
 // Observe checks the updates of object
 func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
+	r.log.Info("Start PulsarConnectionReconciler Observe")
+	errs := []error{}
 	for _, reconciler := range r.reconcilers {
 		if err := reconciler.Observe(ctx); err != nil {
-			return err
+			r.log.Error(err, "PulsarConnectionReconciler Observe error")
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("PulsarConnectionReconciler Observe errors: %v", errs)
 	}
 	return nil
 }
@@ -84,6 +111,8 @@ func (r *PulsarConnectionReconciler) Observe(ctx context.Context) error {
 // Reconcile reconciles all resources
 func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	var err error
+	errs := []error{}
+	log := r.log.WithValues("name", r.connection.Name, "namespace", r.connection.Namespace)
 
 	if !r.hasUnreadyResource() {
 		if !r.connection.DeletionTimestamp.IsZero() {
@@ -108,10 +137,10 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
-		r.log.Info("Doesn't have unReady resource")
+		log.Info("Doesn't have associated unready resource, reconcile completed")
 		return nil
 	}
-	r.log.Info("have unReady resource", "unReadyResources", r.unreadyResources)
+	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
@@ -129,29 +158,49 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 	r.pulsarAdmin, err = r.creator(*pulsarConfig)
 	if err != nil {
-		r.log.Error(err, "create pulsar admin", "Namespace", r.connection.Namespace, "Name", r.connection.Name)
+		log.Error(err, "create pulsar admin")
 		return err
 	}
 	defer func() {
 		if err := r.pulsarAdmin.Close(); err != nil {
-			r.log.Error(err, "close pulsar admin", "Namespace", r.connection.Namespace, "Name", r.connection.Name)
+			log.Error(err, "close pulsar admin")
 		}
 		r.pulsarAdmin = nil
+	}()
+
+	pulsarConfig, err = r.MakePulsarAdminConfigWithAPIVersion(ctx, config.V3)
+	if err != nil {
+		return err
+	}
+	r.pulsarAdminV3, err = r.creator(*pulsarConfig)
+	if err != nil {
+		log.Error(err, "create pulsar admin v3")
+		return err
+	}
+	defer func() {
+		if err := r.pulsarAdminV3.Close(); err != nil {
+			log.Error(err, "close pulsar admin v3")
+		}
+		r.pulsarAdminV3 = nil
 	}()
 
 	if r.connection.DeletionTimestamp.IsZero() {
 		for _, reconciler := range r.reconcilers {
 			if err = reconciler.Reconcile(ctx); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
 	} else {
 		// delete children resources first
 		for i := len(r.reconcilers) - 1; i >= 0; i-- {
 			if err = r.reconcilers[i].Reconcile(ctx); err != nil {
-				return err
+				errs = append(errs, err)
 			}
 		}
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("PulsarConnectionReconciler Reconcile errors: %v", errs)
 	}
 
 	auth := r.connection.Spec.Authentication
@@ -165,6 +214,21 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			return err
 		}
 		hash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+		if err != nil {
+			return err
+		}
+		r.connection.Status.SecretKeyHash = hash
+	}
+	if auth != nil && auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+		// calculate secret key hash
+		secret := &corev1.Secret{}
+		if err := r.client.Get(ctx, types.NamespacedName{
+			Namespace: r.connection.Namespace,
+			Name:      auth.OAuth2.Key.SecretRef.Name,
+		}, secret); err != nil {
+			return err
+		}
+		hash, err := utils.CalculateSecretKeyMd5(secret, auth.OAuth2.Key.SecretRef.Key)
 		if err != nil {
 			return err
 		}
@@ -184,8 +248,15 @@ func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
 }
 
 func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
-	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s:%s:%s", obj.GetNamespace(),
-		obj.GetName(), obj.GetObjectKind().GroupVersionKind().String()))
+	if len(r.unreadyResources) == 30 {
+		// avoid add too many unready resources
+		r.unreadyResources = append(r.unreadyResources, "...")
+	}
+	if len(r.unreadyResources) > 30 {
+		return
+	}
+	r.unreadyResources = append(r.unreadyResources, fmt.Sprintf("%s:%s/%s",
+		obj.GetObjectKind().GroupVersionKind().Kind, obj.GetNamespace(), obj.GetName()))
 }
 
 // NewErrorCondition create a condition with error
@@ -210,7 +281,7 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 			return nil, err
 		}
 		if value, exists := secret.Data[ref.Key]; exists {
-			return pointer.StringPtr(string(value)), nil
+			return ptr.To(string(value)), nil
 		}
 	}
 	return nil, nil
@@ -219,6 +290,16 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 // MakePulsarAdminConfig create pulsar admin configuration
 func (r *PulsarConnectionReconciler) MakePulsarAdminConfig(ctx context.Context) (*admin.PulsarAdminConfig, error) {
 	return MakePulsarAdminConfig(ctx, r.connection, r.client)
+}
+
+// MakePulsarAdminConfigWithAPIVersion create pulsar admin configuration with api version
+func (r *PulsarConnectionReconciler) MakePulsarAdminConfigWithAPIVersion(ctx context.Context, ver config.APIVersion) (*admin.PulsarAdminConfig, error) {
+	c, e := MakePulsarAdminConfig(ctx, r.connection, r.client)
+	if e != nil {
+		return nil, e
+	}
+	c.PulsarAPIVersion = &ver
+	return c, nil
 }
 
 // MakePulsarAdminConfig create pulsar admin configuration
@@ -247,7 +328,10 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			cfg.ClientID = oauth2.ClientID
 			cfg.Audience = oauth2.Audience
 			cfg.Scope = oauth2.Scope
-			value, err := GetValue(ctx, k8sClient, connection.Namespace, &oauth2.Key)
+			if oauth2.Key == nil {
+				return nil, fmt.Errorf("oauth2 key must not be empty")
+			}
+			value, err := GetValue(ctx, k8sClient, connection.Namespace, oauth2.Key)
 			if err != nil {
 				return nil, err
 			}

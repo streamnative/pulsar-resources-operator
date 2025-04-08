@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -17,6 +17,8 @@ package v1alpha1
 const (
 	// ConditionReady indicates status condition ready
 	ConditionReady string = "Ready"
+	// ConditionTopicPolicyReady indicates the topic policy ready
+	ConditionTopicPolicyReady string = "PolicyReady"
 	// FinalizerName is the finalizer string that add to object
 	FinalizerName string = "cloud.streamnative.io/finalizer"
 

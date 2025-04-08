@@ -56,8 +56,8 @@
                     "description": "An explanation about the purpose of this instance.",
                     "examples": [
                         {
-                            "registry": "docker.cloudsmith.io",
-                            "repository": "streamnative/operators/pulsar-resources-operator",
+                            "registry": "dockerio",
+                            "repository": "streamnative/pulsar-resources-operator",
                             "tag": ""
                         }
                     ],
@@ -72,7 +72,7 @@
                             "title": "The registry schema",
                             "description": "An explanation about the purpose of this instance.",
                             "examples": [
-                                "docker.cloudsmith.io"
+                                "docker.io"
                             ]
                         },
                         "repository": {
@@ -81,7 +81,7 @@
                             "title": "The repository schema",
                             "description": "An explanation about the purpose of this instance.",
                             "examples": [
-                                "streamnative/operators/pulsar-resources-operator"
+                                "streamnative/pulsar-resources-operator"
                             ]
                         },
                         "tag": {
@@ -130,11 +130,13 @@
                             ]
                         }
                     },
-                    "examples": [{
-                        "registry": "gcr.io",
-                        "repository": "kubebuilder/kube-rbac-proxy",
-                        "tag": "v0.14.4"
-                    }]
+                    "examples": [
+                        {
+                            "registry": "gcr.io",
+                            "repository": "kubebuilder/kube-rbac-proxy",
+                            "tag": "v0.14.4"
+                        }
+                    ]
                 }
             },
             "additionalProperties": true
@@ -179,7 +181,6 @@
                     }
                 ]
             }
-
         },
         "nameOverride": {
             "$id": "#/properties/nameOverride",
@@ -312,8 +313,7 @@
             "examples": [
                 {}
             ],
-            "required": [
-            ],
+            "required": [],
             "properties": {
                 "requests": {
                     "$id": "#/properties/resources/properties/requests",
@@ -398,6 +398,153 @@
             "examples": [
                 10
             ]
+        },
+        "cloudStorage": {
+            "type": "object",
+            "description": "Cloud storage providers configuration",
+            "properties": {
+                "s3": {
+                    "type": "object",
+                    "description": "AWS S3 configuration",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable AWS S3 support"
+                        },
+                        "region": {
+                            "type": "string",
+                            "description": "AWS region"
+                        },
+                        "credentials": {
+                            "type": "object",
+                            "description": "AWS credentials secret configuration",
+                            "properties": {
+                                "create": {
+                                    "type": "boolean",
+                                    "description": "Create a new secret for AWS credentials"
+                                },
+                                "secretName": {
+                                    "type": "string",
+                                    "description": "Existing secret name"
+                                },
+                                "accessKeyId": {
+                                    "type": "string",
+                                    "description": "AWS access key ID (only used if create is true)"
+                                },
+                                "secretAccessKey": {
+                                    "type": "string",
+                                    "description": "AWS secret access key (only used if create is true)"
+                                }
+                            },
+                            "required": [
+                                "secretName"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "enabled"
+                    ]
+                },
+                "gcs": {
+                    "type": "object",
+                    "description": "Google Cloud Storage configuration",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable Google Cloud Storage support"
+                        },
+                        "serviceAccount": {
+                            "type": "object",
+                            "description": "Service account configuration",
+                            "properties": {
+                                "useWorkloadIdentity": {
+                                    "type": "boolean",
+                                    "description": "Use workload identity"
+                                },
+                                "name": {
+                                    "type": "string",
+                                    "description": "Name of the Kubernetes service account for workload identity"
+                                },
+                                "key": {
+                                    "type": "object",
+                                    "description": "Service account key configuration",
+                                    "properties": {
+                                        "create": {
+                                            "type": "boolean",
+                                            "description": "Create a new secret for service account key"
+                                        },
+                                        "secretName": {
+                                            "type": "string",
+                                            "description": "Existing secret name"
+                                        },
+                                        "json": {
+                                            "type": "string",
+                                            "description": "Service account key JSON content (only used if create is true)"
+                                        },
+                                        "mountPath": {
+                                            "type": "string",
+                                            "description": "Mount path of the service account key file"
+                                        }
+                                    },
+                                    "required": [
+                                        "secretName",
+                                        "mountPath"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    "required": [
+                        "enabled"
+                    ]
+                },
+                "azure": {
+                    "type": "object",
+                    "description": "Azure Blob Storage configuration",
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean",
+                            "description": "Enable Azure Blob Storage support"
+                        },
+                        "accountName": {
+                            "type": "string",
+                            "description": "Azure storage account name"
+                        },
+                        "credentials": {
+                            "type": "object",
+                            "description": "Azure credentials configuration",
+                            "properties": {
+                                "create": {
+                                    "type": "boolean",
+                                    "description": "Create a new secret for Azure credentials"
+                                },
+                                "secretName": {
+                                    "type": "string",
+                                    "description": "Existing secret name"
+                                },
+                                "accountKey": {
+                                    "type": "string",
+                                    "description": "Storage account key (only used if create is true)"
+                                },
+                                "sasToken": {
+                                    "type": "string",
+                                    "description": "SAS token (only used if create is true)"
+                                },
+                                "useAccountKey": {
+                                    "type": "boolean",
+                                    "description": "Use account key for authentication (if false, will use SAS token)"
+                                }
+                            },
+                            "required": [
+                                "secretName"
+                            ]
+                        }
+                    },
+                    "required": [
+                        "enabled"
+                    ]
+                }
+            }
         }
     },
     "additionalProperties": true

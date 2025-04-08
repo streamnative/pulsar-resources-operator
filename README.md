@@ -4,16 +4,41 @@ Authored by [StreamNative](https://streamnative.io), this Pulsar Resources Oper
 
 Currently, the Pulsar Resources Operator provides full lifecycle management for the following Pulsar resources, including creation, update, and deletion. 
 
-- Tenants
-- Namespaces
-- Topics
-- Permissions
+- [Tenants](docs/pulsar_tenant.md)
+- [Namespaces](docs/pulsar_namespace.md)
+- [Topics](docs/pulsar_topic.md)
+- [Permissions](docs/pulsar_permission.md)
+- [Packages](docs/pulsar_package.md)
+- [Functions](docs/pulsar_function.md)
+- [Sinks](docs/pulsar_sink.md)
+- [Sources](docs/pulsar_source.md)
+- [Geo-Replication](docs/pulsar_geo_replication.md)
+- [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
 
+## Lifecycle Management
+
+The Pulsar Resources Operator provides a flexible approach to managing the lifecycle of Pulsar resources through the `PulsarResourceLifeCyclePolicy`. This policy determines how Pulsar resources are handled when their corresponding Kubernetes custom resources are deleted. For more details on lifecycle management, please refer to the [PulsarResourceLifeCyclePolicy documentation](docs/pulsar_resource_lifecycle.md).
+
+There are two available options for the lifecycle policy:
+
+1. `CleanUpAfterDeletion`: When set, the Pulsar resource (such as a tenant, namespace, or topic) will be deleted from the Pulsar cluster when its corresponding Kubernetes custom resource is deleted. This is the default policy.
+
+2. `KeepAfterDeletion`: When set, the Pulsar resource will remain in the Pulsar cluster even after its corresponding Kubernetes custom resource is deleted.
+
+You can specify the lifecycle policy in the custom resource definition:
+
+```yaml
+apiVersion: pulsar.streamnative.io/v1beta1
+kind: PulsarTenant
+metadata:
+  name: my-tenant
+spec:
+  pulsarResourceLifeCyclePolicy: KeepAfterDeletion
+```
 
 # Installation
 
 The Pulsar Resources Operator is an independent controller, it doesn’t need to be installed with the pulsar operator. You can install it when you need the feature. And it is built with the [Operator SDK](https://github.com/operator-framework/operator-sdk), which is part of the [Operator framework](https://github.com/operator-framework/).
-
 
 You can install the Pulsar Resources Operator using the officially supported `pulsar-resources-operator` Helm [chart](https://github.com/streamnative/charts/tree/master/charts/pulsar-resources-operator). It provides Custom Resource Definitions (CRDs) and Controllers to manage the Pulsar resources.
 
@@ -94,12 +119,23 @@ Before creating Pulsar resources, you must create a resource called `PulsarConne
 In this tutorial, a Kubernetes namespace called `test` is used for examples, which is the namespace that the pulsar cluster installed.
 
 - [PulsarConnection](docs/pulsar_connection.md)
+- [PulsarResourceLifeCyclePolicy](docs/pulsar_resource_lifecycle.md)
 - [PulsarTenant](docs/pulsar_tenant.md)
 - [PulsarNamespace](docs/pulsar_namespace.md)
 - [PulsarTopic](docs/pulsar_topic.md)
 - [PulsarPermission](docs/pulsar_permission.md)
+- [PulsarPackage](docs/pulsar_package.md)
+- [PulsarFunction](docs/pulsar_function.md)
+- [PulsarSink](docs/pulsar_sink.md)
+- [PulsarSource](docs/pulsar_source.md)
+- [PulsarGeoReplication](docs/pulsar_geo_replication.md)
+- [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
+- [StreamNativeCloudConnection](docs/streamnative_cloud_connection.md)
+- [ComputeWorkspace](docs/compute_workspace.md)
+- [ComputeFlinkDeployment](docs/compute_flink_deployment.md)
+- [StreamNative Cloud Secret](docs/secret.md)
 
-## Contributing
+# Contributing
 
 Contributions are warmly welcomed and greatly appreciated! 
 The project follows the typical GitHub pull request model.

@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ type PulsarTenantReconciler struct {
 func makeTenantsReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarTenantReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarTenant"),
+		log:  makeSubResourceLog(r, "PulsarTenant"),
 	}
 }
 
@@ -69,11 +69,15 @@ func (r *PulsarTenantReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all tenants
 func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.tenants {
 		tenant := &r.conn.tenants[i]
 		if err := r.ReconcileTenant(ctx, r.conn.pulsarAdmin, tenant); err != nil {
-			return fmt.Errorf("reconcile tenant [%w]", err)
+			errs = append(errs, err)
 		}
+	}
+	if len(errs) > 0 {
+		return fmt.Errorf("reconcile tenant [%v]", errs)
 	}
 	return nil
 }
@@ -81,15 +85,19 @@ func (r *PulsarTenantReconciler) Reconcile(ctx context.Context) error {
 // ReconcileTenant move the current state of the toic closer to the desired state
 func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	tenant *resourcev1alpha1.PulsarTenant) error {
-	log := r.log.WithValues("pulsartenant", tenant.Name, "namespace", tenant.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", tenant.Name, "namespace", tenant.Namespace)
+	log.Info("Start Reconcile")
 
 	if !tenant.DeletionTimestamp.IsZero() {
 		log.Info("Deleting tenant", "LifecyclePolicy", tenant.Spec.LifecyclePolicy)
 		if tenant.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			if err := pulsarAdmin.DeleteTenant(tenant.Spec.Name); err != nil && !admin.IsNotFound(err) {
-				log.Error(err, "Failed to delete tenant")
-				return err
+				if admin.IsNoSuchHostError(err) {
+					log.Info("Pulsar cluster has been deleted")
+				} else {
+					log.Error(err, "Failed to delete tenant")
+					return err
+				}
 			}
 		}
 
@@ -112,7 +120,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 
 	if resourcev1alpha1.IsPulsarResourceReady(tenant) &&
 		!feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) {
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, tenant resource is ready")
 		return nil
 	}
 

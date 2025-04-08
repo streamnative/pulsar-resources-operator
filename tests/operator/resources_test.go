@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,12 +68,27 @@ var _ = Describe("Resources", func() {
 			},
 			Spec: v1alphav1.PulsarTopicSpec{
 				Name:       "persistent://cloud/stage/partitioned-topic",
-				Partitions: pointer.Int32Ptr(1),
+				Partitions: pointer.Int32(1),
 				ConnectionRef: corev1.LocalObjectReference{
 					Name: pconnName,
 				},
 			},
 		}
+		ppackage               *v1alphav1.PulsarPackage
+		ppackageurl            string = "function://public/default/api-examples@v3.2.3.3"
+		pfuncName              string = "test-func"
+		pfuncFailureName       string = "func-test-failure"
+		psinkName              string = "test-sink"
+		psourceName            string = "test-source"
+		pclusterName           string = "test-pulsar"
+		pnsIsolationPolicyName string = "test-ns-isolation-policy"
+		pfunc                  *v1alphav1.PulsarFunction
+		pfuncfailure           *v1alphav1.PulsarFunction
+		psinkpackageurl        string = "builtin://data-generator"
+		psink                  *v1alphav1.PulsarSink
+		psource                *v1alphav1.PulsarSource
+		pnsisolationpolicy     *v1alphav1.PulsarNSIsolationPolicy
+		psourcepackageurl      string = "builtin://data-generator"
 	)
 
 	BeforeEach(func() {
@@ -94,7 +109,19 @@ var _ = Describe("Resources", func() {
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
-
+		ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
+		pfuncfailure = utils.MakePulsarFunction(namespaceName, pfuncFailureName, "function://not/exists/package@latest", pconnName, lifecyclePolicy)
+		psink = utils.MakePulsarSink(namespaceName, psinkName, psinkpackageurl, pconnName, lifecyclePolicy)
+		psource = utils.MakePulsarSource(namespaceName, psourceName, psourcepackageurl, pconnName, lifecyclePolicy)
+		pnsisolationpolicy = utils.MakeNSIsolationPolicy(namespaceName, pnsIsolationPolicyName, pclusterName, pconnName,
+			[]string{pnamespaceName},
+			[]string{"test-pulsar-broker-0.*"},
+			[]string{},
+			map[string]string{
+				"min_limit":       "1",
+				"usage_threshold": "80",
+			})
 	})
 
 	Describe("Basic resource operations", Ordered, func() {
@@ -109,19 +136,6 @@ var _ = Describe("Resources", func() {
 					return statefulset.Status.ReadyReplicas > 0 && statefulset.Status.ReadyReplicas == statefulset.Status.Replicas
 				}, "600s", "100ms").Should(BeTrue())
 			})
-		})
-		Context("Check pulsar proxy", func() {
-			It("should create the pulsar proxy successfully", func() {
-				Eventually(func() bool {
-					statefulset := &v1.StatefulSet{}
-					k8sClient.Get(ctx, types.NamespacedName{
-						Name:      proxyName + "-proxy",
-						Namespace: namespaceName,
-					}, statefulset)
-					return statefulset.Status.ReadyReplicas > 0 && statefulset.Status.ReadyReplicas == statefulset.Status.Replicas
-				}, "600s", "100ms").Should(BeTrue())
-			})
-
 		})
 
 		Context("PulsarConnection operation", func() {
@@ -209,8 +223,8 @@ var _ = Describe("Resources", func() {
 				updateTopicSchema(ctx, ptopicName2, exampleSchemaDef)
 
 				Eventually(func(g Gomega) {
-					podName := fmt.Sprintf("%s-proxy-0", proxyName)
-					containerName := "pulsar-proxy"
+					podName := fmt.Sprintf("%s-broker-0", brokerName)
+					containerName := fmt.Sprintf("%s-broker", brokerName)
 					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
 					g.Expect(err).Should(Succeed())
@@ -228,8 +242,8 @@ var _ = Describe("Resources", func() {
 			})
 
 			It("should always update pulsar resource when enable AlwaysUpdatePulsarResource", func() {
-				podName := fmt.Sprintf("%s-proxy-0", proxyName)
-				containerName := "pulsar-proxy"
+				podName := fmt.Sprintf("%s-broker-0", brokerName)
+				containerName := fmt.Sprintf("%s-broker", brokerName)
 
 				By("delete topic2 with pulsarctl")
 				_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
@@ -264,7 +278,7 @@ var _ = Describe("Resources", func() {
 					Name:      partitionedTopic.Name,
 				}, curTopic)).ShouldNot(HaveOccurred())
 
-				curTopic.Spec.Partitions = pointer.Int32Ptr(2)
+				curTopic.Spec.Partitions = pointer.Int32(2)
 				err := k8sClient.Update(ctx, curTopic)
 				Expect(err).ShouldNot(HaveOccurred())
 				Eventually(func() bool {
@@ -290,6 +304,205 @@ var _ = Describe("Resources", func() {
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
+			})
+		})
+
+		Context("PulsarFunction & PulsarPackage operation", func() {
+			It("should create the pulsarpackage successfully", func() {
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the package should be ready", func() {
+				Eventually(func() bool {
+					p := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, p)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(p)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("should create the pulsarfunction successfully", func() {
+				err := k8sClient.Create(ctx, pfunc)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the function should be ready", func() {
+				Eventually(func() bool {
+					f := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(f)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsarfunction successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+
+			It("cleanup the pulsarpackage successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarSink operation", func() {
+			It("should create the pulsarsink successfully", func() {
+				err := k8sClient.Create(ctx, psink)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the sink should be ready", func() {
+				Eventually(func() bool {
+					s := &v1alphav1.PulsarSink{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psinkName}
+					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(s)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsarsink successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarSink{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psinkName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarSource operation", func() {
+			It("should create the pulsarsource successfully", func() {
+				err := k8sClient.Create(ctx, psource)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the source should be ready", func() {
+				Eventually(func() bool {
+					s := &v1alphav1.PulsarSource{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psourceName}
+					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(s)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsarsource successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarSource{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: psourceName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarFunction & PulsarPackage operation with failure", func() {
+			It("should create the pulsarpackage successfully", func() {
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the package should be ready", func() {
+				Eventually(func() bool {
+					p := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					Expect(k8sClient.Get(ctx, tns, p)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(p)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("should create the pulsarfunction successfully with error config", func() {
+				err := k8sClient.Create(ctx, pfuncfailure)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the function should be not ready", func() {
+				Eventually(func() bool {
+					f := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+					return !v1alphav1.IsPulsarResourceReady(f)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("should update the pulsarfunction successfully with correct config", func() {
+				f := &v1alphav1.PulsarFunction{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+				Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+				f.Spec.Jar.URL = ppackageurl
+				err := k8sClient.Update(ctx, f)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the function should be ready after update", func() {
+				Eventually(func() bool {
+					f := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+					Expect(k8sClient.Get(ctx, tns, f)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(f)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsarfunction successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarFunction{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncFailureName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+
+			It("cleanup the pulsarpackage successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarPackage{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pfuncName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarNSIsolationPolicy operation", func() {
+			It("should create the pulsar ns-isolation-policy successfully", func() {
+				err := k8sClient.Create(ctx, pnsisolationpolicy)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("the ns-isolation-policy should be ready", func() {
+				Eventually(func() bool {
+					s := &v1alphav1.PulsarNSIsolationPolicy{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pnsIsolationPolicyName}
+					Expect(k8sClient.Get(ctx, tns, s)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(s)
+				}, "40s", "100ms").Should(BeTrue())
+			})
+
+			It("cleanup the pulsar ns-isolation-policy successfully", func() {
+				Eventually(func(g Gomega) {
+					t := &v1alphav1.PulsarNSIsolationPolicy{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pnsIsolationPolicyName}
+					g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+				}).Should(Succeed())
+			})
+		})
+
+		Context("PulsarPackage operation with valid file URL", func() {
+			It("should create the pulsarpackage successfully with valid file URL", func() {
+				ppackage.Spec.FileURL = "file:///manager" // we use the manager binary as the file URL
+				ppackage.Spec.PackageURL = "function://public/default/file@valid"
+				ppackage.Name = "test-func-valid"
+				err := k8sClient.Create(ctx, ppackage)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 		})
 

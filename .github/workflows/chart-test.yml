@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,9 +23,12 @@ on:
       - 'charts/**'
       - '.github/workflows/chart-test.yml'
 
+env:
+  GOPRIVATE: github.com/streamnative
+
 jobs:
   lint-test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     outputs:
       changed: ${{ steps.list-changed.outputs.changed }}
       chart_name: ${{ steps.list-changed.outputs.chart_name }}
@@ -42,7 +45,16 @@ jobs:
             diff config/crd/bases/resource.streamnative.io_pulsarnamespaces.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnamespaces.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsarpermissions.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpermissions.yaml  && \
             diff config/crd/bases/resource.streamnative.io_pulsartenants.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartenants.yaml  && \
-            diff config/crd/bases/resource.streamnative.io_pulsartopics.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartopics.yaml
+            diff config/crd/bases/resource.streamnative.io_pulsarfunctions.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarfunctions.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarsinks.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsinks.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarsources.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsources.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsarpackages.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpackages.yaml  && \
+            diff config/crd/bases/resource.streamnative.io_pulsartopics.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartopics.yaml && \
+            diff config/crd/bases/resource.streamnative.io_pulsarnsisolationpolicies.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnsisolationpolicies.yaml && \
+            diff config/crd/bases/resource.streamnative.io_streamnativecloudconnections.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_streamnativecloudconnections.yaml && \
+            diff config/crd/bases/resource.streamnative.io_computeworkspaces.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_computeworkspaces.yaml && \
+            diff config/crd/bases/resource.streamnative.io_computeflinkdeployments.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_computeflinkdeployments.yaml && \
+            diff config/crd/bases/resource.streamnative.io_secrets.yaml charts/pulsar-resources-operator/crds/resource.streamnative.io_secrets.yaml
 
       - name: Set up Helm
         uses: azure/setup-helm@v3
@@ -92,308 +104,8 @@ jobs:
         timeout-minutes: 10
         if: failure()
 
-  install-on-v1-20:
-    runs-on: ubuntu-latest
-    needs: lint-test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.12.3
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-        with:
-          node_image: kindest/node:v1.20.15
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Run chart-testing (install)
-        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
-        if: failure()
-
-  install-on-v1-21:
-    runs-on: ubuntu-latest
-    needs: lint-test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.12.3
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-        with:
-          node_image: kindest/node:v1.21.14
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Run chart-testing (install)
-        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
-        if: failure()
-
-  install-on-v1-22:
-    runs-on: ubuntu-latest
-    needs: lint-test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.12.3
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-        with:
-          node_image: kindest/node:v1.22.17
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Run chart-testing (install)
-        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
-        if: failure()
-
-  install-on-v1-23:
-    runs-on: ubuntu-latest
-    needs: lint-test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.12.3
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-        with:
-          node_image: kindest/node:v1.23.17
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Run chart-testing (install)
-        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
-        if: failure()
-
-  install-on-v1-24:
-    runs-on: ubuntu-latest
-    needs: lint-test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.12.3
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-        with:
-          node_image: kindest/node:v1.24.15
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Run chart-testing (install)
-        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
-        if: failure()
-
-  install-on-v1-25:
-    runs-on: ubuntu-latest
-    needs: lint-test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: clean disk
-        run: |
-          df -h
-          sudo swapoff -a
-          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
-          sudo apt clean
-          docker rmi $(docker images -q) -f
-          df -h
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up Helm
-        uses: azure/setup-helm@v3
-        with:
-          version: v3.12.3
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: 3.9
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Set up chart-testing
-        uses: helm/chart-testing-action@v2.6.0
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Create kind cluster
-        uses: helm/kind-action@v1.8.0
-        with:
-          node_image: kindest/node:v1.25.11
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Run chart-testing (install)
-        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
-        if: ${{ needs.lint-test.outputs.changed == 'true' }}
-
-      - name: Setup tmate session
-        uses: mxschmitt/action-tmate@v3
-        timeout-minutes: 10
-        if: failure()
-
   install-on-v1-26:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-test
     steps:
       - name: Checkout
@@ -433,9 +145,38 @@ jobs:
           node_image: kindest/node:v1.26.6
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
       - name: Run chart-testing (install)
         run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Verify Pod Status
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+        run: |
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=Ready pods --all -n chart-testing --timeout=300s
+          
+          echo "Checking pod status..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.phase}' | tr ' ' '\n' | grep -v "Running" | wc -l) -ne 0 ]]; then
+            echo "Some pods are not running:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "Checking for pod restarts..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' | tr ' ' '\n' | grep -v "^0$" | wc -l) -ne 0 ]]; then
+            echo "Some pods have restarted:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "All pods are running properly!"
+          kubectl get pods -n chart-testing
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3
@@ -443,7 +184,7 @@ jobs:
         if: failure()
 
   install-on-v1-27:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs: lint-test
     steps:
       - name: Checkout
@@ -480,12 +221,199 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@v1.8.0
         with:
-          node_image: kindest/node:v1.27.3
+          node_image: kindest/node:v1.27.13
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
       - name: Run chart-testing (install)
         run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Verify Pod Status
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+        run: |
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=Ready pods --all -n chart-testing --timeout=300s
+          
+          echo "Checking pod status..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.phase}' | tr ' ' '\n' | grep -v "Running" | wc -l) -ne 0 ]]; then
+            echo "Some pods are not running:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "Checking for pod restarts..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' | tr ' ' '\n' | grep -v "^0$" | wc -l) -ne 0 ]]; then
+            echo "Some pods have restarted:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "All pods are running properly!"
+          kubectl get pods -n chart-testing
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10
+        if: failure()
+  
+  install-on-v1-28:
+    runs-on: ubuntu-22.04
+    needs: lint-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: clean disk
+        run: |
+          df -h
+          sudo swapoff -a
+          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker rmi $(docker images -q) -f
+          df -h
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.3
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.6.0
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          node_image: kindest/node:v1.28.9
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Run chart-testing (install)
+        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Verify Pod Status
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+        run: |
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=Ready pods --all -n chart-testing --timeout=300s
+          
+          echo "Checking pod status..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.phase}' | tr ' ' '\n' | grep -v "Running" | wc -l) -ne 0 ]]; then
+            echo "Some pods are not running:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "Checking for pod restarts..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' | tr ' ' '\n' | grep -v "^0$" | wc -l) -ne 0 ]]; then
+            echo "Some pods have restarted:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "All pods are running properly!"
+          kubectl get pods -n chart-testing
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 10
+        if: failure()
+
+  install-on-v1-29:
+    runs-on: ubuntu-22.04
+    needs: lint-test
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: clean disk
+        run: |
+          df -h
+          sudo swapoff -a
+          sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
+          sudo apt clean
+          docker rmi $(docker images -q) -f
+          df -h
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: v3.12.3
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Set up chart-testing
+        uses: helm/chart-testing-action@v2.6.0
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create kind cluster
+        uses: helm/kind-action@v1.8.0
+        with:
+          node_image: kindest/node:v1.29.4
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Create k8s namespace chart-testing
+        run: kubectl create namespace chart-testing
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Run chart-testing (install)
+        run: ct install --debug --config ct.yaml --print-config --charts ${{ needs.lint-test.outputs.chart_name }}
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+
+      - name: Verify Pod Status
+        if: ${{ needs.lint-test.outputs.changed == 'true' }}
+        run: |
+          echo "Waiting for pods to be ready..."
+          kubectl wait --for=condition=Ready pods --all -n chart-testing --timeout=300s
+          
+          echo "Checking pod status..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.phase}' | tr ' ' '\n' | grep -v "Running" | wc -l) -ne 0 ]]; then
+            echo "Some pods are not running:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "Checking for pod restarts..."
+          if [[ $(kubectl get pods -n chart-testing -o jsonpath='{.items[*].status.containerStatuses[*].restartCount}' | tr ' ' '\n' | grep -v "^0$" | wc -l) -ne 0 ]]; then
+            echo "Some pods have restarted:"
+            kubectl get pods -n chart-testing
+            kubectl describe pods -n chart-testing
+            exit 1
+          fi
+          
+          echo "All pods are running properly!"
+          kubectl get pods -n chart-testing
 
       - name: Setup tmate session
         uses: mxschmitt/action-tmate@v3

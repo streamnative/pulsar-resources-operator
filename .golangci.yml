@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,15 +17,15 @@ linters:
   enable:
   - asciicheck
   - bodyclose
-  - deadcode
+  - unused
+  # - deadcode
   # - depguard
   - dogsled
   - errcheck
-  - exportloopref
+  - copyloopvar
   # - gci
-  - goconst
   - gocritic
-  - gocyclo
+#   - gocyclo
   # - godot
   - gofmt
   - goimports
@@ -33,7 +33,6 @@ linters:
   - gosec
   - gosimple
   - govet
-  - ifshort
   - importas
   - ineffassign
   - misspell
@@ -42,17 +41,15 @@ linters:
   - nolintlint
   - prealloc
   - predeclared
-  - revive
   - rowserrcheck
   - staticcheck
-  - structcheck
+  # - structcheck
   - stylecheck
   - thelper
   - typecheck
   - unconvert
   - unparam
-  - varcheck
-  - whitespace
+  # - varcheck
 
 linters-settings:
   godot:
@@ -63,12 +60,10 @@ linters-settings:
     exclude:
     - '^ \+.*'
     - '^ ANCHOR.*'
-  ifshort:
-    # Maximum length of variable declaration measured in number of characters, after which linter won't suggest using short syntax.
-    max-decl-chars: 50
   gci:
-    local-prefixes: "github.com/streamnative"
-    
+    sections:
+    - prefix(github.com/streamnative)
+
   importas:
     no-unaliased: true
     alias:
@@ -88,12 +83,7 @@ linters-settings:
         alias: ctrl
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     require-specific: true
-  staticcheck:
-    go: "1.17"
-  stylecheck:
-    go: "1.17"
   gosec:
     excludes:
     - G307 # Deferring unsafe method "Close" on type "\*os.File"
@@ -121,6 +111,10 @@ issues:
   # We are disabling default golangci exclusions because we want to help reviewers to focus on reviewing the most relevant
   # changes in PRs and avoid nitpicking.
   exclude-use-default: false
+  exclude-files:
+  - "zz_generated.*\\.go$"
+  exclude-dirs:
+  - third_party
   exclude-rules:
   - linters:
     - revive
@@ -210,8 +204,5 @@ run:
   build-tags:
   - tools
   - e2e
-  skip-files:
-  - "zz_generated.*\\.go$"
-  skip-dirs:
-  - third_party
   allow-parallel-runners: true
+  go: "1.22"

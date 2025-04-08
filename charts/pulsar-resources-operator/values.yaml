@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,20 +29,11 @@ image:
   # resource controller container
   manager:
     # -- Specififies the registry of images, especially when user want to use a different image hub
-    registry: docker.streamnative.io
+    registry: docker.io
     # -- The full repo name for image.
-    repository: streamnative/operators/pulsar-resources-operator
+    repository: streamnative/pulsar-resources-operator
     # -- Image tag, it can override the image tag whose default is the chart appVersion.
     tag: ""
-
-  # kube-rbac-proxy container
-  kubeRbacProxy:
-    # -- Specififies the registry of images, especially when user want to use a different image hub
-    registry: gcr.io
-    # -- The full repo name for image.
-    repository: kubebuilder/kube-rbac-proxy
-    # -- Image tag, it can override the image tag whose default is the chart appVersion.
-    tag: "v0.14.4"
 
 # -- Specifies image pull secrets for private registry, the format is `- name: gcr`
 imagePullSecrets: []
@@ -52,13 +43,16 @@ imagePullSecrets: []
 features:
   # Enable to force always sync k8s resource status to pulsar.
   alwaysUpdatePulsarResource: false
+  # resyncPeriod  determines the minimum frequency at which watched resources are reconciled. The unit is hour, default value is 10 hours.
+  resyncPeriod: 10
+  # The number of retries in case of error.
+  retryCount: 5
 
 # -- It will override the value of label `app.kubernetes.io/name` on pod
 nameOverride: ""
 
 # -- It will override the name of deployment
 fullnameOverride: ""
-
 
 serviceAccount:
   # -- Specifies whether a service account should be created
@@ -107,7 +101,6 @@ resources: {}
 # -- Add NodeSelector for pod schedule
 nodeSelector: {}
 
-
 # -- Add tolerations
 tolerations: []
 
@@ -116,6 +109,67 @@ affinity: {}
 
 # -- The period seconds that pod will be termiated gracefully
 terminationGracePeriodSeconds: 10
+
+# -- Cloud storage providers configuration
+# -- Allow to sync files as Pulsar Packages to Pulsar Packages Management Service
+cloudStorage:
+  # -- AWS S3 configuration
+  s3:
+    # -- Enable AWS S3 support
+    enabled: false
+    # -- AWS region
+    region: ""
+    # -- AWS credentials secret configuration
+    credentials:
+      # -- Create a new secret for AWS credentials
+      create: false
+      # -- Existing secret name
+      secretName: "aws-credentials"
+      # -- AWS access key ID (only used if create is true)
+      accessKeyId: ""
+      # -- AWS secret access key (only used if create is true)
+      secretAccessKey: ""
+
+  # -- Google Cloud Storage configuration
+  gcs:
+    # -- Enable Google Cloud Storage support
+    enabled: false
+    # -- Service account configuration
+    serviceAccount:
+      # -- Use GCP Workload Identity (recommended for GKE)
+      useWorkloadIdentity: false
+      # -- GCP service account email for Workload Identity
+      # Format: GSA_NAME@PROJECT_ID.iam.gserviceaccount.com
+      name: ""
+      # -- Service account key configuration (only used if useWorkloadIdentity is false)
+      key:
+        # -- Create a new secret for service account key
+        create: false
+        # -- Existing secret name containing the service account key
+        secretName: "gcs-credentials"
+        # -- Service account key JSON content (only used if create is true)
+        json: ""
+        # -- Mount path of the service account key file
+        mountPath: "/var/secrets/google"
+
+  # -- Azure Blob Storage configuration
+  azure:
+    # -- Enable Azure Blob Storage support
+    enabled: false
+    # -- Azure storage account name
+    accountName: ""
+    # -- Azure credentials configuration
+    credentials:
+      # -- Create a new secret for Azure credentials
+      create: false
+      # -- Existing secret name
+      secretName: "azure-credentials"
+      # -- Storage account key (only used if create is true)
+      accountKey: ""
+      # -- SAS token (only used if create is true)
+      sasToken: ""
+      # -- Use account key for authentication (if false, will use SAS token)
+      useAccountKey: true
 
 extraVolumeMounts: []
 extraVolumes: []

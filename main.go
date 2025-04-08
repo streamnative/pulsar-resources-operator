@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,15 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
+
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
+
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -55,11 +62,15 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
+	var resyncPeriod int
+	var retryCount int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.IntVar(&resyncPeriod, "resync-period", 10, "resyncPeriod is the base frequency the informers are resynced.")
+	flag.IntVar(&retryCount, "retry-count", 5, "The number of retries in case of error.")
 	opts := k8szap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
@@ -83,15 +94,22 @@ func main() {
 
 	ctrl.SetLogger(k8szap.New(k8szap.UseFlagOptions(&opts), k8szap.Encoder(encoder)))
 
+	reSync := time.Duration(resyncPeriod) * time.Hour
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+		},
 		// TODO uncomment it until kube-instrumentation upgrade controller-runtime version to newer
 		// NewClient:              otelcontroller.NewClient,
-		Port:                   9443,
+		WebhookServer: webhook.NewServer(webhook.Options{
+			Port: 9443,
+		}),
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "feaa54b6.streamnative.io",
+		Cache:                  cache.Options{SyncPeriod: &reSync},
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
@@ -105,8 +123,51 @@ func main() {
 		Log:                ctrl.Log.WithName("controllers").WithName("PulsarConnection"),
 		Recorder:           mgr.GetEventRecorderFor("pulsarconnection-controller"),
 		PulsarAdminCreator: admin.NewPulsarAdmin,
+		Retryer:            utils.NewReconcileRetryer(retryCount, utils.NewEventSource(ctrl.Log.WithName("eventSource"))),
 	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarConnection")
+		os.Exit(1)
+	}
+
+	connectionManager := controllers.NewConnectionManager(mgr.GetClient())
+
+	// Set up APIServerConnection controller
+	if err = (&controllers.APIServerConnectionReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "APIServerConnection")
+		os.Exit(1)
+	}
+
+	// Set up Workspace controller
+	if err = (&controllers.WorkspaceReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Workspace")
+		os.Exit(1)
+	}
+
+	// Set up FlinkDeployment controller
+	if err = (&controllers.FlinkDeploymentReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "FlinkDeployment")
+		os.Exit(1)
+	}
+
+	// Set up Secret controller
+	if err = (&controllers.SecretReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Secret")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

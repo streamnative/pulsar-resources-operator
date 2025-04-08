@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,15 +19,18 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+-?*'
 
+env:
+  GOPRIVATE: github.com/streamnative
 jobs:
   build:
     name: Build image and bundle
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     env:
       GOPRIVATE: github.com/streamnative
-      ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
       IMAGE_TAG_BASE: docker.cloudsmith.io/streamnative/operators/pulsar-resources-operator
       IMAGE_TAG_BASE_QUAY: quay.io/streamnativeio/pulsar-resources-operator
+      IMAGE_TAG_BASE_DOCKERHUB: docker.io/streamnative/pulsar-resources-operator
       REDHAT_API_KEY: ${{ secrets.REDHAT_API_KEY }}
     outputs:
       version: ${{ steps.redhat.outputs.version }}
@@ -35,10 +38,10 @@ jobs:
       default_channel: ${{ steps.redhat.outputs.default_channel }}
 
     steps:
-      - name: Set up Go 1.20
+      - name: Set up Go 1.21
         uses: actions/setup-go@v3
         with:
-          go-version: '1.20'
+          go-version: '1.21'
         id: go
 
       - name: Set up Git token
@@ -55,31 +58,30 @@ jobs:
           mv operator-sdk /usr/local/bin/
           operator-sdk version
 
-      - name: Login to CloudSmith
-        uses: docker/login-action@v2
-        with:
-          registry: docker.cloudsmith.io
-          username: ${{ secrets.CLOUDSMITH_USERNAME }}
-          password: ${{ secrets.CLOUDSMITH_PASSWORD }}
-
       - name: Login to Quay
         uses: docker/login-action@v2
         with:
           registry: quay.io
           username: ${{ secrets.QUAY_DOCKER_USERNAME }}
           password: ${{ secrets.QUAY_DOCKER_PASSWORD }}
-
-      - name: Build
+      
+      - name: Login to DockerHub
+        uses: docker/login-action@v2
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: Build image and Publish to DockerHub
+        id: dockerhub
         run: |
           _tag_version=${GITHUB_REF##*/}
           export VERSION=${_tag_version/v/}
           echo $_tag_version, $VERSION
-          export IMG=$IMAGE_TAG_BASE:v$VERSION
+          export IMG=$IMAGE_TAG_BASE_DOCKERHUB:v$VERSION
+          echo "resource-operator-image=$IMG" >> $GITHUB_OUTPUT
           make docker-build
           make docker-push
-          make bundle
-          make bundle-build
-          make bundle-push
 
       - name: Build image And Publish to Quay
         id: redhat
@@ -91,7 +93,7 @@ jobs:
           export IMG=$IMAGE_TAG_BASE_QUAY:v$VERSION
           export IMG_LATEST=$IMAGE_TAG_BASE_QUAY:latest
           make docker-build-redhat
-          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.6.11/preflight-linux-amd64 -O preflight
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.12.1/preflight-linux-amd64 -O preflight
           chmod +x preflight
           mv preflight /usr/local/bin
           preflight -v
@@ -104,6 +106,7 @@ jobs:
           export DEFAULT_CHANNEL=alpha
           echo "channels=$CHANNELS" >> $GITHUB_OUTPUT
           echo "default_channel=$DEFAULT_CHANNEL" >> $GITHUB_OUTPUT
+          rm -rf bundle
           make bundle-redhat
           make bundle-build
           make bundle-push
@@ -111,8 +114,14 @@ jobs:
   operatorhub:
     name: Create PR to the operatorhub
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    env:
+      GOPRIVATE: github.com/streamnative
+      ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
     steps:
+      - name: Set up Git token
+        run: |
+          git config --global url."https://${ACCESS_TOKEN}:@github.com/".insteadOf "https://github.com/"
       - name: Sync up the upstream
         env:
           GITHUB_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}

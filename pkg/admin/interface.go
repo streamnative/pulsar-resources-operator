@@ -1,4 +1,4 @@
-// Copyright 2022 StreamNative
+// Copyright 2025 StreamNative
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
 package admin
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -23,6 +22,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/auth"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
+	utils2 "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -49,7 +49,11 @@ type NamespaceParams struct {
 	BacklogQuotaLimitSize       *resource.Quantity
 	BacklogQuotaRetentionPolicy *string
 	BacklogQuotaType            *string
+	OffloadThresholdTime        *utils.Duration
+	OffloadThresholdSize        *resource.Quantity
 	ReplicationClusters         []string
+	Deduplication               *bool
+	BookieAffinityGroup         *v1alpha1.BookieAffinityGroupData
 }
 
 // TopicParams indicates the parameters for creating a topic
@@ -67,6 +71,7 @@ type TopicParams struct {
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
 	ReplicationClusters               []string
+	Deduplication                     *bool
 }
 
 // ClusterParams indicate the parameters for creating a cluster
@@ -110,7 +115,7 @@ type PulsarAdmin interface {
 	SetNamespaceClusters(name string, clusters []string) error
 
 	// ApplyTopic creates a topic with parameters
-	ApplyTopic(name string, params *TopicParams) error
+	ApplyTopic(name string, params *TopicParams) (error, error)
 
 	// DeleteTopic delete a specific topic
 	DeleteTopic(name string) error
@@ -149,8 +154,59 @@ type PulsarAdmin interface {
 	// DeleteCluster delete cluster info
 	DeleteCluster(name string) error
 
-	// CheckClusterExist check wether the cluster is created or not
+	// CheckClusterExist check whether the cluster is created or not
 	CheckClusterExist(name string) (bool, error)
+
+	// DeletePulsarPackage delete pulsar package
+	DeletePulsarPackage(packageURL string) error
+
+	// CheckPulsarPackageExist check whether the package is created or not
+	CheckPulsarPackageExist(packageURL string) (bool, error)
+
+	// ApplyPulsarPackage apply pulsar package
+	ApplyPulsarPackage(packageURL, filePath, description, contact string, properties map[string]string, changed bool) error
+
+	// DeletePulsarFunction delete pulsar function
+	DeletePulsarFunction(tenant, namespace, name string) error
+
+	// CheckPulsarFunctionExist check whether the function is created or not
+	CheckPulsarFunctionExist(tenant, namespace, name string) (bool, error)
+
+	// ApplyPulsarFunction apply pulsar function
+	ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error
+
+	// DeletePulsarSink delete pulsar sink
+	DeletePulsarSink(tenant, namespace, name string) error
+
+	// CheckPulsarSinkExist check whether the sink is created or not
+	CheckPulsarSinkExist(tenant, namespace, name string) (bool, error)
+
+	// ApplyPulsarSink apply pulsar sink
+	ApplyPulsarSink(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSinkSpec, changed bool) error
+
+	// DeletePulsarSource delete pulsar source
+	DeletePulsarSource(tenant, namespace, name string) error
+
+	// CheckPulsarSourceExist check whether the source is created or not
+	CheckPulsarSourceExist(tenant, namespace, name string) (bool, error)
+
+	// ApplyPulsarSource apply pulsar source
+	ApplyPulsarSource(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarSourceSpec, changed bool) error
+
+	// GetTenantAllowedClusters get the allowed clusters of the tenant
+	GetTenantAllowedClusters(name string) ([]string, error)
+
+	// GetNSIsolationPolicy get the ns-isolation-policy
+	GetNSIsolationPolicy(policyName, clusterName string) (*utils2.NamespaceIsolationData, error)
+
+	// CreateNSIsolationPolicy create a ns-isolation-policy
+	CreateNSIsolationPolicy(policyName, clusterName string, policyData utils2.NamespaceIsolationData) error
+
+	// DeleteNSIsolationPolicy delete the ns-isolation-policy
+	DeleteNSIsolationPolicy(policyName, clusterName string) error
+
+	// GetPulsarPackageMetadata retrieves package information
+	GetPulsarPackageMetadata(packageURL string) (*utils2.PackageMetadata, error)
 }
 
 // PulsarAdminCreator is the function type to create a PulsarAdmin with config
@@ -179,6 +235,8 @@ type PulsarAdminConfig struct {
 	Audience       string
 	Key            string
 	Scope          string
+
+	PulsarAPIVersion *config.APIVersion
 }
 
 // NewPulsarAdmin initialize a pulsar admin client with configuration
@@ -195,8 +253,12 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		PulsarAPIVersion: config.V2,
 	}
 
+	if conf.PulsarAPIVersion != nil {
+		config.PulsarAPIVersion = *conf.PulsarAPIVersion
+	}
+
 	if conf.Key != "" {
-		keyFile, err = ioutil.TempFile("", "oauth2-key-")
+		keyFile, err = os.CreateTemp("", "oauth2-key-")
 		if err != nil {
 			return nil, err
 		}

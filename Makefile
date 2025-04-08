@@ -1,4 +1,4 @@
-# Copyright 2022 StreamNative
+# Copyright 2024 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,6 +54,9 @@ IMG ?= controller:latest
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 
+# Architecture to use envtest with
+ENVTEST_ARCH ?= amd64
+
 KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
 
 REDHAT_SCAN_REGITRY ?= "quay.io"
@@ -71,6 +74,8 @@ endif
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
+
+CODE_GENERATOR_VERSION = v0.30.9
 
 .PHONY: all
 all: build
@@ -96,11 +101,16 @@ help: ## Display this help.
 
 .PHONY: manifests
 manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./api/..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
 generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./api/..."
+
+.PHONY: generate-internal
+generate-internal: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	$(CONTROLLER_GEN)  object:headerFile="hack/boilerplate.go.txt" paths="./pkg/streamnativecloud/apis/..."
+	./hack/update-codegen.sh
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -111,22 +121,22 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
+test: manifests generate generate-internal fmt vet envtest ## Run tests.
+	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --arch=${ENVTEST_ARCH} -p path)" go test ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: generate generate-internal fmt vet license-fix ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
+run: manifests generate generate-internal fmt vet license-fix ## Run a controller from your host.
 	go run ./main.go
 
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	docker build -t ${IMG} . --build-arg ACCESS_TOKEN=${ACCESS_TOKEN}
 
 # Build image for redhat certification
 .PHONY: docker-build-redhat
@@ -181,7 +191,7 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
-	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0)
 
 KUSTOMIZE = $(shell pwd)/bin/kustomize
 .PHONY: kustomize
@@ -191,7 +201,11 @@ kustomize: ## Download kustomize locally if necessary.
 ENVTEST = $(shell pwd)/bin/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@latest)
+	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc7486e6)
+
+CLIENT_GEN = $(shell pwd)/bin/client-gen
+client-gen:
+	$(call go-get-tool,$(CLIENT_GEN),k8s.io/code-generator/cmd/client-gen@$(CODE_GENERATOR_VERSION))
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
@@ -227,7 +241,7 @@ bundle-redhat: manifests kustomize
 	sed -i  "s|image: docker.cloudsmith.io/.*|image: $(KUBE_RBAC_PROXY_IMG)|g" bundle/manifests/pulsar-resources-operator.clusterserviceversion.yaml
 
 	echo "  # OpenShift annotations." >> bundle/metadata/annotations.yaml
-	echo "  com.redhat.openshift.versions: v4.6-v4.15" >> bundle/metadata/annotations.yaml
+	echo "  com.redhat.openshift.versions: v4.6-v4.17" >> bundle/metadata/annotations.yaml
 
 .PHONY: bundle-build
 bundle-build: ## Build the bundle image.
@@ -289,7 +303,7 @@ husky:
 LICENSE_EYE = $(shell pwd)/bin/license-eye
 .PHONY: license-eye
 license-eye: ## Download license-eye locally if necessary. https://github.com/apache/skywalking-eyes
-	$(call go-get-tool,$(LICENSE_EYE),github.com/apache/skywalking-eyes/cmd/license-eye@0.4.0)
+	$(call go-get-tool,$(LICENSE_EYE),github.com/apache/skywalking-eyes/cmd/license-eye@v0.4.0)
 
 ## Check if the specified files have the license header in the config file.
 .PHONY: license-check
@@ -305,4 +319,6 @@ license-fix: license-eye
 .PHONY: copy-crds
 copy-crds: 
 	cp -r config/crd/bases/* charts/pulsar-resources-operator/crds
-
+	# Sync rules from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml
+	@echo "Syncing rules section from config/rbac/role.yaml to charts/pulsar-resources-operator/templates/role.yaml"
+	@./scripts/sync_rules.py config/rbac/role.yaml charts/pulsar-resources-operator/templates/role.yaml

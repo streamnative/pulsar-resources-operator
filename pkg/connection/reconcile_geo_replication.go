@@ -16,6 +16,8 @@ package connection
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -41,7 +43,7 @@ type PulsarGeoReplicationReconciler struct {
 func makeGeoReplicationReconciler(r *PulsarConnectionReconciler) reconciler.Interface {
 	return &PulsarGeoReplicationReconciler{
 		conn: r,
-		log:  r.log.WithName("PulsarGeoReplication"),
+		log:  makeSubResourceLog(r, "PulsarGeoReplication"),
 	}
 }
 
@@ -77,6 +79,7 @@ func (r *PulsarGeoReplicationReconciler) Observe(ctx context.Context) error {
 
 // Reconcile reconciles all the geo replication objects
 func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
+	errs := []error{}
 	for i := range r.conn.geoReplications {
 		r.log.V(1).Info("Reconcile Geo")
 		geoReplication := &r.conn.geoReplications[i]
@@ -102,7 +105,10 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 		}
 
 		if err := r.ReconcileGeoReplication(ctx, pulsarAdmin, geoReplication); err != nil {
-			return fmt.Errorf("reconcile geo replication [%w]", err)
+			errs = append(errs, err)
+		}
+		if len(errs) > 0 {
+			return fmt.Errorf("reconcile geo replication [%v]", errs)
 		}
 	}
 	return nil
@@ -111,8 +117,8 @@ func (r *PulsarGeoReplicationReconciler) Reconcile(ctx context.Context) error {
 // ReconcileGeoReplication handle the current state of the geo replication to the desired state
 func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Context, pulsarAdmin admin.PulsarAdmin,
 	geoReplication *resourcev1alpha1.PulsarGeoReplication) error {
-	log := r.log.WithValues("pulsargeoreplication", geoReplication.Name, "namespace", geoReplication.Namespace)
-	log.V(1).Info("Start Reconcile")
+	log := r.log.WithValues("name", geoReplication.Name, "namespace", geoReplication.Namespace)
+	log.Info("Start Reconcile")
 
 	destConnection := &resourcev1alpha1.PulsarConnection{}
 	namespacedName := types.NamespacedName{
@@ -154,8 +160,12 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 				// Delete the cluster that created with destination cluster info.
 				// TODO it can only be deleted after the cluster has been removed from the tenant, namespace, and topic
 				if err := pulsarAdmin.DeleteCluster(destClusterName); err != nil && !admin.IsNotFound(err) {
-					log.Error(err, "Failed to delete geo replication cluster")
-					return err
+					if admin.IsNoSuchHostError(err) {
+						log.Info("Pulsar cluster has been deleted")
+					} else {
+						log.Error(err, "Failed to delete geo replication cluster")
+						return err
+					}
 				}
 			}
 			controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
@@ -183,7 +193,8 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		// After the previous reconcile succeed, the cluster will be created successfully,
 		// it will update the condition Ready to true, and update the observedGeneration to metadata.generation
 		// If there is no new changes in the object, there is no need to run the left code again.
-		log.V(1).Info("Resource is ready")
+		log.Info("Skip reconcile, geo resource is ready",
+			"Name", geoReplication.Name, "Namespace", geoReplication.Namespace)
 		return nil
 	}
 
@@ -208,6 +219,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			}
 			return err
 		}
+		log.Info("Update cluster success", "ClusterName", destClusterName)
 	} else {
 		// Create Clusters
 		log.V(1).Info("Create cluster", "ClusterName", destClusterName, "params", clusterParam)
@@ -220,11 +232,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 			}
 			return err
 		}
+		log.Info("Create cluster success", "ClusterName", destClusterName)
 	}
 
 	destConnection.Status.ObservedGeneration = destConnection.Generation
 	meta.SetStatusCondition(&destConnection.Status.Conditions, *NewReadyCondition(destConnection.Generation))
 	if err := r.conn.client.Status().Update(ctx, destConnection); err != nil {
+		log.Error(err, "Failed to update the destination connection status")
 		return err
 	}
 
@@ -240,22 +254,41 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 
 func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourcev1alpha1.PulsarConnection) (bool, error) {
 	auth := connection.Spec.Authentication
-	if auth == nil || auth.Token.SecretRef == nil {
+	if auth == nil || (auth.Token != nil && auth.Token.SecretRef == nil) ||
+		(auth.OAuth2 != nil && auth.OAuth2.Key == nil) ||
+		(auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef == nil) {
 		return false, nil
 	}
 	secret := &corev1.Secret{}
-	namespacedName := types.NamespacedName{
-		Name:      auth.Token.SecretRef.Name,
-		Namespace: connection.Namespace,
+	if auth.Token != nil && auth.Token.SecretRef != nil {
+		namespacedName := types.NamespacedName{
+			Name:      auth.Token.SecretRef.Name,
+			Namespace: connection.Namespace,
+		}
+		if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+			return false, err
+		}
+		secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
+		if err != nil {
+			return false, err
+		}
+		return connection.Status.SecretKeyHash != secretHash, nil
 	}
-	if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
-		return false, err
+	if auth.OAuth2 != nil && auth.OAuth2.Key != nil && auth.OAuth2.Key.SecretRef != nil {
+		namespacedName := types.NamespacedName{
+			Name:      auth.OAuth2.Key.SecretRef.Name,
+			Namespace: connection.Namespace,
+		}
+		if err := r.conn.client.Get(context.Background(), namespacedName, secret); err != nil {
+			return false, err
+		}
+		secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.OAuth2.Key.SecretRef.Key)
+		if err != nil {
+			return false, err
+		}
+		return connection.Status.SecretKeyHash != secretHash, nil
 	}
-	secretHash, err := utils.CalculateSecretKeyMd5(secret, auth.Token.SecretRef.Key)
-	if err != nil {
-		return false, err
-	}
-	return connection.Status.SecretKeyHash != secretHash, nil
+	return false, nil
 }
 
 func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client) (*admin.ClusterParams, error) {
@@ -267,6 +300,7 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
 	}
 
+	hasAuth := false
 	if auth := destConnection.Spec.Authentication; auth != nil {
 		if auth.Token != nil {
 			value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
@@ -276,11 +310,34 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 			if value != nil {
 				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
 				clusterParam.AuthParameters = "token:" + *value
+				hasAuth = true
 			}
 		}
-		// TODO support oauth2
-		// if auth.OAuth2 != nil && !hasAuth {
-		// }
+		if oauth2 := auth.OAuth2; !hasAuth && oauth2 != nil {
+			var paramsJSON = utils.ClientCredentials{
+				IssuerURL: oauth2.IssuerEndpoint,
+				Audience:  oauth2.Audience,
+				Scope:     oauth2.Scope,
+				ClientID:  oauth2.ClientID,
+			}
+			if oauth2.Key != nil {
+				value, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
+				if err != nil {
+					return nil, err
+				}
+				if value != nil {
+					paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
+					clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginOAuth2
+					paramsJSONString, err := json.Marshal(paramsJSON)
+					if err != nil {
+						return nil, err
+					}
+					clusterParam.AuthParameters = string(paramsJSONString)
+				}
+			} else {
+				return nil, fmt.Errorf("OAuth2 key is empty")
+			}
+		}
 	}
 	return clusterParam, nil
 }
