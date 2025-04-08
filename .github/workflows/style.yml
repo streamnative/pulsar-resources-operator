@@ -32,10 +32,10 @@ jobs:
       ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
       GOPRIVATE: github.com/streamnative
     steps:
-    - name: Set up Go 1.21
+    - name: Set up Go 1.23
       uses: actions/setup-go@v3
       with:
-        go-version: '1.21'
+        go-version: '1.23'
       id: go
 
     - name: Set up git token
