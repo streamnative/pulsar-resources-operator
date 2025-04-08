@@ -205,4 +205,4 @@ run:
   - tools
   - e2e
   allow-parallel-runners: true
-  go: "1.22"
+  go: "1.23"
