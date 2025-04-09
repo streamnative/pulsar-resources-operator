@@ -34,11 +34,11 @@ import (
 )
 
 var (
-	namespaceName string = "default"
+	namespaceName string = utils.GetEnv("NAMESPACE", "default")
 	k8sClient     client.Client
 	k8sConfig     *rest.Config
-	brokerName    string = "test-pulsar"
-	proxyURL      string = fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:6650", brokerName, namespaceName)
+	brokerName    string = utils.GetEnv("BROKER_NAME", "test-pulsar")
+	proxyURL      string = utils.GetEnv("PROXY_URL", fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:6650", brokerName, namespaceName))
 	pulsarClient  pulsar.Client
 )
 
