@@ -169,6 +169,18 @@ spec:
                     - issuerEndpoint
                     - key
                     type: object
+                  tls:
+                    description: PulsarAuthenticationTLS indicates the parameters
+                      which are need by pulsar TLS Authentication
+                    properties:
+                      clientCertificateKeyPath:
+                        type: string
+                      clientCertificatePath:
+                        type: string
+                    required:
+                    - clientCertificateKeyPath
+                    - clientCertificatePath
+                    type: object
                   token:
                     description: |-
                       Token specifies the configuration for token-based authentication.
@@ -211,6 +223,16 @@ spec:
                 description: |-
                   ClusterName specifies the name of the local Pulsar cluster.
                   When setting up Geo-Replication between Pulsar instances, this should be enabled to identify the cluster.
+                type: string
+              tlsEnableHostnameVerification:
+                description: TLSEnableHostnameVerification indicates whether to verify the hostname of the broker.
+                  Only used when using secure urls.
+                type: boolean
+              tlsAllowInsecureConnection:
+                description: TLSAllowInsecureConnection indicates whether to allow insecure connection to the broker.
+                type: boolean
+              tlsTrustCertsFilePath:
+                description: TLSTrustCertsFilePath Path for the TLS certificate used to validate the broker endpoint when using TLS.
                 type: string
             type: object
           status:
