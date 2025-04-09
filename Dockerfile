@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.22.12-alpine3.20 as builder
+FROM golang:1.23-alpine3.21 as builder
 
 ARG ACCESS_TOKEN="none"
 
@@ -40,7 +40,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager 
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM alpine:3.20
+FROM alpine:3.21
 
 # Upgrade all packages to get latest versions with security fixes
 RUN apk upgrade --no-cache
