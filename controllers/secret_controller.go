@@ -180,10 +180,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      secret.Spec.APIServerRef.Name,
-	}, connection); err != nil {
+	if err := r.Get(ctx, secret.Spec.APIServerRef.ToNamespacedName(req.Namespace), connection); err != nil {
 		r.updateSecretStatus(ctx, secret, err, "ConnectionNotFound",
 			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
 		return ctrl.Result{}, err

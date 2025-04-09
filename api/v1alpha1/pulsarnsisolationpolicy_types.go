@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -38,7 +37,7 @@ type PulsarNSIsolationPolicySpec struct {
 
 	// ConnectionRef is the reference to the PulsarConnection resource
 	// used to connect to the Pulsar cluster for this ns-isolation-policy.
-	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+	ConnectionRef PulsarConnectionRef `json:"connectionRef"`
 
 	// Namespaces namespaces-regex list
 	// +kubebuilder:validation:Required
