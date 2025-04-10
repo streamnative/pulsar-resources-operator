@@ -74,6 +74,19 @@ type PulsarConnectionSpec struct {
 	// When setting up Geo-Replication between Pulsar instances, this should be enabled to identify the cluster.
 	// +optional
 	ClusterName string `json:"clusterName,omitempty"`
+
+	// TLSEnableHostnameVerification indicates whether to verify the hostname of the broker.
+	// Only used when using secure urls.
+	// +optional
+	TLSEnableHostnameVerification bool `json:"tlsEnableHostnameVerification,omitempty"`
+
+	// TLSAllowInsecureConnection indicates whether to allow insecure connection to the broker.
+	// +optional
+	TLSAllowInsecureConnection bool `json:"tlsAllowInsecureConnection,omitempty"`
+
+	// TLSTrustCertsFilePath Path for the TLS certificate used to validate the broker endpoint when using TLS.
+	// +optional
+	TLSTrustCertsFilePath string `json:"tlsTrustCertsFilePath,omitempty"`
 }
 
 // PulsarConnectionStatus defines the observed state of PulsarConnection.
