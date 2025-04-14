@@ -24,14 +24,6 @@ type ServiceAccountSpec struct {
 	// APIServerRef is the reference to the StreamNativeCloudConnection
 	// +required
 	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
-
-	// Description is a user defined description of the service account
-	// +optional
-	Description string `json:"description,omitempty"`
-
-	// InstanceName is the name of the instance this service account is for
-	// +optional
-	InstanceName string `json:"instanceName,omitempty"`
 }
 
 // ServiceAccountStatus defines the observed state of ServiceAccount

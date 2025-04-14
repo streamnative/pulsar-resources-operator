@@ -170,6 +170,37 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Secret")
 		os.Exit(1)
 	}
+
+	// Set up ServiceAccount controller
+	if err = (&controllers.ServiceAccountReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ServiceAccount")
+		os.Exit(1)
+	}
+
+	// Set up ServiceAccountBinding controller
+	if err = (&controllers.ServiceAccountBindingReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "ServiceAccountBinding")
+		os.Exit(1)
+	}
+
+	// Set up APIKey controller
+	if err = (&controllers.APIKeyReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "APIKey")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {

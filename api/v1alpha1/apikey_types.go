@@ -42,27 +42,21 @@ type APIKeySpec struct {
 	// +optional
 	ExpirationTime *metav1.Time `json:"expirationTime,omitempty"`
 
-	// Revoke is a boolean that defines if the token of this API key should be revoked
-	// +kubebuilder:default=false
+	// Revoke indicates whether this API key should be revoked
 	// +optional
 	Revoke bool `json:"revoke,omitempty"`
 
-	// EncryptionKey is a public key to encrypt the API Key token
-	// Please provide an RSA key with modulus length of at least 2048 bits
+	// EncryptionKey contains the public key used to encrypt the token
 	// +optional
 	EncryptionKey *EncryptionKey `json:"encryptionKey,omitempty"`
 }
 
-// EncryptionKey specifies a public key for encryption purposes
-// Either a PEM or JWK must be specified
+// EncryptionKey contains a public key used for encryption
+// +structType=atomic
 type EncryptionKey struct {
-	// PEM is a PEM-encoded public key in PKIX, ASN.1 DER form ("spki" format)
+	// PEM is the public key in PEM format
 	// +optional
 	PEM string `json:"pem,omitempty"`
-
-	// JWK is a JWK-encoded public key
-	// +optional
-	JWK string `json:"jwk,omitempty"`
 }
 
 // APIKeyStatus defines the observed state of APIKey

@@ -16,12 +16,14 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"sync"
 	"time"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
+	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -53,6 +55,7 @@ const ServiceAccountFinalizer = "serviceaccount.resource.streamnative.io/finaliz
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=serviceaccounts/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=serviceaccounts/finalizers,verbs=update
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
+//+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
 // handleWatchEvents processes events from the watch interface
 func (r *ServiceAccountReconciler) handleWatchEvents(ctx context.Context, namespacedName types.NamespacedName, watcher watch.Interface) {
@@ -75,24 +78,49 @@ func (r *ServiceAccountReconciler) handleWatchEvents(ctx context.Context, namesp
 
 			if event.Type == watch.Modified {
 				// Check if the object is a ServiceAccount
-				_, ok := event.Object.(*cloudapi.ServiceAccount)
+				cloudSA, ok := event.Object.(*cloudapi.ServiceAccount)
 				if !ok {
 					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to ServiceAccount")
 					continue
 				}
 
 				// Get the local ServiceAccount
-				localServiceAccount := &resourcev1alpha1.ServiceAccount{}
-				if err := r.Get(ctx, namespacedName, localServiceAccount); err != nil {
+				localSA := &resourcev1alpha1.ServiceAccount{}
+				if err := r.Get(ctx, namespacedName, localSA); err != nil {
 					logger.Error(err, "Failed to get local ServiceAccount")
 					continue
 				}
 
 				// Update status
-				r.updateServiceAccountStatus(ctx, localServiceAccount, nil, "Ready", "ServiceAccount synced successfully")
+				r.updateServiceAccountStatus(ctx, localSA, nil, "Ready", "ServiceAccount synced successfully")
+
+				// Process credentials and create Secret if needed
+				if cloudSA.Status.PrivateKeyType == utils.ServiceAccountCredentialsType && cloudSA.Status.PrivateKeyData != "" {
+					r.processServiceAccountCredentials(ctx, localSA, cloudSA)
+				}
 			}
 		}
 	}
+}
+
+// processServiceAccountCredentials handles credentials data and creates a Secret
+func (r *ServiceAccountReconciler) processServiceAccountCredentials(ctx context.Context, localSA *resourcev1alpha1.ServiceAccount, cloudSA *cloudapi.ServiceAccount) {
+	logger := log.FromContext(ctx)
+
+	// Base64 decode the private key data
+	credentialsData, err := base64.StdEncoding.DecodeString(cloudSA.Status.PrivateKeyData)
+	if err != nil {
+		logger.Error(err, "Failed to decode private key data")
+		return
+	}
+
+	// Create or update Secret with credentials
+	if err := utils.CreateOrUpdateServiceAccountCredentialsSecret(ctx, r.Client, localSA, localSA.Namespace, localSA.Name, string(credentialsData)); err != nil {
+		logger.Error(err, "Failed to create or update service account credentials secret")
+		return
+	}
+
+	logger.Info("Successfully created credentials secret for service account")
 }
 
 // setupWatch creates a new watcher for a ServiceAccount
@@ -249,40 +277,65 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 		if resultSA.Status.PrivateKeyData != "" {
 			serviceAccount.Status.PrivateKeyData = resultSA.Status.PrivateKeyData
+
+			// If the credentials type is ServiceAccountCredentialsType, create a Secret
+			if resultSA.Status.PrivateKeyType == utils.ServiceAccountCredentialsType {
+				credentialsData, err := base64.StdEncoding.DecodeString(resultSA.Status.PrivateKeyData)
+				if err != nil {
+					logger.Error(err, "Failed to decode private key data")
+				} else {
+					if err := utils.CreateOrUpdateServiceAccountCredentialsSecret(ctx, r.Client, serviceAccount, serviceAccount.Namespace, serviceAccount.Name, string(credentialsData)); err != nil {
+						logger.Error(err, "Failed to create or update service account credentials secret")
+					} else {
+						logger.Info("Successfully created credentials secret for service account")
+					}
+				}
+			}
+		}
+
+		// Set up watch for ServiceAccount
+		if err := r.setupWatch(ctx, serviceAccount, saClient); err != nil {
+			logger.Error(err, "Failed to set up watch", "serviceAccount", serviceAccount.Name)
 		}
 
 		// Update status
 		r.updateServiceAccountStatus(ctx, serviceAccount, nil, "Ready", "ServiceAccount created successfully")
 	} else {
-		// Update ServiceAccount
-		resultSA, err := saClient.UpdateServiceAccount(ctx, serviceAccount)
-		if err != nil {
-			r.updateServiceAccountStatus(ctx, serviceAccount, err, "UpdateServiceAccountFailed",
-				fmt.Sprintf("Failed to update ServiceAccount: %v", err))
-			return ctrl.Result{}, err
+		// Update status with private key information from existing ServiceAccount
+		if existingSA.Status.PrivateKeyType != "" {
+			serviceAccount.Status.PrivateKeyType = existingSA.Status.PrivateKeyType
+		}
+		if existingSA.Status.PrivateKeyData != "" {
+			serviceAccount.Status.PrivateKeyData = existingSA.Status.PrivateKeyData
+
+			// If the credentials type is ServiceAccountCredentialsType, ensure Secret exists
+			if existingSA.Status.PrivateKeyType == utils.ServiceAccountCredentialsType {
+				credentialsData, err := base64.StdEncoding.DecodeString(existingSA.Status.PrivateKeyData)
+				if err != nil {
+					logger.Error(err, "Failed to decode private key data")
+				} else {
+					if err := utils.CreateOrUpdateServiceAccountCredentialsSecret(ctx, r.Client, serviceAccount, serviceAccount.Namespace, serviceAccount.Name, string(credentialsData)); err != nil {
+						logger.Error(err, "Failed to create or update service account credentials secret")
+					} else {
+						logger.Info("Successfully created credentials secret for service account")
+					}
+				}
+			}
 		}
 
-		// Update status with private key information if available
-		if resultSA.Status.PrivateKeyType != "" {
-			serviceAccount.Status.PrivateKeyType = resultSA.Status.PrivateKeyType
-		}
-		if resultSA.Status.PrivateKeyData != "" {
-			serviceAccount.Status.PrivateKeyData = resultSA.Status.PrivateKeyData
+		// Set up watch for ServiceAccount
+		if err := r.setupWatch(ctx, serviceAccount, saClient); err != nil {
+			logger.Error(err, "Failed to set up watch", "serviceAccount", serviceAccount.Name)
 		}
 
 		// Update status
-		r.updateServiceAccountStatus(ctx, serviceAccount, nil, "Ready", "ServiceAccount updated successfully")
-	}
-
-	// Setup watch after ServiceAccount is created/updated
-	if err := r.setupWatch(ctx, serviceAccount, saClient); err != nil {
-		logger.Error(err, "Failed to setup watch")
-		// Don't return error, just log it
+		r.updateServiceAccountStatus(ctx, serviceAccount, nil, "Ready", "ServiceAccount synced successfully")
 	}
 
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
+// updateServiceAccountStatus updates the status of the ServiceAccount resource
 func (r *ServiceAccountReconciler) updateServiceAccountStatus(
 	ctx context.Context,
 	serviceAccount *resourcev1alpha1.ServiceAccount,
@@ -290,61 +343,54 @@ func (r *ServiceAccountReconciler) updateServiceAccountStatus(
 	reason string,
 	message string,
 ) {
-	// Create new condition
-	condition := metav1.Condition{
+	logger := log.FromContext(ctx)
+	serviceAccount.Status.ObservedGeneration = serviceAccount.Generation
+
+	// Set ready condition based on error
+	meta := metav1.Now()
+	readyCondition := metav1.Condition{
 		Type:               "Ready",
 		Status:             metav1.ConditionTrue,
 		Reason:             reason,
 		Message:            message,
-		ObservedGeneration: serviceAccount.Generation,
-		LastTransitionTime: metav1.Now(),
+		LastTransitionTime: meta,
 	}
 
 	if err != nil {
-		condition.Status = metav1.ConditionFalse
+		readyCondition.Status = metav1.ConditionFalse
+		logger.Error(err, "ServiceAccount reconciliation failed",
+			"reason", reason, "message", message)
 	}
 
-	// Create new conditions slice for comparison
-	newConditions := make([]metav1.Condition, 0)
-	for _, c := range serviceAccount.Status.Conditions {
-		if c.Type != condition.Type {
-			newConditions = append(newConditions, c)
+	// Update ready condition
+	if len(serviceAccount.Status.Conditions) == 0 {
+		serviceAccount.Status.Conditions = []metav1.Condition{readyCondition}
+	} else {
+		for i, condition := range serviceAccount.Status.Conditions {
+			if condition.Type == "Ready" {
+				// Only update time if status changes
+				if condition.Status != readyCondition.Status {
+					readyCondition.LastTransitionTime = meta
+				} else {
+					readyCondition.LastTransitionTime = condition.LastTransitionTime
+				}
+				serviceAccount.Status.Conditions[i] = readyCondition
+				break
+			}
 		}
 	}
-	newConditions = append(newConditions, condition)
 
-	// Check if status has actually changed
-	if !controllers2.StatusHasChanged(serviceAccount.Status.Conditions, newConditions) {
-		return
-	}
-
-	// Update conditions
-	serviceAccount.Status.Conditions = newConditions
-
-	// Update observed generation
-	serviceAccount.Status.ObservedGeneration = serviceAccount.Generation
-
-	// Update status
+	// Update ServiceAccount status
 	if err := r.Status().Update(ctx, serviceAccount); err != nil {
-		log.FromContext(ctx).Error(err, "Failed to update ServiceAccount status")
+		logger.Error(err, "Failed to update ServiceAccount status")
 	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ServiceAccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Initialize the watcher map
 	r.watcherMap = make(map[types.NamespacedName]watch.Interface)
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.ServiceAccount{}).
-		WithEventFilter(predicate.Or(
-			// Trigger on spec changes
-			predicate.GenerationChangedPredicate{},
-			// Trigger periodically to sync status
-			predicate.NewPredicateFuncs(func(object client.Object) bool {
-				// Trigger every minute to sync status
-				return true
-			}),
-		)).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Complete(r)
 }

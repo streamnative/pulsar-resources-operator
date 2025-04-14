@@ -76,7 +76,7 @@ func (c *ServiceAccountBindingClient) GetServiceAccountBinding(ctx context.Conte
 }
 
 // convertToCloudServiceAccountBinding converts a local ServiceAccountBinding to a cloud ServiceAccountBinding
-func convertToCloudServiceAccountBinding(binding *resourcev1alpha1.ServiceAccountBinding) *cloudapi.ServiceAccountBinding {
+func convertToCloudServiceAccountBinding(binding *resourcev1alpha1.ServiceAccountBinding, organization string) *cloudapi.ServiceAccountBinding {
 	// Convert to cloud API type
 	cloudBinding := &cloudapi.ServiceAccountBinding{
 		ObjectMeta: metav1.ObjectMeta{
@@ -96,12 +96,16 @@ func convertToCloudServiceAccountBinding(binding *resourcev1alpha1.ServiceAccoun
 		Name:      binding.Spec.PoolMemberRef.Name,
 	}
 
+	if binding.Spec.PoolMemberRef.Namespace == "" {
+		cloudBinding.Spec.PoolMemberRef.Namespace = organization
+	}
+
 	return cloudBinding
 }
 
 // CreateServiceAccountBinding creates a new ServiceAccountBinding
 func (c *ServiceAccountBindingClient) CreateServiceAccountBinding(ctx context.Context, binding *resourcev1alpha1.ServiceAccountBinding) (*cloudapi.ServiceAccountBinding, error) {
-	cloudBinding := convertToCloudServiceAccountBinding(binding)
+	cloudBinding := convertToCloudServiceAccountBinding(binding, c.organization)
 
 	// Create ServiceAccountBinding
 	return c.client.CloudV1alpha1().ServiceAccountBindings(c.organization).Create(ctx, cloudBinding, metav1.CreateOptions{})
@@ -116,7 +120,7 @@ func (c *ServiceAccountBindingClient) UpdateServiceAccountBinding(ctx context.Co
 	}
 
 	// Create updated version
-	updated := convertToCloudServiceAccountBinding(binding)
+	updated := convertToCloudServiceAccountBinding(binding, c.organization)
 	// Preserve ResourceVersion for optimistic concurrency
 	updated.ResourceVersion = existing.ResourceVersion
 
