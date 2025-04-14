@@ -55,10 +55,10 @@ jobs:
       - name: Cleanup disk
         run: sudo rm -rf /usr/local/.ghcup
 
-      - name: Set up Go 1.22.12
+      - name: Set up Go 1.23
         uses: actions/setup-go@v3
         with:
-          go-version: '1.22.12'
+          go-version: '1.23'
         id: go
 
       - name: Set up Git token
