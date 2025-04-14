@@ -78,11 +78,11 @@ type EncryptionKey struct {
 // APIKeyStatus defines the observed state of ServiceAccount
 type APIKeyStatus struct {
 	// ObservedGeneration is the most recent generation observed by the controller.
-	//ObservedGeneration int64 `json:"observedGeneration" protobuf:"varint,1,opt,name=observedGeneration"`
+	// ObservedGeneration int64 `json:"observedGeneration" protobuf:"varint,1,opt,name=observedGeneration"`
 
-	// KeyId is a generated field that is a uid for the token
+	// KeyID is a generated field that is a uid for the token
 	// +optional
-	KeyId *string `json:"keyId,omitempty" protobuf:"bytes,1,opt,name=keyId"`
+	KeyID *string `json:"keyId,omitempty" protobuf:"bytes,1,opt,name=keyId"`
 
 	// IssuedAt is a timestamp of when the key was issued, stored as an epoch in seconds
 	// +optional
@@ -122,14 +122,11 @@ type EncryptedToken struct {
 	JWE *string `json:"jwe,omitempty" protobuf:"bytes,7,opt,name=jwe"`
 }
 
-type APIKeyConditionType string
+//+kubebuilder:object:root=true
 
-// These are valid conditions of the API Key.
-const (
-	// APIKeyIssued means the api key is ready for use.
-	APIKeyIssued APIKeyConditionType = "Issued"
-	// APIKeyExpired means the key has expired.
-	APIKeyExpired APIKeyConditionType = "Expired"
-	// APIKeyRevoked means the api keys has manually been revoked.
-	APIKeyRevoked APIKeyConditionType = "Revoked"
-)
+// APIKeyList contains a list of APIKey
+type APIKeyList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []APIKey `json:"items"`
+}

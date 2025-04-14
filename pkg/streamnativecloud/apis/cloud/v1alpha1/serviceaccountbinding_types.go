@@ -52,3 +52,12 @@ type ServiceAccountBindingStatus struct {
 	// +listMapKey=type
 	Conditions []Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,1,rep,name=conditions"`
 }
+
+//+kubebuilder:object:root=true
+
+// ServiceAccountBindingList contains a list of ServiceAccountBinding
+type ServiceAccountBindingList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ServiceAccountBinding `json:"items"`
+}

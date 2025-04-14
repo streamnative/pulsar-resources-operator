@@ -56,3 +56,12 @@ type ServiceAccountStatus struct {
 	// +listMapKey=type
 	Conditions []Condition `json:"conditions,omitempty" patchStrategy:"merge" patchMergeKey:"type" protobuf:"bytes,3,rep,name=conditions"`
 }
+
+//+kubebuilder:object:root=true
+
+// ServiceAccountList contains a list of ServiceAccount
+type ServiceAccountList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ServiceAccount `json:"items"`
+}
