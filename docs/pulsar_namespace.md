@@ -28,8 +28,47 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `replicationClusters`         | List of clusters to which the namespace is replicated. Use only if replicating clusters within the same Pulsar instance.                                                                                          | No       |
 | `deduplication`               | Whether to enable message deduplication for the namespace.                                                                                                                                                        | No       |
 | `bookieAffinityGroup`         | Set the bookie-affinity group for the namespace, which has two sub fields: `bookkeeperAffinityGroupPrimary(String)` is required, and `bookkeeperAffinityGroupSecondary(String)` is optional.                      | No       |
+| `topicAutoCreationConfig`     | Configures automatic topic creation behavior within this namespace. Contains settings for whether auto-creation is allowed, the type of topics created, and default number of partitions.                          | No       |
 
 Note: Valid time units are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
+
+## topicAutoCreationConfig
+
+The `topicAutoCreationConfig` field allows you to control the automatic topic creation behavior at the namespace level:
+
+| Field        | Description                                                                           | Required |
+|-------------|---------------------------------------------------------------------------------------|----------|
+| `allow`     | Whether automatic topic creation is allowed in this namespace.                         | No       |
+| `type`      | The type of topics to create automatically. Options: "partitioned", "non-partitioned". | No       |
+| `partitions`| The default number of partitions for automatically created topics when type is "partitioned". | No   |
+
+This configuration overrides the broker's default topic auto-creation settings for the specific namespace. When a client attempts to produce messages to or consume messages from a non-existent topic, the broker can automatically create that topic based on these settings.
+
+### Configuration examples
+
+1. **Enable auto-creation with partitioned topics**:
+   ```yaml
+   topicAutoCreationConfig:
+     allow: true
+     type: "partitioned"
+     partitions: 8
+   ```
+   This will automatically create partitioned topics with 8 partitions when clients attempt to use non-existent topics.
+
+2. **Enable auto-creation with non-partitioned topics**:
+   ```yaml
+   topicAutoCreationConfig:
+     allow: true
+     type: "non-partitioned"
+   ```
+   This will automatically create non-partitioned topics when clients attempt to use non-existent topics.
+
+3. **Disable auto-creation**:
+   ```yaml
+   topicAutoCreationConfig:
+     allow: false
+   ```
+   This explicitly disables topic auto-creation for the namespace, overriding any broker-level settings that might enable it.
 
 ## replicationClusters vs geoReplicationRefs
 
@@ -74,6 +113,10 @@ spec:
   # retentionTime: 20h
   # retentionSize: 2Gi
   # lifecyclePolicy: CleanUpAfterDeletion
+  # topicAutoCreationConfig:
+  #  allow: true
+  #  type: "partitioned"
+  #  partitions: 4
 ```
 
 2. Apply the YAML file to create the namespace.
@@ -101,7 +144,7 @@ Please note the following important points:
 
 1. The fields `name` and `bundles` cannot be updated after the namespace is created. These are immutable properties of the namespace.
 
-2. Other fields such as `backlogQuotaLimitSize`, `backlogQuotaLimitTime`, `messageTTL`, `maxProducersPerTopic`, `maxConsumersPerTopic`, `maxConsumersPerSubscription`, `retentionTime`, and `retentionSize` can be modified.
+2. Other fields such as `backlogQuotaLimitSize`, `backlogQuotaLimitTime`, `messageTTL`, `maxProducersPerTopic`, `maxConsumersPerTopic`, `maxConsumersPerSubscription`, `retentionTime`, `retentionSize`, and `topicAutoCreationConfig` can be modified.
 
 3. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
 
