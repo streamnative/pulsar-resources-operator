@@ -54,6 +54,7 @@ type NamespaceParams struct {
 	ReplicationClusters         []string
 	Deduplication               *bool
 	BookieAffinityGroup         *v1alpha1.BookieAffinityGroupData
+	TopicAutoCreationConfig     *v1alpha1.TopicAutoCreationConfig
 }
 
 // TopicParams indicates the parameters for creating a topic

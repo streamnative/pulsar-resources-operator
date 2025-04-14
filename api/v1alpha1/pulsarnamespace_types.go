@@ -22,6 +22,20 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
+// TopicAutoCreationConfig defines the configuration for automatic topic creation
+type TopicAutoCreationConfig struct {
+	// Allow specifies whether to allow automatic topic creation
+	Allow bool `json:"allow,omitempty"`
+
+	// Type specifies the type of automatically created topics
+	// +kubebuilder:validation:Enum=partitioned;non-partitioned
+	Type string `json:"type,omitempty"`
+
+	// Partitions specifies the default number of partitions for automatically created topics
+	// +optional
+	Partitions *int32 `json:"partitions,omitempty"`
+}
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -130,6 +144,11 @@ type PulsarNamespaceSpec struct {
 
 	// BookieAffinityGroup is the name of the namespace isolation policy to apply to the namespace.
 	BookieAffinityGroup *BookieAffinityGroupData `json:"bookieAffinityGroup,omitempty"`
+
+	// TopicAutoCreationConfig controls whether automatic topic creation is allowed in this namespace
+	// and configures properties of automatically created topics
+	// +optional
+	TopicAutoCreationConfig *TopicAutoCreationConfig `json:"topicAutoCreationConfig,omitempty"`
 }
 
 type BookieAffinityGroupData struct {

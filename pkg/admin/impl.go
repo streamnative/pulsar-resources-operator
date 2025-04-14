@@ -471,6 +471,38 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
+	// Handle topic auto-creation configuration
+	if params.TopicAutoCreationConfig != nil {
+		topicTypeStr, err := utils.ParseTopicType(params.TopicAutoCreationConfig.Type)
+		if err != nil {
+			return err
+		}
+
+		// Convert operator's TopicAutoCreationConfig to Pulsar client's TopicAutoCreationConfig
+		config := &utils.TopicAutoCreationConfig{
+			Allow: params.TopicAutoCreationConfig.Allow,
+			Type:  topicTypeStr,
+		}
+
+		// Set default partitions
+		if params.TopicAutoCreationConfig.Partitions != nil {
+			partitions := int(*params.TopicAutoCreationConfig.Partitions)
+			config.Partitions = &partitions
+		}
+
+		// Call Pulsar client API to set topic auto-creation configuration
+		err = p.adminClient.Namespaces().SetTopicAutoCreation(*naName, *config)
+		if err != nil {
+			return err
+		}
+	} else {
+		// If no configuration is specified, try to remove topic auto-creation configuration (ignore errors if it doesn't exist)
+		err = p.adminClient.Namespaces().RemoveTopicAutoCreation(*naName)
+		if err != nil && !IsNotFound(err) {
+			return err
+		}
+	}
+
 	return nil
 }
 

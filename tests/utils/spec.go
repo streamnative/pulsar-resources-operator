@@ -80,6 +80,10 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			BacklogQuotaLimitSize: &backlogSize,
 			Bundles:               &bundle,
 			MessageTTL:            ttl,
+			TopicAutoCreationConfig: &v1alpha1.TopicAutoCreationConfig{
+				Allow: true,
+				Type:  "partitioned",
+			},
 		},
 	}
 }
