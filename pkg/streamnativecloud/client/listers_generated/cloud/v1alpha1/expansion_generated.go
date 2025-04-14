@@ -15,6 +15,14 @@
 
 package v1alpha1
 
+// APIKeyListerExpansion allows custom methods to be added to
+// APIKeyLister.
+type APIKeyListerExpansion interface{}
+
+// APIKeyNamespaceListerExpansion allows custom methods to be added to
+// APIKeyNamespaceLister.
+type APIKeyNamespaceListerExpansion interface{}
+
 // SecretListerExpansion allows custom methods to be added to
 // SecretLister.
 type SecretListerExpansion interface{}
@@ -22,3 +30,19 @@ type SecretListerExpansion interface{}
 // SecretNamespaceListerExpansion allows custom methods to be added to
 // SecretNamespaceLister.
 type SecretNamespaceListerExpansion interface{}
+
+// ServiceAccountListerExpansion allows custom methods to be added to
+// ServiceAccountLister.
+type ServiceAccountListerExpansion interface{}
+
+// ServiceAccountNamespaceListerExpansion allows custom methods to be added to
+// ServiceAccountNamespaceLister.
+type ServiceAccountNamespaceListerExpansion interface{}
+
+// ServiceAccountBindingListerExpansion allows custom methods to be added to
+// ServiceAccountBindingLister.
+type ServiceAccountBindingListerExpansion interface{}
+
+// ServiceAccountBindingNamespaceListerExpansion allows custom methods to be added to
+// ServiceAccountBindingNamespaceLister.
+type ServiceAccountBindingNamespaceListerExpansion interface{}

@@ -15,4 +15,10 @@
 
 package v1alpha1
 
+type APIKeyExpansion interface{}
+
 type SecretExpansion interface{}
+
+type ServiceAccountExpansion interface{}
+
+type ServiceAccountBindingExpansion interface{}

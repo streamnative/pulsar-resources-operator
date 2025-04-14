@@ -25,7 +25,10 @@ import (
 
 type CloudV1alpha1Interface interface {
 	RESTClient() rest.Interface
+	APIKeysGetter
 	SecretsGetter
+	ServiceAccountsGetter
+	ServiceAccountBindingsGetter
 }
 
 // CloudV1alpha1Client is used to interact with features provided by the cloud.streamnative.io group.
@@ -33,8 +36,20 @@ type CloudV1alpha1Client struct {
 	restClient rest.Interface
 }
 
+func (c *CloudV1alpha1Client) APIKeys(namespace string) APIKeyInterface {
+	return newAPIKeys(c, namespace)
+}
+
 func (c *CloudV1alpha1Client) Secrets(namespace string) SecretInterface {
 	return newSecrets(c, namespace)
+}
+
+func (c *CloudV1alpha1Client) ServiceAccounts(namespace string) ServiceAccountInterface {
+	return newServiceAccounts(c, namespace)
+}
+
+func (c *CloudV1alpha1Client) ServiceAccountBindings(namespace string) ServiceAccountBindingInterface {
+	return newServiceAccountBindings(c, namespace)
 }
 
 // NewForConfig creates a new CloudV1alpha1Client for the given config.

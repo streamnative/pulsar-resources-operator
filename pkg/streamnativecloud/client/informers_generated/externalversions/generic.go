@@ -51,8 +51,14 @@ func (f *genericInformer) Lister() cache.GenericLister {
 func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource) (GenericInformer, error) {
 	switch resource {
 	// Group=cloud.streamnative.io, Version=v1alpha1
+	case v1alpha1.SchemeGroupVersion.WithResource("apikeys"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().APIKeys().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("secrets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().Secrets().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("serviceaccounts"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().ServiceAccounts().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("serviceaccountbindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().ServiceAccountBindings().Informer()}, nil
 
 		// Group=compute.streamnative.io, Version=v1alpha1
 	case computev1alpha1.SchemeGroupVersion.WithResource("flinkdeployments"):
