@@ -20,6 +20,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pkg/errors"
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
 
@@ -320,7 +321,7 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 		for _, err := range errs {
 			errorMsg += err.Error() + "; "
 		}
-		r.updateServiceAccountBindingStatus(ctx, binding, fmt.Errorf(errorMsg), "ProcessingFailed", errorMsg)
+		r.updateServiceAccountBindingStatus(ctx, binding, errors.New(errorMsg), "ProcessingFailed", errorMsg)
 		return ctrl.Result{}, nil
 	}
 

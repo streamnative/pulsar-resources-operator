@@ -21,7 +21,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ServiceAccountBinding
+// ServiceAccountBinding is a resource that represents a binding between a service account and a pool member
 // +k8s:openapi-gen=true
 // +resource:path=serviceaccountbindings,strategy=ServiceAccountBindingStrategy
 // +kubebuilder:categories=all

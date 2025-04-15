@@ -21,7 +21,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// ServiceAccount
+// ServiceAccount is a resource that represents a service account for a cluster
 // +k8s:openapi-gen=true
 // +resource:path=serviceaccounts,strategy=ServiceAccountStrategy
 // +kubebuilder:categories=all

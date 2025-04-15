@@ -19,7 +19,7 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -40,6 +40,7 @@ const (
 	// ServiceAccountCredentialsField is the key for the service account credentials in the secret
 	ServiceAccountCredentialsField = "credentials.json"
 	// ServiceAccountCredentialsType is the type for service account credentials
+	//nolint:gosec
 	ServiceAccountCredentialsType = "TYPE_SN_CREDENTIALS_FILE"
 )
 
@@ -147,7 +148,7 @@ func GetPrivateKeyFromSecret(ctx context.Context, c client.Client, namespace, na
 	secretName := name + PrivateKeySecretSuffix
 	var secret corev1.Secret
 	if err := c.Get(ctx, types.NamespacedName{Namespace: namespace, Name: secretName}, &secret); err != nil {
-		if errors.IsNotFound(err) {
+		if apierrors.IsNotFound(err) {
 			return "", fmt.Errorf("private key secret not found: %s", secretName)
 		}
 		return "", fmt.Errorf("failed to get private key secret: %w", err)

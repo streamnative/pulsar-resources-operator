@@ -21,7 +21,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// APIKey
+// APIKey is a resource that represents an API key for a service account
 // +k8s:openapi-gen=true
 // +resource:path=apikeys,strategy=APIKeyStrategy
 // +kubebuilder:categories=all
