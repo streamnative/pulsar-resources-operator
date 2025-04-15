@@ -31,6 +31,9 @@ resources:
 - bases/resource.streamnative.io_computeworkspaces.yaml
 - bases/resource.streamnative.io_computeflinkdeployments.yaml
 - bases/resource.streamnative.io_secrets.yaml
+- bases/resource.streamnative.io_serviceaccounts.yaml
+- bases/resource.streamnative.io_serviceaccountbindings.yaml
+- bases/resource.streamnative.io_apikeys.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:

@@ -80,6 +80,10 @@ func (r *APIKeyReconciler) handleWatchEvents(ctx context.Context, namespacedName
 				return
 			}
 
+			logger.Info("Received watch event",
+				"apiKey", namespacedName.Name,
+				"eventType", event.Type)
+
 			if event.Type == watch.Modified {
 				// Check if the object is an APIKey
 				cloudAPIKey, ok := event.Object.(*cloudapi.APIKey)
@@ -88,6 +92,14 @@ func (r *APIKeyReconciler) handleWatchEvents(ctx context.Context, namespacedName
 					continue
 				}
 
+				// Log token and encryption status
+				hasEncryptedToken := cloudAPIKey.Status.EncryptedToken != nil
+				hasJWE := hasEncryptedToken && cloudAPIKey.Status.EncryptedToken.JWE != nil
+				logger.Info("Received APIKey update",
+					"apiKey", namespacedName.Name,
+					"hasEncryptedToken", hasEncryptedToken,
+					"hasJWE", hasJWE)
+
 				// Get the local APIKey
 				localAPIKey := &resourcev1alpha1.APIKey{}
 				if err := r.Get(ctx, namespacedName, localAPIKey); err != nil {
@@ -95,25 +107,81 @@ func (r *APIKeyReconciler) handleWatchEvents(ctx context.Context, namespacedName
 					continue
 				}
 
-				// Update status
-				r.updateAPIKeyStatus(ctx, localAPIKey, nil, "Ready", "APIKey synced successfully")
+				// Check remote status and handle abnormal situations
+				if isRemoteStatusAbnormal(cloudAPIKey) {
+					logger.Info("Detected abnormal remote APIKey status",
+						"apiKey", namespacedName.Name,
+						"hasEncryptedToken", hasEncryptedToken,
+						"hasJWE", hasJWE)
+					r.updateAPIKeyStatus(ctx, localAPIKey,
+						fmt.Errorf("remote API server returned incomplete or invalid status"),
+						"RemoteStatusAbnormal",
+						"Remote API server returned incomplete or invalid status for the APIKey")
+					continue
+				}
 
 				// Process encrypted token and update Secret if needed
 				if cloudAPIKey.Status.EncryptedToken != nil && cloudAPIKey.Status.EncryptedToken.JWE != nil {
+					logger.Info("Found encrypted token in watch event, processing", "apiKey", namespacedName.Name)
 					r.processEncryptedToken(ctx, localAPIKey, cloudAPIKey)
+				} else {
+					logger.Info("No encrypted token found in watch event", "apiKey", namespacedName.Name)
+					// Update status to reflect that we're waiting for token
+					r.updateAPIKeyStatus(ctx, localAPIKey, nil, "WaitingForToken",
+						"Waiting for encrypted token from remote API server")
 				}
 			}
 		}
 	}
 }
 
+// isRemoteStatusAbnormal checks if the remote API key status is incomplete or invalid
+func isRemoteStatusAbnormal(cloudAPIKey *cloudapi.APIKey) bool {
+	// Consider status abnormal if:
+	// 1. Status is completely empty/nil (very unlikely but possible)
+	if cloudAPIKey == nil {
+		return true
+	}
+
+	// 2. We expect some basic fields to be present in a normal response
+	// KeyID should be present in a successful API key
+	if cloudAPIKey.Status.KeyID == nil {
+		return true
+	}
+
+	// 3. For an APIKey that's been processed by the server, we should have either:
+	//    - An encrypted token
+	//    - Or explicit conditions indicating why token creation failed
+	if cloudAPIKey.Status.EncryptedToken == nil && len(cloudAPIKey.Status.Conditions) == 0 {
+		return true
+	}
+
+	// 4. If there are conditions, check if they indicate failure
+	for _, condition := range cloudAPIKey.Status.Conditions {
+		if condition.Type == "Ready" && condition.Status == metav1.ConditionFalse {
+			return true
+		}
+	}
+
+	return false
+}
+
 // processEncryptedToken handles decrypting the token and storing it in a Secret
 func (r *APIKeyReconciler) processEncryptedToken(ctx context.Context, localAPIKey *resourcev1alpha1.APIKey, cloudAPIKey *cloudapi.APIKey) {
 	logger := log.FromContext(ctx)
 
+	logger.Info("Processing encrypted token",
+		"apiKey", localAPIKey.Name,
+		"hasEncryptionKey", localAPIKey.Spec.EncryptionKey != nil,
+		"hasJWE", cloudAPIKey.Status.EncryptedToken != nil && cloudAPIKey.Status.EncryptedToken.JWE != nil)
+
 	// Skip if we don't have an encryption key in our local APIKey
 	if localAPIKey.Spec.EncryptionKey == nil || localAPIKey.Spec.EncryptionKey.PEM == "" {
 		logger.Info("No encryption key found in local APIKey, skipping token processing")
+		r.updateAPIKeyStatus(ctx, localAPIKey,
+			fmt.Errorf("missing encryption key in local APIKey"),
+			"MissingEncryptionKey",
+			"Cannot decrypt token: no encryption key found in local APIKey")
 		return
 	}
 
@@ -121,23 +189,39 @@ func (r *APIKeyReconciler) processEncryptedToken(ctx context.Context, localAPIKe
 	privateKeyStr, err := utils.GetPrivateKeyFromSecret(ctx, r.Client, localAPIKey.Namespace, localAPIKey.Name)
 	if err != nil {
 		logger.Error(err, "Failed to get private key from secret")
+		r.updateAPIKeyStatus(ctx, localAPIKey,
+			err,
+			"PrivateKeyError",
+			fmt.Sprintf("Failed to get private key from secret: %v", err))
 		return
 	}
+	logger.Info("Retrieved private key from secret", "apiKey", localAPIKey.Name)
 
 	// Import private key
 	privateKey, err := crypto.ImportPrivateKeyFromPEM(privateKeyStr)
 	if err != nil {
 		logger.Error(err, "Failed to import private key")
+		r.updateAPIKeyStatus(ctx, localAPIKey,
+			err,
+			"PrivateKeyImportError",
+			fmt.Sprintf("Failed to import private key: %v", err))
 		return
 	}
+	logger.Info("Successfully imported private key", "apiKey", localAPIKey.Name)
 
 	// Decrypt token
 	jweToken := *cloudAPIKey.Status.EncryptedToken.JWE
+	logger.Info("Attempting to decrypt JWE token", "apiKey", localAPIKey.Name, "jweLength", len(jweToken))
 	token, err := crypto.DecryptJWEToken(jweToken, privateKey)
 	if err != nil {
 		logger.Error(err, "Failed to decrypt token")
+		r.updateAPIKeyStatus(ctx, localAPIKey,
+			err,
+			"TokenDecryptionFailed",
+			fmt.Sprintf("Failed to decrypt token: %v", err))
 		return
 	}
+	logger.Info("Successfully decrypted token", "apiKey", localAPIKey.Name)
 
 	// Store token in secret
 	var keyID string
@@ -147,10 +231,17 @@ func (r *APIKeyReconciler) processEncryptedToken(ctx context.Context, localAPIKe
 
 	if err := utils.CreateOrUpdateTokenSecret(ctx, r.Client, localAPIKey, localAPIKey.Namespace, localAPIKey.Name, token, keyID); err != nil {
 		logger.Error(err, "Failed to create or update token secret")
+		r.updateAPIKeyStatus(ctx, localAPIKey,
+			err,
+			"SecretUpdateFailed",
+			fmt.Sprintf("Failed to create or update token secret: %v", err))
 		return
 	}
 
-	logger.Info("Successfully processed encrypted token and stored in secret")
+	logger.Info("Successfully processed encrypted token and stored in secret", "apiKey", localAPIKey.Name)
+
+	// Update status to indicate successful token processing
+	r.updateAPIKeyStatus(ctx, localAPIKey, nil, "Ready", "APIKey token successfully decrypted and stored in secret")
 }
 
 // setupWatch creates a new watcher for an APIKey
@@ -340,6 +431,9 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		if resultAPIKey.Status.EncryptedToken != nil && resultAPIKey.Status.EncryptedToken.JWE != nil {
 			// Process the encrypted token
 			r.processEncryptedToken(ctx, apiKey, resultAPIKey)
+		} else {
+			r.updateAPIKeyStatus(ctx, apiKey, nil, "WaitingForToken",
+				"Waiting for encrypted token from remote API server")
 		}
 
 		// Set up watch for APIKey

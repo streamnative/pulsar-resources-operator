@@ -134,6 +134,9 @@ In this tutorial, a Kubernetes namespace called `test` is used for examples, whi
 - [ComputeWorkspace](docs/compute_workspace.md)
 - [ComputeFlinkDeployment](docs/compute_flink_deployment.md)
 - [StreamNative Cloud Secret](docs/secret.md)
+- [StreamNative Cloud APIKey](docs/apikey.md)
+- [StreamNative Cloud ServiceAccount](docs/serviceaccount.md)
+- [StreamNative Cloud ServiceAccountBinding](docs/serviceaccountbinding.md)
 
 # Contributing
 

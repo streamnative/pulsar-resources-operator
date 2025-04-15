@@ -162,11 +162,20 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, err
 	}
 
-	// Get the APIServerConnection from the ServiceAccount
+	// Determine which APIServerRef to use
+	// If APIServerRef is specified in binding, use that; otherwise use the one from ServiceAccount
+	apiServerRefName := ""
+	if binding.Spec.APIServerRef != nil && binding.Spec.APIServerRef.Name != "" {
+		apiServerRefName = binding.Spec.APIServerRef.Name
+	} else {
+		apiServerRefName = serviceAccount.Spec.APIServerRef.Name
+	}
+
+	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
-		Name:      serviceAccount.Spec.APIServerRef.Name,
+		Name:      apiServerRefName,
 	}, connection); err != nil {
 		r.updateServiceAccountBindingStatus(ctx, binding, err, "ConnectionNotFound",
 			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
@@ -202,22 +211,39 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, err
 	}
 
+	// Validate PoolMemberRefs
+	if len(binding.Spec.PoolMemberRefs) == 0 {
+		err := fmt.Errorf("at least one poolMemberRef is required")
+		r.updateServiceAccountBindingStatus(ctx, binding, err, "ValidationFailed", err.Error())
+		return ctrl.Result{}, err
+	}
+
 	// Handle deletion
 	if !binding.DeletionTimestamp.IsZero() {
 		if controllers2.ContainsString(binding.Finalizers, ServiceAccountBindingFinalizer) {
-			// Try to delete remote ServiceAccountBinding
-			if err := bindingClient.DeleteServiceAccountBinding(ctx, binding); err != nil {
-				if !apierrors.IsNotFound(err) {
-					r.updateServiceAccountBindingStatus(ctx, binding, err, "DeleteFailed",
-						fmt.Sprintf("Failed to delete external resources: %v", err))
-					return ctrl.Result{}, err
+			// Try to delete remote ServiceAccountBinding for each PoolMemberRef
+			for i, poolMemberRef := range binding.Spec.PoolMemberRefs {
+				// Create a unique name for each remote ServiceAccountBinding based on the local binding name and index
+				remoteName := fmt.Sprintf("%s.%s.%s", binding.Spec.ServiceAccountName, poolMemberRef.Namespace, poolMemberRef.Name)
+
+				// Delete the remote ServiceAccountBinding
+				if err := bindingClient.DeleteServiceAccountBinding(ctx, &resourcev1alpha1.ServiceAccountBinding{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: remoteName,
+					},
+				}); err != nil {
+					if !apierrors.IsNotFound(err) {
+						r.updateServiceAccountBindingStatus(ctx, binding, err, "DeleteFailed",
+							fmt.Sprintf("Failed to delete remote ServiceAccountBinding for PoolMemberRef %d: %v", i, err))
+						return ctrl.Result{}, err
+					}
+					// If the resource is already gone, that's fine
+					logger.Info("Remote ServiceAccountBinding already deleted or not found",
+						"binding", remoteName, "poolMemberRef", poolMemberRef)
 				}
-				// If the resource is already gone, that's fine
-				logger.Info("Remote ServiceAccountBinding already deleted or not found",
-					"binding", binding.Name)
 			}
 
-			// Remove finalizer after successful deletion
+			// Remove finalizer after successful deletion of all remote ServiceAccountBindings
 			binding.Finalizers = controllers2.RemoveString(binding.Finalizers, ServiceAccountBindingFinalizer)
 			if err := r.Update(ctx, binding); err != nil {
 				return ctrl.Result{}, err
@@ -234,47 +260,72 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 		}
 	}
 
-	// Check if ServiceAccountBinding exists
-	existingBinding, err := bindingClient.GetServiceAccountBinding(ctx, binding.Name)
-	if err != nil {
-		logger.Info("Failed to get ServiceAccountBinding", "error", err, "existingBinding", existingBinding)
-		if !apierrors.IsNotFound(err) {
-			r.updateServiceAccountBindingStatus(ctx, binding, err, "GetServiceAccountBindingFailed",
-				fmt.Sprintf("Failed to get ServiceAccountBinding: %v", err))
-			return ctrl.Result{}, client.IgnoreNotFound(err)
-		}
-		existingBinding = nil
-	}
+	// Process each PoolMemberRef
+	var errs []error
+	for i, poolMemberRef := range binding.Spec.PoolMemberRefs {
+		// Create a unique name for each remote ServiceAccountBinding based on the local binding name and index
+		remoteName := fmt.Sprintf("%s.%s.%s", binding.Spec.ServiceAccountName, poolMemberRef.Namespace, poolMemberRef.Name)
 
-	if existingBinding == nil {
-		// Create ServiceAccountBinding
-		_, err := bindingClient.CreateServiceAccountBinding(ctx, binding)
+		// Create a ServiceAccountBinding for this PoolMemberRef
+		remoteBinding := &resourcev1alpha1.ServiceAccountBinding{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: remoteName,
+			},
+			Spec: resourcev1alpha1.ServiceAccountBindingSpec{
+				ServiceAccountName: binding.Spec.ServiceAccountName,
+				PoolMemberRefs:     []resourcev1alpha1.PoolMemberReference{poolMemberRef},
+			},
+		}
+
+		// Check if ServiceAccountBinding exists
+		existingBinding, err := bindingClient.GetServiceAccountBinding(ctx, remoteName)
 		if err != nil {
-			r.updateServiceAccountBindingStatus(ctx, binding, err, "CreateServiceAccountBindingFailed",
-				fmt.Sprintf("Failed to create ServiceAccountBinding: %v", err))
-			return ctrl.Result{}, err
+			logger.Info("Failed to get ServiceAccountBinding", "error", err, "existingBinding", existingBinding)
+			if !apierrors.IsNotFound(err) {
+				errs = append(errs, fmt.Errorf("failed to get ServiceAccountBinding for PoolMemberRef %d: %w", i, err))
+				continue
+			}
+			existingBinding = nil
 		}
 
-		// Update status
-		r.updateServiceAccountBindingStatus(ctx, binding, nil, "Ready", "ServiceAccountBinding created successfully")
-	} else {
-		// Update ServiceAccountBinding
-		_, err := bindingClient.UpdateServiceAccountBinding(ctx, binding)
-		if err != nil {
-			r.updateServiceAccountBindingStatus(ctx, binding, err, "UpdateServiceAccountBindingFailed",
-				fmt.Sprintf("Failed to update ServiceAccountBinding: %v", err))
-			return ctrl.Result{}, err
+		if existingBinding == nil {
+			// Create ServiceAccountBinding
+			_, err := bindingClient.CreateServiceAccountBinding(ctx, remoteBinding)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to create ServiceAccountBinding for PoolMemberRef %d: %w", i, err))
+				continue
+			}
+			logger.Info("Created ServiceAccountBinding", "name", remoteName, "poolMemberRef", poolMemberRef)
+		} else {
+			// Update ServiceAccountBinding
+			_, err := bindingClient.UpdateServiceAccountBinding(ctx, remoteBinding)
+			if err != nil {
+				errs = append(errs, fmt.Errorf("failed to update ServiceAccountBinding for PoolMemberRef %d: %w", i, err))
+				continue
+			}
+			logger.Info("Updated ServiceAccountBinding", "name", remoteName, "poolMemberRef", poolMemberRef)
 		}
 
-		// Update status
-		r.updateServiceAccountBindingStatus(ctx, binding, nil, "Ready", "ServiceAccountBinding updated successfully")
+		// Setup watch for each remote binding
+		if err := r.setupWatch(ctx, remoteBinding, bindingClient); err != nil {
+			logger.Error(err, "Failed to setup watch", "name", remoteName)
+			// Don't return error, just log it
+		}
 	}
 
-	// Setup watch after ServiceAccountBinding is created/updated
-	if err := r.setupWatch(ctx, binding, bindingClient); err != nil {
-		logger.Error(err, "Failed to setup watch")
-		// Don't return error, just log it
+	// Update status based on errors
+	if len(errs) > 0 {
+		// Combine error messages
+		errorMsg := "Failed to process some PoolMemberRefs: "
+		for _, err := range errs {
+			errorMsg += err.Error() + "; "
+		}
+		r.updateServiceAccountBindingStatus(ctx, binding, fmt.Errorf(errorMsg), "ProcessingFailed", errorMsg)
+		return ctrl.Result{}, nil
 	}
+
+	// Update status
+	r.updateServiceAccountBindingStatus(ctx, binding, nil, "Ready", "All ServiceAccountBindings processed successfully")
 
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }

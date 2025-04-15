@@ -90,14 +90,16 @@ func convertToCloudServiceAccountBinding(binding *resourcev1alpha1.ServiceAccoun
 		cloudBinding.Spec.ServiceAccountName = binding.Spec.ServiceAccountName
 	}
 
-	// Convert PoolMemberRef
-	cloudBinding.Spec.PoolMemberRef = cloudapi.PoolMemberReference{
-		Namespace: binding.Spec.PoolMemberRef.Namespace,
-		Name:      binding.Spec.PoolMemberRef.Name,
-	}
+	// Convert PoolMemberRef - use the first one if multiple are provided
+	if len(binding.Spec.PoolMemberRefs) > 0 {
+		cloudBinding.Spec.PoolMemberRef = cloudapi.PoolMemberReference{
+			Namespace: binding.Spec.PoolMemberRefs[0].Namespace,
+			Name:      binding.Spec.PoolMemberRefs[0].Name,
+		}
 
-	if binding.Spec.PoolMemberRef.Namespace == "" {
-		cloudBinding.Spec.PoolMemberRef.Namespace = organization
+		if binding.Spec.PoolMemberRefs[0].Namespace == "" {
+			cloudBinding.Spec.PoolMemberRef.Namespace = organization
+		}
 	}
 
 	return cloudBinding

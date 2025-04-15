@@ -15,6 +15,7 @@
 package v1alpha1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -24,9 +25,14 @@ type ServiceAccountBindingSpec struct {
 	// +required
 	ServiceAccountName string `json:"serviceAccountName"`
 
-	// PoolMemberRef refers to a PoolMember in the current namespace or other namespaces
+	// APIServerRef is the reference to the StreamNativeCloudConnection
+	// If not provided, it will be retrieved from the referenced ServiceAccount
+	// +optional
+	APIServerRef *corev1.LocalObjectReference `json:"apiServerRef,omitempty"`
+
+	// PoolMemberRefs refers to a list of PoolMembers in the current namespace or other namespaces
 	// +required
-	PoolMemberRef PoolMemberReference `json:"poolMemberRef"`
+	PoolMemberRefs []PoolMemberReference `json:"poolMemberRefs"`
 }
 
 // ServiceAccountBindingStatus defines the observed state of ServiceAccountBinding

@@ -83,18 +83,14 @@ spec:
                 description: Description is a user defined description of the key
                 type: string
               encryptionKey:
-                description: |-
-                  EncryptionKey is a public key to encrypt the API Key token
-                  Please provide an RSA key with modulus length of at least 2048 bits
+                description: EncryptionKey contains the public key used to encrypt
+                  the token
                 properties:
-                  jwk:
-                    description: JWK is a JWK-encoded public key
-                    type: string
                   pem:
-                    description: PEM is a PEM-encoded public key in PKIX, ASN.1 DER
-                      form ("spki" format)
+                    description: PEM is the public key in PEM format
                     type: string
                 type: object
+                x-kubernetes-map-type: atomic
               expirationTime:
                 description: |-
                   ExpirationTime is a timestamp that defines when this API key will expire
@@ -106,9 +102,7 @@ spec:
                   is for
                 type: string
               revoke:
-                default: false
-                description: Revoke is a boolean that defines if the token of this
-                  API key should be revoked
+                description: Revoke indicates whether this API key should be revoked
                 type: boolean
               serviceAccountName:
                 description: ServiceAccountName is the name of the service account
