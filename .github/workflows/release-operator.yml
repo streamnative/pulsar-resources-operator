@@ -38,10 +38,10 @@ jobs:
       default_channel: ${{ steps.redhat.outputs.default_channel }}
 
     steps:
-      - name: Set up Go 1.21
+      - name: Set up Go 1.23
         uses: actions/setup-go@v3
         with:
-          go-version: '1.21'
+          go-version: '1.23'
         id: go
 
       - name: Set up Git token
@@ -93,7 +93,7 @@ jobs:
           export IMG=$IMAGE_TAG_BASE_QUAY:v$VERSION
           export IMG_LATEST=$IMAGE_TAG_BASE_QUAY:latest
           make docker-build-redhat
-          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.11.1/preflight-linux-amd64 -O preflight
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.12.1/preflight-linux-amd64 -O preflight
           chmod +x preflight
           mv preflight /usr/local/bin
           preflight -v
