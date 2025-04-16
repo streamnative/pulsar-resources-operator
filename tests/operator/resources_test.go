@@ -95,7 +95,7 @@ var _ = Describe("Resources", func() {
 		Expect(feature.SetFeatureGates()).ShouldNot(HaveOccurred())
 		ctx = context.TODO()
 		// use ClusterIP svc when run operator in k8s
-		adminServiceURL := fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName)
+		adminServiceURL := utils.GetEnv("ADMIN_SERVICE_URL", fmt.Sprintf("http://%s-broker.%s.svc.cluster.local:8080", brokerName, namespaceName))
 		// use NodePort svc when cluster is kind cluster and run operator locally, the nodePort need to be setup in kind
 		// adminServiceURL := fmt.Sprintf("http://127.0.0.1:%d", nodePort)
 		pconn = utils.MakePulsarConnection(namespaceName, pconnName, adminServiceURL)
@@ -125,7 +125,7 @@ var _ = Describe("Resources", func() {
 	})
 
 	Describe("Basic resource operations", Ordered, func() {
-		Context("Check pulsar broker", func() {
+		Context("Check pulsar broker", Label("Permissions"), func() {
 			It("should create the pulsar broker successfully", func() {
 				Eventually(func() bool {
 					statefulset := &v1.StatefulSet{}
@@ -138,14 +138,14 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
-		Context("PulsarConnection operation", func() {
+		Context("PulsarConnection operation", Label("Permissions"), func() {
 			It("should create the pulsarconnection successfully", func() {
 				err := k8sClient.Create(ctx, pconn)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 		})
 
-		Context("PulsarTenant operation", func() {
+		Context("PulsarTenant operation", Label("Permissions"), func() {
 			It("should create the pulsartenant successfully", func() {
 				err := k8sClient.Create(ctx, ptenant)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
@@ -176,7 +176,7 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
-		Context("PulsarNamespace operation", func() {
+		Context("PulsarNamespace operation", Label("Permissions"), func() {
 			It("should create the pulsarnamespace successfully", func() {
 				err := k8sClient.Create(ctx, pnamespace)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
@@ -193,7 +193,7 @@ var _ = Describe("Resources", func() {
 		})
 
 		Context("PulsarTopic operation", Ordered, func() {
-			It("should create the pulsartopic successfully", func() {
+			It("should create the pulsartopic successfully", Label("Permissions"), func() {
 				err := k8sClient.Create(ctx, ptopic)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 				err = k8sClient.Create(ctx, ptopic2)
@@ -202,7 +202,7 @@ var _ = Describe("Resources", func() {
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 			})
 
-			It("should be ready", func() {
+			It("should be ready", Label("Permissions"), func() {
 				Eventually(func() bool {
 					t := &v1alphav1.PulsarTopic{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
@@ -291,7 +291,7 @@ var _ = Describe("Resources", func() {
 
 		})
 
-		Context("PulsarPermission operation", func() {
+		Context("PulsarPermission operation", Label("Permissions"), func() {
 			It("should grant the pulsarpermission successfully", func() {
 				err := k8sClient.Create(ctx, ppermission)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
@@ -304,6 +304,69 @@ var _ = Describe("Resources", func() {
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should add a new role", func() {
+				t := &v1alphav1.PulsarPermission{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
+				Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+				t.Spec.Roles = append(t.Spec.Roles, "spiderman")
+				err := k8sClient.Update(ctx, t)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarPermission{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("spiderman should exists along with ironman", func() {
+				Eventually(func(g Gomega) {
+					podName := fmt.Sprintf("%s-broker-0", brokerName)
+					containerName := fmt.Sprintf("%s-broker", brokerName)
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin topics permissions "+ppermission.Spec.ResourceName)
+					g.Expect(err).Should(Succeed())
+					g.Expect(stdout).Should(Not(BeEmpty()))
+					g.Expect(stdout).Should(ContainSubstring("ironman"))
+					g.Expect(stdout).Should(ContainSubstring("spiderman"))
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("should delete a role", func() {
+				t := &v1alphav1.PulsarPermission{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
+				Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+				// remove spiderman and assign to roles
+				t.Spec.Roles = []string{"ironman"}
+				err := k8sClient.Update(ctx, t)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarPermission{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("spiderman shouldn't exists anymore but ironman", func() {
+				Eventually(func(g Gomega) {
+					podName := fmt.Sprintf("%s-broker-0", brokerName)
+					containerName := fmt.Sprintf("%s-broker", brokerName)
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin topics permissions "+ptopic.Spec.Name)
+					g.Expect(err).Should(Succeed())
+					g.Expect(stdout).Should(Not(BeEmpty()))
+					g.Expect(stdout).Should(ContainSubstring("ironman"))
+					g.Expect(stdout).Should(Not(ContainSubstring("spiderman")))
+				}, "20s", "100ms").Should(Succeed())
 			})
 		})
 
@@ -510,6 +573,20 @@ var _ = Describe("Resources", func() {
 			Eventually(func(g Gomega) {
 				t := &v1alphav1.PulsarTopic{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
+				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+			}).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				t := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName2}
+				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+			}).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				t := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: partitionedTopic.Name}
 				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 			}).Should(Succeed())

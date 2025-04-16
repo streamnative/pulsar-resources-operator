@@ -16,6 +16,7 @@ package utils
 
 import (
 	"encoding/json"
+	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
@@ -306,4 +307,12 @@ func MakeNSIsolationPolicy(namespace, name, clusterName, connectionName string, 
 			AutoFailoverPolicyParams: params,
 		},
 	}
+}
+
+func GetEnv(key, fallback string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		value = fallback
+	}
+	return value
 }
