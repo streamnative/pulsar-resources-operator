@@ -15,6 +15,7 @@
 package admin
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
@@ -242,6 +243,10 @@ type PulsarAdminConfig struct {
 	Key            string
 	Scope          string
 
+	// TLS Authentication related configuration
+	ClientCertificatePath    string
+	ClientCertificateKeyPath string
+
 	PulsarAPIVersion *config.APIVersion
 }
 
@@ -253,8 +258,10 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	var adminClient admin.Client
 
 	config := &config.Config{
-		WebServiceURL:              conf.WebServiceURL,
-		TLSAllowInsecureConnection: true,
+		WebServiceURL:                 conf.WebServiceURL,
+		TLSAllowInsecureConnection:    conf.TLSAllowInsecureConnection,
+		TLSEnableHostnameVerification: conf.TLSEnableHostnameVerification,
+		TLSTrustCertsFilePath:         conf.TLSTrustCertsFilePath,
 		// V2 admin endpoint contains operations for tenant, namespace and topic.
 		PulsarAPIVersion: config.V2,
 	}
@@ -296,9 +303,22 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		if err != nil {
 			return nil, err
 		}
-	} else {
+	} else if conf.Token != "" {
 		config.Token = conf.Token
 
+		adminClient, err = admin.New(config)
+		if err != nil {
+			return nil, err
+		}
+	} else if conf.ClientCertificatePath != "" {
+		config.AuthPlugin = auth.TLSPluginName
+		config.AuthParams = fmt.Sprintf("{\"tlsCertFile\": %q, \"tlsKeyFile\": %q}", conf.ClientCertificatePath, conf.ClientCertificateKeyPath)
+
+		adminClient, err = admin.New(config)
+		if err != nil {
+			return nil, err
+		}
+	} else {
 		adminClient, err = admin.New(config)
 		if err != nil {
 			return nil, err
