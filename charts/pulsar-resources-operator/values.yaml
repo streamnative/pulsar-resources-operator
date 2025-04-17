@@ -170,3 +170,6 @@ cloudStorage:
       sasToken: ""
       # -- Use account key for authentication (if false, will use SAS token)
       useAccountKey: true
+
+extraVolumeMounts: []
+extraVolumes: []

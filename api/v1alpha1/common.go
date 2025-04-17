@@ -55,6 +55,9 @@ type PulsarAuthentication struct {
 	// For detailed information on the OAuth2 fields, refer to the PulsarAuthenticationOAuth2 struct.
 	// +optional
 	OAuth2 *PulsarAuthenticationOAuth2 `json:"oauth2,omitempty"`
+
+	// +optional
+	TLS *PulsarAuthenticationTLS `json:"tls,omitempty"`
 }
 
 // PulsarResourceLifeCyclePolicy defines the behavior for managing Pulsar resources
@@ -105,6 +108,12 @@ type PulsarAuthenticationOAuth2 struct {
 	// Scope is an optional field to request specific permissions from the OAuth2 server.
 	// If not specified, the default scope defined by the OAuth2 server will be used.
 	Scope string `json:"scope,omitempty"`
+}
+
+// PulsarAuthenticationTLS indicates the parameters which are need by pulsar TLS Authentication
+type PulsarAuthenticationTLS struct {
+	ClientCertificatePath    string `json:"clientCertificatePath"`
+	ClientCertificateKeyPath string `json:"clientCertificateKeyPath"`
 }
 
 // IsPulsarResourceReady returns true if resource satisfies with these condition

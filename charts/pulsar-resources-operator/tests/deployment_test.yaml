@@ -36,6 +36,10 @@ tests:
           path: spec.template.spec.containers[0].resources.requests
       - isNull:
           path: spec.template.spec.containers[0].resources.limits
+      - isNull:
+          path: spec.template.spec.containers[1].volumeMounts
+      - isNull:
+          path: spec.template.spec.volumes
 
   - it: should update the image version successfully
     set:
