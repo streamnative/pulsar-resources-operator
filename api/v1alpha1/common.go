@@ -18,6 +18,7 @@ import (
 	"reflect"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
 
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -365,4 +366,46 @@ type VolumeSource struct {
 	// Secret represents a secret that should populate this volume.
 	// +optional
 	Secret *corev1.SecretVolumeSource `json:"secret,omitempty"`
+}
+
+// PulsarConnectionRef indicates the connection reference
+type PulsarConnectionRef struct {
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// +required
+	Name string `json:"name"`
+}
+
+// StreamNativeCloudConnectionRef indicates the connection reference
+type StreamNativeCloudConnectionRef struct {
+	// +optional
+	Namespace string `json:"namespace,omitempty"`
+
+	// +required
+	Name string `json:"name"`
+}
+
+// ToNamespacedName converts the connection reference to a namespaced name
+func (r PulsarConnectionRef) ToNamespacedName(defaultNamespace string) types.NamespacedName {
+	ns := defaultNamespace
+	if r.Namespace != "" {
+		ns = r.Namespace
+	}
+	return types.NamespacedName{
+		Namespace: ns,
+		Name:      r.Name,
+	}
+}
+
+// ToNamespacedName converts the connection reference to a namespaced name
+func (r StreamNativeCloudConnectionRef) ToNamespacedName(defaultNamespace string) types.NamespacedName {
+	ns := defaultNamespace
+	if r.Namespace != "" {
+		ns = r.Namespace
+	}
+	return types.NamespacedName{
+		Namespace: ns,
+		Name:      r.Name,
+	}
 }

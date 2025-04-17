@@ -182,10 +182,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 				}
 				log.V(1).Info("Found geo replication", "GEO Replication", geoReplication.Name)
 				destConnection := &resourcev1alpha1.PulsarConnection{}
-				namespacedName = types.NamespacedName{
-					Name:      geoReplication.Spec.DestinationConnectionRef.Name,
-					Namespace: geoReplication.Namespace,
-				}
+				namespacedName = geoReplication.Spec.DestinationConnectionRef.ToNamespacedName(geoReplication.Namespace)
 				if err := r.conn.client.Get(ctx, namespacedName, destConnection); err != nil {
 					log.Error(err, "Failed to get destination connection for geo replication")
 					return err

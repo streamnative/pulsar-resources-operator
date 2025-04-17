@@ -152,10 +152,7 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      workspace.Spec.APIServerRef.Name,
-	}, connection); err != nil {
+	if err := r.Get(ctx, workspace.Spec.APIServerRef.ToNamespacedName(req.Namespace), connection); err != nil {
 		r.updateWorkspaceStatus(ctx, workspace, err, "ConnectionNotFound",
 			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
 		return ctrl.Result{}, err
