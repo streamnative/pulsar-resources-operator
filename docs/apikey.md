@@ -30,6 +30,7 @@ spec:
 | `spec.expirationTime` | string | Timestamp defining when this API key will expire | No |
 | `spec.revoke` | boolean | Indicates whether this API key should be revoked | No |
 | `spec.encryptionKey` | object | Contains the public key used to encrypt the token | No |
+| `spec.exportPlaintextToken` | boolean | Indicates whether the plaintext token should be exported as Kubernetes secret if the Pulsar Resources Operator managed the private key. (Default: false) | No |
 
 ## Status
 
@@ -48,11 +49,11 @@ spec:
 
 For each APIKey resource, the operator creates and manages two types of Secrets:
 
-1. **Private Key Secret**: Contains the RSA private key used for decrypting tokens
+1. **Private Key Secret**: Contains the RSA private key used for decrypting tokens, only if no `encryptionKey` provided 
    - Name format: `<apikey-name>-private-key`
    - Contains key: `private-key`
 
-2. **Token Secret**: Contains the decrypted API token for authentication
+2. **Token Secret**: Contains the decrypted API token for authentication, only if no `encryptionKey` provided, and `exportPlaintextToken` to `true`
    - Name format: `<apikey-name>-token`
    - Contains key: `token`
    - Includes labels:

@@ -49,6 +49,10 @@ type APIKeySpec struct {
 	// EncryptionKey contains the public key used to encrypt the token
 	// +optional
 	EncryptionKey *EncryptionKey `json:"encryptionKey,omitempty"`
+
+	// ExportPlaintextToken indicates whether the token should be exported in plaintext
+	// +optional
+	ExportPlaintextToken *bool `json:"exportPlaintextToken,omitempty"`
 }
 
 // EncryptionKey contains a public key used for encryption

@@ -120,15 +120,19 @@ func (r *APIKeyReconciler) handleWatchEvents(ctx context.Context, namespacedName
 					continue
 				}
 
-				// Process encrypted token and update Secret if needed
-				if cloudAPIKey.Status.EncryptedToken != nil && cloudAPIKey.Status.EncryptedToken.JWE != nil {
-					logger.Info("Found encrypted token in watch event, processing", "apiKey", namespacedName.Name)
-					r.processEncryptedToken(ctx, localAPIKey, cloudAPIKey)
+				if localAPIKey.Spec.ExportPlaintextToken != nil && *localAPIKey.Spec.ExportPlaintextToken {
+					// Process encrypted token and update Secret if needed
+					if cloudAPIKey.Status.EncryptedToken != nil && cloudAPIKey.Status.EncryptedToken.JWE != nil {
+						logger.Info("Found encrypted token in watch event, processing", "apiKey", namespacedName.Name)
+						r.processEncryptedToken(ctx, localAPIKey, cloudAPIKey)
+					} else {
+						logger.Info("No encrypted token found in watch event", "apiKey", namespacedName.Name)
+						// Update status to reflect that we're waiting for token
+						r.updateAPIKeyStatus(ctx, localAPIKey, nil, "WaitingForToken",
+							"Waiting for encrypted token from remote API server")
+					}
 				} else {
-					logger.Info("No encrypted token found in watch event", "apiKey", namespacedName.Name)
-					// Update status to reflect that we're waiting for token
-					r.updateAPIKeyStatus(ctx, localAPIKey, nil, "WaitingForToken",
-						"Waiting for encrypted token from remote API server")
+					r.updateAPIKeyStatus(ctx, localAPIKey, nil, "Ready", "APIKey created successfully")
 				}
 			}
 		}
@@ -427,13 +431,18 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 
-		// Update status with token information
-		if resultAPIKey.Status.EncryptedToken != nil && resultAPIKey.Status.EncryptedToken.JWE != nil {
-			// Process the encrypted token
-			r.processEncryptedToken(ctx, apiKey, resultAPIKey)
+		if apiKey.Spec.ExportPlaintextToken != nil && *apiKey.Spec.ExportPlaintextToken {
+			// Update status with token information
+			if resultAPIKey.Status.EncryptedToken != nil && resultAPIKey.Status.EncryptedToken.JWE != nil {
+				// Process the encrypted token
+				r.processEncryptedToken(ctx, apiKey, resultAPIKey)
+			} else {
+				r.updateAPIKeyStatus(ctx, apiKey, nil, "WaitingForToken",
+					"Waiting for encrypted token from remote API server")
+			}
 		} else {
-			r.updateAPIKeyStatus(ctx, apiKey, nil, "WaitingForToken",
-				"Waiting for encrypted token from remote API server")
+			// Update status with token information
+			r.updateAPIKeyStatus(ctx, apiKey, nil, "Ready", "APIKey created successfully")
 		}
 
 		// Set up watch for APIKey
