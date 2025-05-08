@@ -23,6 +23,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rsutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
@@ -81,6 +82,11 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			BacklogQuotaLimitSize: &backlogSize,
 			Bundles:               &bundle,
 			MessageTTL:            ttl,
+			TopicAutoCreationConfig: &v1alpha1.TopicAutoCreationConfig{
+				Allow:      true,
+				Type:       "partitioned",
+				Partitions: ptr.To[int32](10),
+			},
 		},
 	}
 }
