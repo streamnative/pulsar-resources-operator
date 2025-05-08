@@ -25,8 +25,20 @@ type FakeCloudV1alpha1 struct {
 	*testing.Fake
 }
 
+func (c *FakeCloudV1alpha1) APIKeys(namespace string) v1alpha1.APIKeyInterface {
+	return &FakeAPIKeys{c, namespace}
+}
+
 func (c *FakeCloudV1alpha1) Secrets(namespace string) v1alpha1.SecretInterface {
 	return &FakeSecrets{c, namespace}
+}
+
+func (c *FakeCloudV1alpha1) ServiceAccounts(namespace string) v1alpha1.ServiceAccountInterface {
+	return &FakeServiceAccounts{c, namespace}
+}
+
+func (c *FakeCloudV1alpha1) ServiceAccountBindings(namespace string) v1alpha1.ServiceAccountBindingInterface {
+	return &FakeServiceAccountBindings{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate

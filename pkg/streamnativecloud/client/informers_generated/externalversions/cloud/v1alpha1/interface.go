@@ -21,8 +21,14 @@ import (
 
 // Interface provides access to all the informers in this group version.
 type Interface interface {
+	// APIKeys returns a APIKeyInformer.
+	APIKeys() APIKeyInformer
 	// Secrets returns a SecretInformer.
 	Secrets() SecretInformer
+	// ServiceAccounts returns a ServiceAccountInformer.
+	ServiceAccounts() ServiceAccountInformer
+	// ServiceAccountBindings returns a ServiceAccountBindingInformer.
+	ServiceAccountBindings() ServiceAccountBindingInformer
 }
 
 type version struct {
@@ -36,7 +42,22 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 	return &version{factory: f, namespace: namespace, tweakListOptions: tweakListOptions}
 }
 
+// APIKeys returns a APIKeyInformer.
+func (v *version) APIKeys() APIKeyInformer {
+	return &aPIKeyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
 // Secrets returns a SecretInformer.
 func (v *version) Secrets() SecretInformer {
 	return &secretInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceAccounts returns a ServiceAccountInformer.
+func (v *version) ServiceAccounts() ServiceAccountInformer {
+	return &serviceAccountInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ServiceAccountBindings returns a ServiceAccountBindingInformer.
+func (v *version) ServiceAccountBindings() ServiceAccountBindingInformer {
+	return &serviceAccountBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
