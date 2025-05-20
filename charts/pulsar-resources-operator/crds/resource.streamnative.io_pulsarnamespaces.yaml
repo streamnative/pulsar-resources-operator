@@ -238,6 +238,28 @@ spec:
                   Should be set in conjunction with RetentionSize for effective retention policy.
                   Retention Quota must exceed configured backlog quota for namespace
                 type: string
+              topicAutoCreationConfig:
+                description: |-
+                  TopicAutoCreationConfig controls whether automatic topic creation is allowed in this namespace
+                  and configures properties of automatically created topics
+                properties:
+                  allow:
+                    description: Allow specifies whether to allow automatic topic
+                      creation
+                    type: boolean
+                  partitions:
+                    description: Partitions specifies the default number of partitions
+                      for automatically created topics
+                    format: int32
+                    type: integer
+                  type:
+                    description: Type specifies the type of automatically created
+                      topics
+                    enum:
+                    - partitioned
+                    - non-partitioned
+                    type: string
+                type: object
             required:
             - connectionRef
             - name
