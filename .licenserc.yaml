@@ -38,5 +38,6 @@ header:
     - '**/README.md.gotmpl'
     - '**/*.json'
     - '**/.helmignore'
+    - 'testbin/**'
 
   comment: on-failure

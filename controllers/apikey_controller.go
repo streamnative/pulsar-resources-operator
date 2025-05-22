@@ -18,7 +18,6 @@ import (
 	"context"
 	"crypto/rsa"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwa"
@@ -33,7 +32,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -47,10 +45,6 @@ type APIKeyReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
 	ConnectionManager *ConnectionManager
-	// watcherMap stores active watchers for APIKeys
-	watcherMap map[types.NamespacedName]watch.Interface
-	// watcherMutex protects watcherMap
-	watcherMutex sync.RWMutex
 }
 
 const APIKeyFinalizer = "apikey.resource.streamnative.io/finalizer"
@@ -60,115 +54,6 @@ const APIKeyFinalizer = "apikey.resource.streamnative.io/finalizer"
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=apikeys/finalizers,verbs=update
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
-
-// handleWatchEvents processes events from the watch interface
-func (r *APIKeyReconciler) handleWatchEvents(ctx context.Context, namespacedName types.NamespacedName, watcher watch.Interface) {
-	logger := log.FromContext(ctx)
-	defer watcher.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				logger.Info("Watch channel closed", "namespace", namespacedName.Namespace, "name", namespacedName.Name)
-				// Remove the watcher from the map
-				r.watcherMutex.Lock()
-				delete(r.watcherMap, namespacedName)
-				r.watcherMutex.Unlock()
-				return
-			}
-
-			logger.Info("Received watch event",
-				"apiKey", namespacedName.Name,
-				"eventType", event.Type)
-
-			if event.Type == watch.Modified {
-				// Check if the object is an APIKey
-				cloudAPIKey, ok := event.Object.(*cloudapi.APIKey)
-				if !ok {
-					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to APIKey")
-					continue
-				}
-
-				// Log token and encryption status
-				hasEncryptedToken := cloudAPIKey.Status.EncryptedToken != nil
-				hasJWE := hasEncryptedToken && cloudAPIKey.Status.EncryptedToken.JWE != nil
-				logger.Info("Received APIKey update",
-					"apiKey", namespacedName.Name,
-					"hasEncryptedToken", hasEncryptedToken,
-					"hasJWE", hasJWE)
-
-				// Get the local APIKey
-				localAPIKey := &resourcev1alpha1.APIKey{}
-				if err := r.Get(ctx, namespacedName, localAPIKey); err != nil {
-					logger.Error(err, "Failed to get local APIKey")
-					continue
-				}
-
-				// Check remote status and handle abnormal situations
-				if isRemoteStatusAbnormal(cloudAPIKey) {
-					logger.Info("Detected abnormal remote APIKey status",
-						"apiKey", namespacedName.Name,
-						"hasEncryptedToken", hasEncryptedToken,
-						"hasJWE", hasJWE)
-					r.updateAPIKeyStatus(ctx, localAPIKey,
-						fmt.Errorf("remote API server returned incomplete or invalid status"),
-						"RemoteStatusAbnormal",
-						"Remote API server returned incomplete or invalid status for the APIKey")
-					continue
-				}
-
-				if localAPIKey.Spec.ExportPlaintextToken != nil && *localAPIKey.Spec.ExportPlaintextToken {
-					// Process encrypted token and update Secret if needed
-					if cloudAPIKey.Status.EncryptedToken != nil && cloudAPIKey.Status.EncryptedToken.JWE != nil {
-						logger.Info("Found encrypted token in watch event, processing", "apiKey", namespacedName.Name)
-						r.processEncryptedToken(ctx, localAPIKey, cloudAPIKey)
-					} else {
-						logger.Info("No encrypted token found in watch event", "apiKey", namespacedName.Name)
-						// Update status to reflect that we're waiting for token
-						r.updateAPIKeyStatus(ctx, localAPIKey, nil, "WaitingForToken",
-							"Waiting for encrypted token from remote API server")
-					}
-				} else {
-					r.updateAPIKeyStatus(ctx, localAPIKey, nil, "Ready", "APIKey created successfully")
-				}
-			}
-		}
-	}
-}
-
-// isRemoteStatusAbnormal checks if the remote API key status is incomplete or invalid
-func isRemoteStatusAbnormal(cloudAPIKey *cloudapi.APIKey) bool {
-	// Consider status abnormal if:
-	// 1. Status is completely empty/nil (very unlikely but possible)
-	if cloudAPIKey == nil {
-		return true
-	}
-
-	// 2. We expect some basic fields to be present in a normal response
-	// KeyID should be present in a successful API key
-	if cloudAPIKey.Status.KeyID == nil {
-		return true
-	}
-
-	// 3. For an APIKey that's been processed by the server, we should have either:
-	//    - An encrypted token
-	//    - Or explicit conditions indicating why token creation failed
-	if cloudAPIKey.Status.EncryptedToken == nil && len(cloudAPIKey.Status.Conditions) == 0 {
-		return true
-	}
-
-	// 4. If there are conditions, check if they indicate failure
-	for _, condition := range cloudAPIKey.Status.Conditions {
-		if condition.Type == "Ready" && condition.Status == metav1.ConditionFalse {
-			return true
-		}
-	}
-
-	return false
-}
 
 // processEncryptedToken handles decrypting the token and storing it in a Secret
 func (r *APIKeyReconciler) processEncryptedToken(ctx context.Context, localAPIKey *resourcev1alpha1.APIKey, cloudAPIKey *cloudapi.APIKey) {
@@ -214,9 +99,8 @@ func (r *APIKeyReconciler) processEncryptedToken(ctx context.Context, localAPIKe
 	logger.Info("Successfully imported private key", "apiKey", localAPIKey.Name)
 
 	// Decrypt token
-	jweToken := *cloudAPIKey.Status.EncryptedToken.JWE
-	logger.Info("Attempting to decrypt JWE token", "apiKey", localAPIKey.Name, "jweLength", len(jweToken))
-	token, err := crypto.DecryptJWEToken(jweToken, privateKey)
+	logger.Info("Attempting to decrypt JWE token", "apiKey", localAPIKey.Name)
+	token, err := DecryptToken(privateKey, *cloudAPIKey.Status.EncryptedToken)
 	if err != nil {
 		logger.Error(err, "Failed to decrypt token")
 		r.updateAPIKeyStatus(ctx, localAPIKey,
@@ -248,37 +132,6 @@ func (r *APIKeyReconciler) processEncryptedToken(ctx context.Context, localAPIKe
 	r.updateAPIKeyStatus(ctx, localAPIKey, nil, "Ready", "APIKey token successfully decrypted and stored in secret")
 }
 
-// setupWatch creates a new watcher for an APIKey
-func (r *APIKeyReconciler) setupWatch(ctx context.Context, apiKey *resourcev1alpha1.APIKey, apiKeyClient *controllers2.APIKeyClient) error {
-	namespacedName := types.NamespacedName{
-		Namespace: apiKey.Namespace,
-		Name:      apiKey.Name,
-	}
-
-	// Check if we already have a watcher
-	r.watcherMutex.RLock()
-	_, exists := r.watcherMap[namespacedName]
-	r.watcherMutex.RUnlock()
-	if exists {
-		return nil
-	}
-
-	// Create new watcher
-	watcher, err := apiKeyClient.WatchAPIKey(ctx, apiKey.Name)
-	if err != nil {
-		return fmt.Errorf("failed to create watcher: %w", err)
-	}
-
-	// Store watcher in map
-	r.watcherMutex.Lock()
-	r.watcherMap[namespacedName] = watcher
-	r.watcherMutex.Unlock()
-
-	// Start watching in a new goroutine
-	go r.handleWatchEvents(ctx, namespacedName, watcher)
-	return nil
-}
-
 // Reconcile handles the reconciliation of APIKey objects
 func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
@@ -291,15 +144,10 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	apiKey := &resourcev1alpha1.APIKey{}
 	if err := r.Get(ctx, req.NamespacedName, apiKey); err != nil {
 		if apierrors.IsNotFound(err) {
-			// Stop and remove watcher if it exists
-			r.watcherMutex.Lock()
-			if watcher, exists := r.watcherMap[req.NamespacedName]; exists {
-				watcher.Stop()
-				delete(r.watcherMap, req.NamespacedName)
-			}
-			r.watcherMutex.Unlock()
+			logger.Info("APIKey not found. Reconciliation will stop.", "namespace", req.Namespace, "name", req.Name)
 			return ctrl.Result{}, nil
 		}
+		// Other error fetching APIKey
 		return ctrl.Result{}, err
 	}
 
@@ -317,7 +165,6 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Get API connection
 	apiConn, err := r.ConnectionManager.GetOrCreateConnection(connection, nil)
 	if err != nil {
-		// If connection is not initialized, requeue the request
 		if _, ok := err.(*NotInitializedError); ok {
 			logger.Info("Connection not initialized, requeueing", "error", err.Error())
 			return ctrl.Result{Requeue: true}, nil
@@ -346,19 +193,15 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	// Handle deletion
 	if !apiKey.DeletionTimestamp.IsZero() {
 		if controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
-			// Try to delete remote APIKey
 			if err := apiKeyClient.DeleteAPIKey(ctx, apiKey); err != nil {
 				if !apierrors.IsNotFound(err) {
 					r.updateAPIKeyStatus(ctx, apiKey, err, "DeleteFailed",
 						fmt.Sprintf("Failed to delete external resources: %v", err))
 					return ctrl.Result{}, err
 				}
-				// If the resource is already gone, that's fine
 				logger.Info("Remote APIKey already deleted or not found",
 					"apiKey", apiKey.Name)
 			}
-
-			// Remove finalizer after successful deletion
 			apiKey.Finalizers = controllers2.RemoveString(apiKey.Finalizers, APIKeyFinalizer)
 			if err := r.Update(ctx, apiKey); err != nil {
 				return ctrl.Result{}, err
@@ -367,7 +210,6 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	// Add finalizer if it doesn't exist
 	if !controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
 		apiKey.Finalizers = append(apiKey.Finalizers, APIKeyFinalizer)
 		if err := r.Update(ctx, apiKey); err != nil {
@@ -375,7 +217,6 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		}
 	}
 
-	// Check if ApiKey exists
 	existingAPIKey, err := apiKeyClient.GetAPIKey(ctx, apiKey.Name)
 	if err != nil {
 		logger.Info("Failed to get APIKey", "error", err, "existingAPIKey", existingAPIKey)
@@ -388,103 +229,156 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if existingAPIKey == nil {
-		// Generate RSA key pair for token encryption
-		privateKey, err := crypto.GenerateRSAKeyPair()
-		if err != nil {
-			r.updateAPIKeyStatus(ctx, apiKey, err, "KeyGenerationFailed",
-				fmt.Sprintf("Failed to generate RSA key pair: %v", err))
+		if apiKey.Spec.EncryptionKey == nil || apiKey.Spec.EncryptionKey.PEM == "" {
+			// Generate RSA key pair for token encryption
+			privateKey, pKeyErr := crypto.GenerateRSAKeyPair()
+			if pKeyErr != nil {
+				r.updateAPIKeyStatus(ctx, apiKey, pKeyErr, "KeyGenerationFailed",
+					fmt.Sprintf("Failed to generate RSA key pair: %v", pKeyErr))
+				return ctrl.Result{}, pKeyErr
+			}
+
+			publicKeyPEM, pubKeyErr := crypto.ExportPublicKeyAsPEM(privateKey)
+			if pubKeyErr != nil {
+				r.updateAPIKeyStatus(ctx, apiKey, pubKeyErr, "KeyExportFailed",
+					fmt.Sprintf("Failed to export public key: %v", pubKeyErr))
+				return ctrl.Result{}, pubKeyErr
+			}
+
+			privateKeyPEM := crypto.ExportPrivateKeyAsPEM(privateKey)
+			if err := utils.CreateOrUpdatePrivateKeySecret(ctx, r.Client, apiKey, apiKey.Namespace, apiKey.Name, privateKeyPEM); err != nil {
+				r.updateAPIKeyStatus(ctx, apiKey, err, "SecretCreationFailed",
+					fmt.Sprintf("Failed to create private key secret: %v", err))
+				return ctrl.Result{}, err
+			}
+
+			if apiKey.Spec.EncryptionKey == nil {
+				apiKey.Spec.EncryptionKey = &resourcev1alpha1.EncryptionKey{}
+			}
+			apiKey.Spec.EncryptionKey.PEM = publicKeyPEM
+		}
+
+		if err := r.Update(ctx, apiKey); err != nil { // Update spec with public key PEM
+			logger.Error(err, "Failed to update APIKey spec with public key PEM")
 			return ctrl.Result{}, err
 		}
 
-		// Export public key in PEM format
-		publicKeyPEM, err := crypto.ExportPublicKeyAsPEM(privateKey)
-		if err != nil {
-			r.updateAPIKeyStatus(ctx, apiKey, err, "KeyExportFailed",
-				fmt.Sprintf("Failed to export public key: %v", err))
-			return ctrl.Result{}, err
+		createdAPIKey, createErr := apiKeyClient.CreateAPIKey(ctx, apiKey)
+		if createErr != nil {
+			r.updateAPIKeyStatus(ctx, apiKey, createErr, "CreateAPIKeyFailed",
+				fmt.Sprintf("Failed to create APIKey: %v", createErr))
+			return ctrl.Result{}, createErr
 		}
+		logger.Info("Successfully created remote APIKey", "apiKeyName", apiKey.Name)
 
-		// Store private key in Secret
-		privateKeyPEM := crypto.ExportPrivateKeyAsPEM(privateKey)
-		if err := utils.CreateOrUpdatePrivateKeySecret(ctx, r.Client, apiKey, apiKey.Namespace, apiKey.Name, privateKeyPEM); err != nil {
-			r.updateAPIKeyStatus(ctx, apiKey, err, "SecretCreationFailed",
-				fmt.Sprintf("Failed to create private key secret: %v", err))
-			return ctrl.Result{}, err
-		}
-
-		// Add encryption key to spec
-		if apiKey.Spec.EncryptionKey == nil {
-			apiKey.Spec.EncryptionKey = &resourcev1alpha1.EncryptionKey{}
-		}
-		apiKey.Spec.EncryptionKey.PEM = publicKeyPEM
-
-		// Update APIKey with encryption key
-		if err := r.Update(ctx, apiKey); err != nil {
-			return ctrl.Result{}, err
-		}
-
-		// Create APIKey
-		resultAPIKey, err := apiKeyClient.CreateAPIKey(ctx, apiKey)
-		if err != nil {
-			r.updateAPIKeyStatus(ctx, apiKey, err, "CreateAPIKeyFailed",
-				fmt.Sprintf("Failed to create APIKey: %v", err))
-			return ctrl.Result{}, err
-		}
+		r.syncCloudStatusToLocal(apiKey, createdAPIKey)
 
 		if apiKey.Spec.ExportPlaintextToken != nil && *apiKey.Spec.ExportPlaintextToken {
-			// Update status with token information
-			if resultAPIKey.Status.EncryptedToken != nil && resultAPIKey.Status.EncryptedToken.JWE != nil {
-				// Process the encrypted token
-				r.processEncryptedToken(ctx, apiKey, resultAPIKey)
+			if createdAPIKey.Status.EncryptedToken != nil && createdAPIKey.Status.EncryptedToken.JWE != nil {
+				r.processEncryptedToken(ctx, apiKey, createdAPIKey)
 			} else {
 				r.updateAPIKeyStatus(ctx, apiKey, nil, "WaitingForToken",
 					"Waiting for encrypted token from remote API server")
 			}
 		} else {
-			// Update status with token information
-			r.updateAPIKeyStatus(ctx, apiKey, nil, "Ready", "APIKey created successfully")
+			r.updateAPIKeyStatus(ctx, apiKey, nil, "Ready", "APIKey created successfully (no token export requested)")
 		}
-
-		// Set up watch for APIKey
-		if err := r.setupWatch(ctx, apiKey, apiKeyClient); err != nil {
-			logger.Error(err, "Failed to set up watch", "apiKey", apiKey.Name)
-		}
-
-		// Update status
-		r.updateAPIKeyStatus(ctx, apiKey, nil, "Ready", "APIKey created successfully")
+		// The status might have been updated by processEncryptedToken or the else block above.
+		// We requeue to ensure the latest status is reflected and to handle any eventual consistency.
 		return ctrl.Result{RequeueAfter: requeueInterval}, nil
 	}
 
-	// Update revocation status if needed
+	r.syncCloudStatusToLocal(apiKey, existingAPIKey)
+
+	// If ExportPlaintextToken is true, ensure token is processed
+	if apiKey.Spec.ExportPlaintextToken != nil && *apiKey.Spec.ExportPlaintextToken {
+		if existingAPIKey.Status.EncryptedToken != nil && existingAPIKey.Status.EncryptedToken.JWE != nil {
+			r.processEncryptedToken(ctx, apiKey, existingAPIKey)
+		} else {
+			r.updateAPIKeyStatus(ctx, apiKey, nil, "WaitingForToken", "Existing APIKey waiting for encrypted token from remote API server or token not available")
+		}
+	}
+
+	// Sync spec fields like Revoke and Description if they differ
+	// We compare the spec of the local apiKey CR with the spec of the fetched existingAPIKey from the cloud.
+	// If they differ, we send the local apiKey (which represents the desired state) to UpdateAPIKey.
+	needsRemoteUpdate := false
 	if apiKey.Spec.Revoke != existingAPIKey.Spec.Revoke {
-		// Create a new local copy with updated values
-		updatedAPIKey := apiKey.DeepCopy()
-		if err := r.Update(ctx, updatedAPIKey); err != nil {
-			r.updateAPIKeyStatus(ctx, apiKey, err, "UpdateFailed",
-				fmt.Sprintf("Failed to update APIKey: %v", err))
-			return ctrl.Result{}, err
-		}
+		logger.Info("Revoke status differs", "apiKeyName", apiKey.Name, "local", apiKey.Spec.Revoke, "remote", existingAPIKey.Spec.Revoke)
+		needsRemoteUpdate = true
 	}
-
-	// Update description if needed
 	if apiKey.Spec.Description != existingAPIKey.Spec.Description {
-		// Create a new local copy with updated values
-		updatedAPIKey := apiKey.DeepCopy()
-		if err := r.Update(ctx, updatedAPIKey); err != nil {
-			r.updateAPIKeyStatus(ctx, apiKey, err, "UpdateFailed",
-				fmt.Sprintf("Failed to update APIKey: %v", err))
+		logger.Info("Description differs", "apiKeyName", apiKey.Name, "local", apiKey.Spec.Description, "remote", existingAPIKey.Spec.Description)
+		needsRemoteUpdate = true
+	}
+
+	if needsRemoteUpdate {
+		logger.Info("Updating remote APIKey spec due to detected differences", "apiKeyName", apiKey.Name)
+		// Pass the local apiKey CR, as UpdateAPIKey expects *resourcev1alpha1.APIKey
+		// It will be converted to cloudapi.APIKey by the client.
+		_, err := apiKeyClient.UpdateAPIKey(ctx, apiKey)
+		if err != nil {
+			r.updateAPIKeyStatus(ctx, apiKey, err, "UpdateFailed", fmt.Sprintf("Failed to update remote APIKey spec: %v", err))
 			return ctrl.Result{}, err
 		}
+		logger.Info("Successfully updated remote APIKey spec", "apiKeyName", apiKey.Name)
 	}
 
-	// Set up watch for APIKey
-	if err := r.setupWatch(ctx, apiKey, apiKeyClient); err != nil {
-		logger.Error(err, "Failed to set up watch", "apiKey", apiKey.Name)
-	}
-
-	// Update status
+	// Always update local status to reflect observed generation and potentially new conditions from processing token.
 	r.updateAPIKeyStatus(ctx, apiKey, nil, "Ready", "APIKey synced successfully")
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
+}
+
+// syncCloudStatusToLocal copies relevant status fields from the cloud APIKey (cloudapi.APIKey)
+// to the local APIKey resource's status (resourcev1alpha1.APIKey).
+// This is used to ensure that the local representation reflects the state observed from the cloud.
+func (r *APIKeyReconciler) syncCloudStatusToLocal(localAPIKey *resourcev1alpha1.APIKey, cloudAPIKey *cloudapi.APIKey) {
+	if cloudAPIKey == nil {
+		// If there's no cloud APIKey (e.g., not found), clear relevant local status fields.
+		localAPIKey.Status.KeyID = nil
+		localAPIKey.Status.IssuedAt = nil
+		localAPIKey.Status.ExpiresAt = nil
+		localAPIKey.Status.RevokedAt = nil
+		localAPIKey.Status.EncryptedToken = nil
+		return
+	}
+
+	localAPIKey.Status.KeyID = cloudAPIKey.Status.KeyID // Direct assignment for *string
+
+	if cloudAPIKey.Status.IssuedAt != nil {
+		localAPIKey.Status.IssuedAt = cloudAPIKey.Status.IssuedAt.DeepCopy()
+	} else {
+		localAPIKey.Status.IssuedAt = nil
+	}
+
+	// Sync ExpiresAt
+	if cloudAPIKey.Status.ExpiresAt != nil {
+		localAPIKey.Status.ExpiresAt = cloudAPIKey.Status.ExpiresAt.DeepCopy()
+	} else {
+		localAPIKey.Status.ExpiresAt = nil
+	}
+
+	// Sync RevokedAt
+	if cloudAPIKey.Status.RevokedAt != nil {
+		localAPIKey.Status.RevokedAt = cloudAPIKey.Status.RevokedAt.DeepCopy()
+	} else {
+		localAPIKey.Status.RevokedAt = nil
+	}
+
+	if cloudAPIKey.Status.EncryptedToken != nil {
+		if localAPIKey.Status.EncryptedToken == nil {
+			localAPIKey.Status.EncryptedToken = &resourcev1alpha1.EncryptedToken{}
+		}
+		if cloudAPIKey.Status.EncryptedToken.JWE != nil {
+			// Create a new string pointer for JWE to ensure no aliasing issues.
+			jweCopy := *cloudAPIKey.Status.EncryptedToken.JWE
+			localAPIKey.Status.EncryptedToken.JWE = &jweCopy
+		} else {
+			localAPIKey.Status.EncryptedToken.JWE = nil
+		}
+	} else {
+		localAPIKey.Status.EncryptedToken = nil
+	}
 }
 
 // updateAPIKeyStatus updates the status of the ApiKey resource
@@ -498,50 +392,48 @@ func (r *APIKeyReconciler) updateAPIKeyStatus(
 	logger := log.FromContext(ctx)
 	apiKey.Status.ObservedGeneration = apiKey.Generation
 
-	// Set ready condition based on error
-	meta := metav1.Now()
-	readyCondition := metav1.Condition{
+	newCondition := metav1.Condition{
 		Type:               "Ready",
 		Status:             metav1.ConditionTrue,
 		Reason:             reason,
 		Message:            message,
-		LastTransitionTime: meta,
+		LastTransitionTime: metav1.Now(),
 	}
 
 	if err != nil {
-		readyCondition.Status = metav1.ConditionFalse
-		logger.Error(err, "APIKey reconciliation failed",
-			"reason", reason, "message", message)
+		newCondition.Status = metav1.ConditionFalse
+		// Do not log error here again if err is not nil, as it's usually logged by the caller
 	}
 
 	// Update ready condition
-	meta = metav1.Now()
-	if len(apiKey.Status.Conditions) == 0 {
-		apiKey.Status.Conditions = []metav1.Condition{readyCondition}
-	} else {
-		for i, condition := range apiKey.Status.Conditions {
-			if condition.Type == "Ready" {
-				// Only update time if status changes
-				if condition.Status != readyCondition.Status {
-					readyCondition.LastTransitionTime = meta
-				} else {
-					readyCondition.LastTransitionTime = condition.LastTransitionTime
-				}
-				apiKey.Status.Conditions[i] = readyCondition
-				break
+	found := false
+	for i, condition := range apiKey.Status.Conditions {
+		if condition.Type == "Ready" {
+			// Only update LastTransitionTime if Status or Reason or Message changes
+			if condition.Status != newCondition.Status || condition.Reason != newCondition.Reason || condition.Message != newCondition.Message {
+				apiKey.Status.Conditions[i] = newCondition
+			} else {
+				// If nothing changed, keep the old LastTransitionTime
+				newCondition.LastTransitionTime = condition.LastTransitionTime
+				apiKey.Status.Conditions[i] = newCondition
 			}
+			found = true
+			break
 		}
 	}
+	if !found {
+		apiKey.Status.Conditions = append(apiKey.Status.Conditions, newCondition)
+	}
 
-	// Update APIKey status
-	if err := r.Status().Update(ctx, apiKey); err != nil {
-		logger.Error(err, "Failed to update APIKey status")
+	// Persist status update
+	if statusUpdateErr := r.Status().Update(ctx, apiKey); statusUpdateErr != nil {
+		logger.Error(statusUpdateErr, "Failed to update APIKey status")
+		// Potentially requeue if status update fails, but be careful of loops
 	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *APIKeyReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.watcherMap = make(map[types.NamespacedName]watch.Interface)
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.APIKey{}).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
@@ -549,6 +441,8 @@ func (r *APIKeyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 // DecryptToken decrypts an encrypted token using the provided private key
+// This function is a utility and not part of the Reconciler methods.
+// It's kept here for potential direct use or if it was previously used by other parts of the codebase.
 func DecryptToken(priv *rsa.PrivateKey, encryptedToken cloudapi.EncryptedToken) (string, error) {
 	if encryptedToken.JWE == nil || *encryptedToken.JWE == "" {
 		return "", errors.New("encrypted token is empty")
