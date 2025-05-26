@@ -97,6 +97,10 @@ spec:
                   This can only be set on initial creation and not updated later
                 format: date-time
                 type: string
+              exportPlaintextToken:
+                description: ExportPlaintextToken indicates whether the token should
+                  be exported in plaintext
+                type: boolean
               instanceName:
                 description: InstanceName is the name of the instance this API key
                   is for

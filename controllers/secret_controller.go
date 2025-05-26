@@ -17,24 +17,21 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
-	controllers2 "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud"
+	cloudapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud" // Standard alias for cloud client package
 
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	cloudapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/cloud/v1alpha1"
 )
 
 // SecretReconciler reconciles a StreamNative Cloud Secret object
@@ -42,10 +39,6 @@ type SecretReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
 	ConnectionManager *ConnectionManager
-	// watcherMap stores active watchers for Secrets
-	watcherMap map[types.NamespacedName]watch.Interface
-	// watcherMutex protects watcherMap
-	watcherMutex sync.RWMutex
 }
 
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=secrets,verbs=get;list;watch;create;update;patch;delete
@@ -54,95 +47,21 @@ type SecretReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
-// handleWatchEvents processes events from the watch interface
-func (r *SecretReconciler) handleWatchEvents(ctx context.Context, namespacedName types.NamespacedName, watcher watch.Interface) {
-	logger := log.FromContext(ctx)
-	defer watcher.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				logger.Info("Watch channel closed", "namespace", namespacedName.Namespace, "name", namespacedName.Name)
-				// Remove the watcher from the map
-				r.watcherMutex.Lock()
-				delete(r.watcherMap, namespacedName)
-				r.watcherMutex.Unlock()
-				return
-			}
-
-			if event.Type == watch.Modified {
-				// Check if the object is a Secret
-				_, ok := event.Object.(*cloudapi.Secret)
-				if !ok {
-					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to Secret")
-					continue
-				}
-
-				// Get the local secret
-				localSecret := &resourcev1alpha1.Secret{}
-				if err := r.Get(ctx, namespacedName, localSecret); err != nil {
-					logger.Error(err, "Failed to get local Secret")
-					continue
-				}
-
-				// Update status
-				r.updateSecretStatus(ctx, localSecret, nil, "Ready", "Secret synced successfully")
-			}
-		}
-	}
-}
-
-// setupWatch creates a new watcher for a Secret
-func (r *SecretReconciler) setupWatch(ctx context.Context, secret *resourcev1alpha1.Secret, secretClient *controllers2.SecretClient) error {
-	namespacedName := types.NamespacedName{
-		Namespace: secret.Namespace,
-		Name:      secret.Name,
-	}
-
-	// Check if we already have a watcher
-	r.watcherMutex.RLock()
-	_, exists := r.watcherMap[namespacedName]
-	r.watcherMutex.RUnlock()
-	if exists {
-		return nil
-	}
-
-	// Create new watcher
-	watcher, err := secretClient.WatchSecret(ctx, secret.Name)
-	if err != nil {
-		return fmt.Errorf("failed to create watcher: %w", err)
-	}
-
-	// Store watcher in map
-	r.watcherMutex.Lock()
-	r.watcherMap[namespacedName] = watcher
-	r.watcherMutex.Unlock()
-
-	// Start watching in a new goroutine
-	go r.handleWatchEvents(ctx, namespacedName, watcher)
-	return nil
-}
-
 // getSecretData obtains the Secret data either from direct Data field or from SecretRef
-func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1alpha1.Secret) (map[string]string, *corev1.SecretType, error) {
+func (r *SecretReconciler) getSecretData(ctx context.Context, secretCR *resourcev1alpha1.Secret) (map[string]string, *corev1.SecretType, error) {
 	// If direct data is provided, use it
-	if len(secret.Spec.Data) > 0 {
-		return secret.Spec.Data, secret.Spec.Type, nil
+	if len(secretCR.Spec.Data) > 0 {
+		return secretCR.Spec.Data, secretCR.Spec.Type, nil
 	}
 
 	// If SecretRef is provided, fetch from the referenced Kubernetes Secret
-	if secret.Spec.SecretRef != nil {
-		// Get the referenced Kubernetes Secret
-		nsName := secret.Spec.SecretRef.ToNamespacedName()
+	if secretCR.Spec.SecretRef != nil {
+		nsName := secretCR.Spec.SecretRef.ToNamespacedName()
 		k8sSecret := &corev1.Secret{}
 		if err := r.Get(ctx, nsName, k8sSecret); err != nil {
 			return nil, nil, fmt.Errorf("failed to get referenced Secret %s/%s: %w", nsName.Namespace, nsName.Name, err)
 		}
 
-		// Convert the binary data to string data
 		stringData := make(map[string]string)
 		for k, v := range k8sSecret.Data {
 			stringData[k] = string(v)
@@ -150,7 +69,6 @@ func (r *SecretReconciler) getSecretData(ctx context.Context, secret *resourcev1
 		return stringData, &k8sSecret.Type, nil
 	}
 
-	// Neither Data nor SecretRef is provided
 	return nil, nil, fmt.Errorf("neither Data nor SecretRef is specified in the Secret spec")
 }
 
@@ -159,224 +77,232 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling Secret", "namespace", req.Namespace, "name", req.Name)
 
-	// Add requeue interval for status sync
-	requeueInterval := time.Minute
+	requeueInterval := 1 * time.Minute // Default requeue interval
 
-	// Get the Secret resource
-	secret := &resourcev1alpha1.Secret{}
-	if err := r.Get(ctx, req.NamespacedName, secret); err != nil {
+	secretCR := &resourcev1alpha1.Secret{}
+	if err := r.Get(ctx, req.NamespacedName, secretCR); err != nil {
 		if apierrors.IsNotFound(err) {
-			// Stop and remove watcher if it exists
-			r.watcherMutex.Lock()
-			if watcher, exists := r.watcherMap[req.NamespacedName]; exists {
-				watcher.Stop()
-				delete(r.watcherMap, req.NamespacedName)
-			}
-			r.watcherMutex.Unlock()
+			logger.Info("Secret resource not found. Ignoring since object must be deleted.")
 			return ctrl.Result{}, nil
 		}
+		logger.Error(err, "Failed to get Secret resource")
 		return ctrl.Result{}, err
 	}
 
-	// Get the APIServerConnection
+	// Validate APIServerRef
+	if secretCR.Spec.APIServerRef.Name == "" {
+		err := fmt.Errorf("APIServerRef.Name is required in Secret spec but not specified")
+		r.updateSecretStatus(ctx, secretCR, err, "ValidationFailed", err.Error())
+		return ctrl.Result{}, err // No requeue for permanent misconfiguration
+	}
+
+	// Get StreamNativeCloudConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
 	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace,
-		Name:      secret.Spec.APIServerRef.Name,
+		Namespace: req.Namespace, // Assuming connection is in the same namespace
+		Name:      secretCR.Spec.APIServerRef.Name,
 	}, connection); err != nil {
-		r.updateSecretStatus(ctx, secret, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
+		r.updateSecretStatus(ctx, secretCR, err, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", secretCR.Spec.APIServerRef.Name, err))
 		return ctrl.Result{}, err
 	}
 
-	// Get API connection
+	// Get or create API connection
 	apiConn, err := r.ConnectionManager.GetOrCreateConnection(connection, nil)
 	if err != nil {
-		// If connection is not initialized, requeue the request
 		if _, ok := err.(*NotInitializedError); ok {
-			logger.Info("Connection not initialized, requeueing", "error", err.Error())
+			logger.Info("Connection not initialized, requeueing", "connectionName", connection.Name, "error", err.Error())
 			return ctrl.Result{Requeue: true}, nil
 		}
-		r.updateSecretStatus(ctx, secret, err, "GetConnectionFailed",
-			fmt.Sprintf("Failed to get connection: %v", err))
+		r.updateSecretStatus(ctx, secretCR, err, "GetConnectionFailed",
+			fmt.Sprintf("Failed to get active connection for %s: %v", connection.Name, err))
 		return ctrl.Result{}, err
 	}
 
-	// Get organization from connection
-	organization := connection.Spec.Organization
-	if organization == "" {
-		err := fmt.Errorf("organization is required but not specified")
-		r.updateSecretStatus(ctx, secret, err, "ValidationFailed", err.Error())
+	// Validate Organization in connection spec
+	if connection.Spec.Organization == "" {
+		err := fmt.Errorf("organization is required in StreamNativeCloudConnection %s but not specified", connection.Name)
+		r.updateSecretStatus(ctx, secretCR, err, "ValidationFailed", err.Error())
 		return ctrl.Result{}, err
 	}
 
-	// Create secret client
-	secretClient, err := controllers2.NewSecretClient(apiConn, organization)
+	// Create Secret client
+	secretClient, err := cloudapi.NewSecretClient(apiConn, connection.Spec.Organization)
 	if err != nil {
-		r.updateSecretStatus(ctx, secret, err, "ClientCreationFailed",
-			fmt.Sprintf("Failed to create secret client: %v", err))
+		r.updateSecretStatus(ctx, secretCR, err, "ClientCreationFailed",
+			fmt.Sprintf("Failed to create Secret client: %v", err))
 		return ctrl.Result{}, err
 	}
 
+	finalizerName := cloudapi.SecretFinalizer
 	// Handle deletion
-	if !secret.DeletionTimestamp.IsZero() {
-		if controllers2.ContainsString(secret.Finalizers, controllers2.SecretFinalizer) {
-			// Try to delete remote secret
-			if err := secretClient.DeleteSecret(ctx, secret); err != nil {
+	if !secretCR.ObjectMeta.DeletionTimestamp.IsZero() {
+		if controllerutil.ContainsFinalizer(secretCR, finalizerName) {
+			if err := secretClient.DeleteSecret(ctx, secretCR); err != nil {
+				// If the remote secret is already gone, that's okay.
 				if !apierrors.IsNotFound(err) {
-					r.updateSecretStatus(ctx, secret, err, "DeleteFailed",
-						fmt.Sprintf("Failed to delete external resources: %v", err))
+					r.updateSecretStatus(ctx, secretCR, err, "DeleteRemoteSecretFailed", fmt.Sprintf("Failed to delete remote Secret: %v", err))
 					return ctrl.Result{}, err
 				}
-				// If the resource is already gone, that's fine
-				logger.Info("Remote Secret already deleted or not found",
-					"secret", secret.Name)
 			}
 
-			// Remove finalizer after successful deletion
-			secret.Finalizers = controllers2.RemoveString(secret.Finalizers, controllers2.SecretFinalizer)
-			if err := r.Update(ctx, secret); err != nil {
+			controllerutil.RemoveFinalizer(secretCR, finalizerName)
+			if err := r.Update(ctx, secretCR); err != nil {
+				logger.Error(err, "Failed to remove finalizer from Secret")
 				return ctrl.Result{}, err
 			}
 		}
 		return ctrl.Result{}, nil
 	}
 
-	// Add finalizer if it doesn't exist
-	if !controllers2.ContainsString(secret.Finalizers, controllers2.SecretFinalizer) {
-		secret.Finalizers = append(secret.Finalizers, controllers2.SecretFinalizer)
-		if err := r.Update(ctx, secret); err != nil {
+	// Add finalizer if not present
+	if !controllerutil.ContainsFinalizer(secretCR, finalizerName) {
+		controllerutil.AddFinalizer(secretCR, finalizerName)
+		if err := r.Update(ctx, secretCR); err != nil {
+			r.updateSecretStatus(ctx, secretCR, err, "AddFinalizerFailed", fmt.Sprintf("Failed to add finalizer: %v", err))
 			return ctrl.Result{}, err
 		}
+		// Requeue after adding finalizer to ensure the update is processed before proceeding
+		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Get secret data (either from direct Data field or from SecretRef)
-	secretData, secretType, err := r.getSecretData(ctx, secret)
-	if err != nil {
-		r.updateSecretStatus(ctx, secret, err, "GetSecretDataFailed",
-			fmt.Sprintf("Failed to get secret data: %v", err))
-		return ctrl.Result{}, err
+	// Resolve secret data from Spec.Data or Spec.SecretRef
+	// The secretCR passed to cloud client methods should have its Spec.Data and Spec.Type populated.
+	currentSpecData := make(map[string]string)
+	for k, v := range secretCR.Spec.Data {
+		currentSpecData[k] = v
 	}
+	currentSpecType := secretCR.Spec.Type
 
-	// Update the secret's Data field with the fetched data if SecretRef was used
-	if secret.Spec.SecretRef != nil && len(secret.Spec.Data) == 0 {
-		secret.Spec.Data = secretData
-		if secret.Spec.Type == nil || *secret.Spec.Type == "" {
-			secret.Spec.Type = secretType
-		}
-		if err := r.Update(ctx, secret); err != nil {
-			r.updateSecretStatus(ctx, secret, err, "UpdateSecretFailed",
-				fmt.Sprintf("Failed to update secret with data from referenced Secret: %v", err))
+	// If SecretRef is used, we resolve it and update the CR if necessary.
+	// This ensures that the CR in etcd reflects the data being sent to the cloud API.
+	if secretCR.Spec.SecretRef != nil {
+		resolvedData, resolvedType, err := r.getSecretData(ctx, secretCR)
+		if err != nil {
+			r.updateSecretStatus(ctx, secretCR, err, "GetSecretDataFailed", fmt.Sprintf("Failed to get secret data from SecretRef: %v", err))
 			return ctrl.Result{}, err
 		}
+
+		// Check if an update to the local CR is needed
+		updateLocalCR := false
+		if len(secretCR.Spec.Data) == 0 { // Only populate from SecretRef if direct data is not set
+			secretCR.Spec.Data = resolvedData
+			updateLocalCR = true
+		}
+		// Only update type if original spec type was nil or empty, and resolvedType is not nil
+		if (secretCR.Spec.Type == nil || *secretCR.Spec.Type == "") && resolvedType != nil {
+			secretCR.Spec.Type = resolvedType
+			updateLocalCR = true
+		}
+
+		if updateLocalCR {
+			if err := r.Update(ctx, secretCR); err != nil {
+				// Restore original spec data before status update to avoid inconsistent state reporting
+				secretCR.Spec.Data = currentSpecData
+				secretCR.Spec.Type = currentSpecType
+				r.updateSecretStatus(ctx, secretCR, err, "UpdateLocalSecretFailed",
+					fmt.Sprintf("Failed to update local Secret CR with resolved data: %v", err))
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{Requeue: true}, nil // Requeue to use the updated CR
+		}
 	}
 
-	// Check if secret exists
-	existingSecret, err := secretClient.GetSecret(ctx, secret.Name)
+	existingRemoteSecret, err := secretClient.GetSecret(ctx, secretCR.Name)
 	if err != nil {
-		logger.Info("Failed to get secret", "error", err, "existingSecret", existingSecret)
 		if !apierrors.IsNotFound(err) {
-			r.updateSecretStatus(ctx, secret, err, "GetSecretFailed",
-				fmt.Sprintf("Failed to get secret: %v", err))
-			return ctrl.Result{}, client.IgnoreNotFound(err)
-		}
-		existingSecret = nil
-	}
-
-	if existingSecret == nil {
-		// Create secret
-		_, err := secretClient.CreateSecret(ctx, secret)
-		if err != nil {
-			r.updateSecretStatus(ctx, secret, err, "CreateSecretFailed",
-				fmt.Sprintf("Failed to create secret: %v", err))
+			r.updateSecretStatus(ctx, secretCR, err, "GetRemoteSecretFailed", fmt.Sprintf("Failed to get remote Secret: %v", err))
 			return ctrl.Result{}, err
 		}
+		existingRemoteSecret = nil
+	}
 
-		// Update status
-		r.updateSecretStatus(ctx, secret, nil, "Ready", "Secret created successfully")
+	if existingRemoteSecret == nil {
+		if _, err := secretClient.CreateSecret(ctx, secretCR); err != nil {
+			r.updateSecretStatus(ctx, secretCR, err, "CreateRemoteSecretFailed", fmt.Sprintf("Failed to create remote Secret: %v", err))
+			return ctrl.Result{}, err
+		}
+		r.updateSecretStatus(ctx, secretCR, nil, "Ready", "Secret created and synced successfully")
 	} else {
-		// Update secret
-		_, err := secretClient.UpdateSecret(ctx, secret)
-		if err != nil {
-			r.updateSecretStatus(ctx, secret, err, "UpdateSecretFailed",
-				fmt.Sprintf("Failed to update secret: %v", err))
+		if _, err := secretClient.UpdateSecret(ctx, secretCR); err != nil { // Pass the K8s CR
+			r.updateSecretStatus(ctx, secretCR, err, "UpdateRemoteSecretFailed", fmt.Sprintf("Failed to update remote Secret: %v", err))
 			return ctrl.Result{}, err
 		}
-		// Update status
-		r.updateSecretStatus(ctx, secret, nil, "Ready", "Secret updated successfully")
+		r.updateSecretStatus(ctx, secretCR, nil, "Ready", "Secret updated and synced successfully")
 	}
 
-	// Setup watch after secret is created/updated
-	if err := r.setupWatch(ctx, secret, secretClient); err != nil {
-		logger.Error(err, "Failed to setup watch")
-		// Don't return error, just log it
-	}
-
+	logger.Info("Successfully reconciled Secret", "namespace", req.Namespace, "name", req.Name)
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
 func (r *SecretReconciler) updateSecretStatus(
 	ctx context.Context,
-	secret *resourcev1alpha1.Secret,
-	err error,
+	secretCR *resourcev1alpha1.Secret, // Changed to secretCR for clarity
+	errEncountered error,
 	reason string,
 	message string,
 ) {
-	// Create new condition
-	condition := metav1.Condition{
-		Type:               "Ready",
-		Status:             metav1.ConditionTrue,
+	logger := log.FromContext(ctx)
+	statusChanged := false
+
+	// Prepare the new condition
+	newCondition := metav1.Condition{
+		Type:               resourcev1alpha1.ConditionReady,
+		Status:             metav1.ConditionFalse,
 		Reason:             reason,
 		Message:            message,
-		ObservedGeneration: secret.Generation,
+		ObservedGeneration: secretCR.Generation,
 		LastTransitionTime: metav1.Now(),
 	}
-
-	if err != nil {
-		condition.Status = metav1.ConditionFalse
+	if errEncountered == nil {
+		newCondition.Status = metav1.ConditionTrue
+	} else {
+		logger.Error(errEncountered, message, "secretName", secretCR.Name)
 	}
 
-	// Create new conditions slice for comparison
-	newConditions := make([]metav1.Condition, 0)
-	for _, c := range secret.Status.Conditions {
-		if c.Type != condition.Type {
-			newConditions = append(newConditions, c)
+	// Check existing conditions
+	existingCondition := findCondition(secretCR.Status.Conditions, resourcev1alpha1.ConditionReady)
+	if existingCondition == nil {
+		secretCR.Status.Conditions = append(secretCR.Status.Conditions, newCondition)
+		statusChanged = true
+	} else if existingCondition.Status != newCondition.Status ||
+		existingCondition.Reason != newCondition.Reason ||
+		existingCondition.Message != newCondition.Message ||
+		existingCondition.ObservedGeneration != newCondition.ObservedGeneration {
+		existingCondition.Status = newCondition.Status
+		existingCondition.Reason = newCondition.Reason
+		existingCondition.Message = newCondition.Message
+		existingCondition.ObservedGeneration = newCondition.ObservedGeneration
+		existingCondition.LastTransitionTime = newCondition.LastTransitionTime
+		statusChanged = true
+	}
+
+	if statusChanged {
+		err := r.Status().Update(ctx, secretCR)
+		if err != nil {
+			logger.Error(err, "Failed to update Secret status", "secretName", secretCR.Name)
+		} else {
+			logger.Info("Successfully updated Secret status", "secretName", secretCR.Name, "reason", reason)
 		}
 	}
-	newConditions = append(newConditions, condition)
+}
 
-	// Check if status has actually changed
-	if !controllers2.StatusHasChanged(secret.Status.Conditions, newConditions) {
-		return
+// findCondition finds a condition of a specific type in a list of conditions.
+// Returns nil if not found.
+func findCondition(conditions []metav1.Condition, conditionType string) *metav1.Condition {
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return &conditions[i]
+		}
 	}
-
-	// Update conditions
-	secret.Status.Conditions = newConditions
-
-	// Update observed generation
-	secret.Status.ObservedGeneration = secret.Generation
-
-	// Update status
-	if err := r.Status().Update(ctx, secret); err != nil {
-		log.FromContext(ctx).Error(err, "Failed to update Secret status")
-	}
+	return nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Initialize the watcher map
-	r.watcherMap = make(map[types.NamespacedName]watch.Interface)
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.Secret{}).
-		WithEventFilter(predicate.Or(
-			// Trigger on spec changes
-			predicate.GenerationChangedPredicate{},
-			// Trigger periodically to sync status
-			predicate.NewPredicateFuncs(func(object client.Object) bool {
-				// Trigger every minute to sync status
-				return true
-			}),
-		)).
+		Owns(&corev1.Secret{}).                                  // If we want to react to changes in owned k8s secrets
+		WithEventFilter(predicate.GenerationChangedPredicate{}). // Only reconcile on spec changes or finalizer changes
 		Complete(r)
 }

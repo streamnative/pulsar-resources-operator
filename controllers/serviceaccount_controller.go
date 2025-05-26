@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"sync"
 	"time"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -29,13 +28,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	cloudapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/cloud/v1alpha1"
 )
 
 // ServiceAccountReconciler reconciles a StreamNative Cloud ServiceAccount object
@@ -43,10 +40,6 @@ type ServiceAccountReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
 	ConnectionManager *ConnectionManager
-	// watcherMap stores active watchers for ServiceAccounts
-	watcherMap map[types.NamespacedName]watch.Interface
-	// watcherMutex protects watcherMap
-	watcherMutex sync.RWMutex
 }
 
 const ServiceAccountFinalizer = "serviceaccount.resource.streamnative.io/finalizer"
@@ -56,103 +49,6 @@ const ServiceAccountFinalizer = "serviceaccount.resource.streamnative.io/finaliz
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=serviceaccounts/finalizers,verbs=update
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
-
-// handleWatchEvents processes events from the watch interface
-func (r *ServiceAccountReconciler) handleWatchEvents(ctx context.Context, namespacedName types.NamespacedName, watcher watch.Interface) {
-	logger := log.FromContext(ctx)
-	defer watcher.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				logger.Info("Watch channel closed", "namespace", namespacedName.Namespace, "name", namespacedName.Name)
-				// Remove the watcher from the map
-				r.watcherMutex.Lock()
-				delete(r.watcherMap, namespacedName)
-				r.watcherMutex.Unlock()
-				return
-			}
-
-			if event.Type == watch.Modified {
-				// Check if the object is a ServiceAccount
-				cloudSA, ok := event.Object.(*cloudapi.ServiceAccount)
-				if !ok {
-					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to ServiceAccount")
-					continue
-				}
-
-				// Get the local ServiceAccount
-				localSA := &resourcev1alpha1.ServiceAccount{}
-				if err := r.Get(ctx, namespacedName, localSA); err != nil {
-					logger.Error(err, "Failed to get local ServiceAccount")
-					continue
-				}
-
-				// Update status
-				r.updateServiceAccountStatus(ctx, localSA, nil, "Ready", "ServiceAccount synced successfully")
-
-				// Process credentials and create Secret if needed
-				if cloudSA.Status.PrivateKeyType == utils.ServiceAccountCredentialsType && cloudSA.Status.PrivateKeyData != "" {
-					r.processServiceAccountCredentials(ctx, localSA, cloudSA)
-				}
-			}
-		}
-	}
-}
-
-// processServiceAccountCredentials handles credentials data and creates a Secret
-func (r *ServiceAccountReconciler) processServiceAccountCredentials(ctx context.Context, localSA *resourcev1alpha1.ServiceAccount, cloudSA *cloudapi.ServiceAccount) {
-	logger := log.FromContext(ctx)
-
-	// Base64 decode the private key data
-	credentialsData, err := base64.StdEncoding.DecodeString(cloudSA.Status.PrivateKeyData)
-	if err != nil {
-		logger.Error(err, "Failed to decode private key data")
-		return
-	}
-
-	// Create or update Secret with credentials
-	if err := utils.CreateOrUpdateServiceAccountCredentialsSecret(ctx, r.Client, localSA, localSA.Namespace, localSA.Name, string(credentialsData)); err != nil {
-		logger.Error(err, "Failed to create or update service account credentials secret")
-		return
-	}
-
-	logger.Info("Successfully created credentials secret for service account")
-}
-
-// setupWatch creates a new watcher for a ServiceAccount
-func (r *ServiceAccountReconciler) setupWatch(ctx context.Context, serviceAccount *resourcev1alpha1.ServiceAccount, saClient *controllers2.ServiceAccountClient) error {
-	namespacedName := types.NamespacedName{
-		Namespace: serviceAccount.Namespace,
-		Name:      serviceAccount.Name,
-	}
-
-	// Check if we already have a watcher
-	r.watcherMutex.RLock()
-	_, exists := r.watcherMap[namespacedName]
-	r.watcherMutex.RUnlock()
-	if exists {
-		return nil
-	}
-
-	// Create new watcher
-	watcher, err := saClient.WatchServiceAccount(ctx, serviceAccount.Name)
-	if err != nil {
-		return fmt.Errorf("failed to create watcher: %w", err)
-	}
-
-	// Store watcher in map
-	r.watcherMutex.Lock()
-	r.watcherMap[namespacedName] = watcher
-	r.watcherMutex.Unlock()
-
-	// Start watching in a new goroutine
-	go r.handleWatchEvents(ctx, namespacedName, watcher)
-	return nil
-}
 
 // Reconcile handles the reconciliation of ServiceAccount objects
 func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -166,13 +62,7 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	serviceAccount := &resourcev1alpha1.ServiceAccount{}
 	if err := r.Get(ctx, req.NamespacedName, serviceAccount); err != nil {
 		if apierrors.IsNotFound(err) {
-			// Stop and remove watcher if it exists
-			r.watcherMutex.Lock()
-			if watcher, exists := r.watcherMap[req.NamespacedName]; exists {
-				watcher.Stop()
-				delete(r.watcherMap, req.NamespacedName)
-			}
-			r.watcherMutex.Unlock()
+			logger.Info("ServiceAccount not found. Reconciliation will stop.", "namespace", req.Namespace, "name", req.Name)
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
@@ -220,7 +110,7 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Handle deletion
 	if !serviceAccount.DeletionTimestamp.IsZero() {
-		if controllers2.ContainsString(serviceAccount.Finalizers, ServiceAccountFinalizer) {
+		if controllerutil.ContainsFinalizer(serviceAccount, ServiceAccountFinalizer) {
 			// Try to delete remote ServiceAccount
 			if err := saClient.DeleteServiceAccount(ctx, serviceAccount); err != nil {
 				if !apierrors.IsNotFound(err) {
@@ -234,7 +124,7 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 
 			// Remove finalizer after successful deletion
-			serviceAccount.Finalizers = controllers2.RemoveString(serviceAccount.Finalizers, ServiceAccountFinalizer)
+			controllerutil.RemoveFinalizer(serviceAccount, ServiceAccountFinalizer)
 			if err := r.Update(ctx, serviceAccount); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -243,18 +133,20 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	// Add finalizer if it doesn't exist
-	if !controllers2.ContainsString(serviceAccount.Finalizers, ServiceAccountFinalizer) {
-		serviceAccount.Finalizers = append(serviceAccount.Finalizers, ServiceAccountFinalizer)
+	if !controllerutil.ContainsFinalizer(serviceAccount, ServiceAccountFinalizer) {
+		controllerutil.AddFinalizer(serviceAccount, ServiceAccountFinalizer)
 		if err := r.Update(ctx, serviceAccount); err != nil {
 			return ctrl.Result{}, err
 		}
+		// Requeue after adding finalizer to ensure the update is processed before proceeding
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Check if ServiceAccount exists
 	existingSA, err := saClient.GetServiceAccount(ctx, serviceAccount.Name)
 	if err != nil {
-		logger.Info("Failed to get ServiceAccount", "error", err, "existingSA", existingSA)
 		if !apierrors.IsNotFound(err) {
+			logger.Info("Failed to get ServiceAccount", "error", err, "existingSA", existingSA)
 			r.updateServiceAccountStatus(ctx, serviceAccount, err, "GetServiceAccountFailed",
 				fmt.Sprintf("Failed to get ServiceAccount: %v", err))
 			return ctrl.Result{}, client.IgnoreNotFound(err)
@@ -286,16 +178,9 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				} else {
 					if err := utils.CreateOrUpdateServiceAccountCredentialsSecret(ctx, r.Client, serviceAccount, serviceAccount.Namespace, serviceAccount.Name, string(credentialsData)); err != nil {
 						logger.Error(err, "Failed to create or update service account credentials secret")
-					} else {
-						logger.Info("Successfully created credentials secret for service account")
 					}
 				}
 			}
-		}
-
-		// Set up watch for ServiceAccount
-		if err := r.setupWatch(ctx, serviceAccount, saClient); err != nil {
-			logger.Error(err, "Failed to set up watch", "serviceAccount", serviceAccount.Name)
 		}
 
 		// Update status
@@ -316,20 +201,14 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 				} else {
 					if err := utils.CreateOrUpdateServiceAccountCredentialsSecret(ctx, r.Client, serviceAccount, serviceAccount.Namespace, serviceAccount.Name, string(credentialsData)); err != nil {
 						logger.Error(err, "Failed to create or update service account credentials secret")
-					} else {
-						logger.Info("Successfully created credentials secret for service account")
 					}
 				}
 			}
 		}
 
-		// Set up watch for ServiceAccount
-		if err := r.setupWatch(ctx, serviceAccount, saClient); err != nil {
-			logger.Error(err, "Failed to set up watch", "serviceAccount", serviceAccount.Name)
-		}
-
 		// Update status
 		r.updateServiceAccountStatus(ctx, serviceAccount, nil, "Ready", "ServiceAccount synced successfully")
+		logger.Info("ServiceAccount reconciled", "namespace", serviceAccount.Namespace, "name", serviceAccount.Name)
 	}
 
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
@@ -388,7 +267,6 @@ func (r *ServiceAccountReconciler) updateServiceAccountStatus(
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ServiceAccountReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	r.watcherMap = make(map[types.NamespacedName]watch.Interface)
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.ServiceAccount{}).
 		WithEventFilter(predicate.GenerationChangedPredicate{}).
