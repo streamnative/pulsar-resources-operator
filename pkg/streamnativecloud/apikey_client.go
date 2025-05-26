@@ -16,10 +16,6 @@ package streamnativecloud
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -102,9 +98,11 @@ func convertToCloudAPIKey(apiKey *resourcev1alpha1.APIKey) *cloudapi.APIKey {
 	if apiKey.Spec.ExpirationTime != nil {
 		cloudAPIKey.Spec.ExpirationTime = apiKey.Spec.ExpirationTime
 	}
-
-	privateKey := GenerateEncryptionKey()
-	cloudAPIKey.Spec.EncryptionKey = ExportPublicKey(privateKey)
+	if apiKey.Spec.EncryptionKey != nil {
+		cloudAPIKey.Spec.EncryptionKey = &cloudapi.EncryptionKey{
+			PEM: apiKey.Spec.EncryptionKey.PEM,
+		}
+	}
 
 	return cloudAPIKey
 }
@@ -137,26 +135,4 @@ func (c *APIKeyClient) UpdateAPIKey(ctx context.Context, apiKey *resourcev1alpha
 // DeleteAPIKey deletes an APIKey by name
 func (c *APIKeyClient) DeleteAPIKey(ctx context.Context, apiKey *resourcev1alpha1.APIKey) error {
 	return c.client.CloudV1alpha1().APIKeys(c.organization).Delete(ctx, apiKey.Name, metav1.DeleteOptions{})
-}
-
-func GenerateEncryptionKey() *rsa.PrivateKey {
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		panic(err)
-	}
-	return privateKey
-}
-
-func ExportPublicKey(key *rsa.PrivateKey) *cloudapi.EncryptionKey {
-	der, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
-	if err != nil {
-		panic(err)
-	}
-	pemKey := pem.EncodeToMemory(&pem.Block{
-		Type:  "PUBLIC KEY",
-		Bytes: der,
-	})
-	return &cloudapi.EncryptionKey{
-		PEM: string(pemKey),
-	}
 }

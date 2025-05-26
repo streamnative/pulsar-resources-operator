@@ -18,7 +18,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"sync"
 	"time"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -28,13 +27,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/apimachinery/pkg/watch"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	computeapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/compute/v1alpha1"
 )
 
 // FlinkDeploymentReconciler reconciles a FlinkDeployment object
@@ -42,10 +39,6 @@ type FlinkDeploymentReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
 	ConnectionManager *ConnectionManager
-	// watcherMap stores active watchers for FlinkDeployments
-	watcherMap map[types.NamespacedName]watch.Interface
-	// watcherMutex protects watcherMap
-	watcherMutex sync.RWMutex
 }
 
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeflinkdeployments,verbs=get;list;watch;create;update;patch;delete
@@ -54,276 +47,165 @@ type FlinkDeploymentReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces,verbs=get;list;watch
 
-// handleWatchEvents processes events from the watch interface
-func (r *FlinkDeploymentReconciler) handleWatchEvents(ctx context.Context, namespacedName types.NamespacedName, watcher watch.Interface) {
-	logger := log.FromContext(ctx)
-	defer watcher.Stop()
-
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case event, ok := <-watcher.ResultChan():
-			if !ok {
-				logger.Info("Watch channel closed", "namespace", namespacedName.Namespace, "name", namespacedName.Name)
-				// Remove the watcher from the map
-				r.watcherMutex.Lock()
-				delete(r.watcherMap, namespacedName)
-				r.watcherMutex.Unlock()
-				return
-			}
-
-			if event.Type == watch.Modified {
-				remoteDeployment, ok := event.Object.(*computeapi.FlinkDeployment)
-				if !ok {
-					logger.Error(fmt.Errorf("unexpected object type"), "Failed to convert object to FlinkDeployment")
-					continue
-				}
-
-				// Get the local deployment
-				localDeployment := &resourcev1alpha1.ComputeFlinkDeployment{}
-				if err := r.Get(ctx, namespacedName, localDeployment); err != nil {
-					logger.Error(err, "Failed to get local FlinkDeployment")
-					continue
-				}
-
-				// Convert status to RawExtension
-				statusBytes, err := json.Marshal(remoteDeployment.Status)
-				if err != nil {
-					logger.Error(err, "Failed to marshal deployment status")
-					continue
-				}
-
-				// Create new status
-				newStatus := localDeployment.Status.DeepCopy()
-				newStatus.DeploymentStatus = &runtime.RawExtension{Raw: statusBytes}
-
-				// Check if status has changed
-				if !controllers2.FlinkDeploymentStatusHasChanged(&localDeployment.Status, newStatus) {
-					continue
-				}
-
-				// Update status
-				localDeployment.Status = *newStatus
-				if err := r.Status().Update(ctx, localDeployment); err != nil {
-					logger.Error(err, "Failed to update FlinkDeployment status")
-				}
-			}
-		}
-	}
-}
-
-// setupWatch creates a new watcher for a FlinkDeployment
-func (r *FlinkDeploymentReconciler) setupWatch(ctx context.Context, deployment *resourcev1alpha1.ComputeFlinkDeployment, deploymentClient *controllers2.FlinkDeploymentClient) error {
-	namespacedName := types.NamespacedName{
-		Namespace: deployment.Namespace,
-		Name:      deployment.Name,
-	}
-
-	// Check if we already have a watcher
-	r.watcherMutex.RLock()
-	_, exists := r.watcherMap[namespacedName]
-	r.watcherMutex.RUnlock()
-	if exists {
-		return nil
-	}
-
-	// Create new watcher
-	watcher, err := deploymentClient.WatchFlinkDeployment(ctx, deployment.Name)
-	if err != nil {
-		return fmt.Errorf("failed to create watcher: %w", err)
-	}
-
-	// Store watcher in map
-	r.watcherMutex.Lock()
-	r.watcherMap[namespacedName] = watcher
-	r.watcherMutex.Unlock()
-
-	// Start watching in a new goroutine
-	go r.handleWatchEvents(ctx, namespacedName, watcher)
-	return nil
-}
-
 // Reconcile handles the reconciliation of FlinkDeployment objects
 func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("Reconciling FlinkDeployment", "namespace", req.Namespace, "name", req.Name)
 
-	// Add requeue interval for status sync
 	requeueInterval := time.Minute
 
-	// Get the FlinkDeployment resource
 	deployment := &resourcev1alpha1.ComputeFlinkDeployment{}
 	if err := r.Get(ctx, req.NamespacedName, deployment); err != nil {
 		if apierrors.IsNotFound(err) {
-			// Stop and remove watcher if it exists
-			r.watcherMutex.Lock()
-			if watcher, exists := r.watcherMap[req.NamespacedName]; exists {
-				watcher.Stop()
-				delete(r.watcherMap, req.NamespacedName)
-			}
-			r.watcherMutex.Unlock()
+			logger.Info("FlinkDeployment resource not found. Ignoring since object must be deleted.")
 			return ctrl.Result{}, nil
 		}
+		logger.Error(err, "Failed to get FlinkDeployment resource")
 		return ctrl.Result{}, err
 	}
 
-	// Get APIServerRef from ComputeWorkspace if not specified in FlinkDeployment
 	apiServerRef := deployment.Spec.APIServerRef
 	if apiServerRef.Name == "" {
-		// Get the ComputeWorkspace
 		workspace := &resourcev1alpha1.ComputeWorkspace{}
 		if err := r.Get(ctx, types.NamespacedName{
 			Namespace: req.Namespace,
 			Name:      deployment.Spec.WorkspaceName,
 		}, workspace); err != nil {
 			r.updateDeploymentStatus(ctx, deployment, err, "GetWorkspaceFailed",
-				fmt.Sprintf("Failed to get ComputeWorkspace: %v", err))
+				fmt.Sprintf("Failed to get ComputeWorkspace %s: %v", deployment.Spec.WorkspaceName, err))
+			return ctrl.Result{}, err
+		}
+		if workspace.Spec.APIServerRef.Name == "" {
+			err := fmt.Errorf("APIServerRef is empty in both FlinkDeployment spec and referenced ComputeWorkspace %s spec", workspace.Name)
+			r.updateDeploymentStatus(ctx, deployment, err, "ValidationFailed", err.Error())
 			return ctrl.Result{}, err
 		}
 		apiServerRef = workspace.Spec.APIServerRef
 	}
 
-	// Get the APIServerConnection
-	apiConn := &resourcev1alpha1.StreamNativeCloudConnection{}
+	apiConnResource := &resourcev1alpha1.StreamNativeCloudConnection{}
 	if err := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      apiServerRef.Name,
-	}, apiConn); err != nil {
+	}, apiConnResource); err != nil {
 		r.updateDeploymentStatus(ctx, deployment, err, "GetAPIServerConnectionFailed",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
+			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", apiServerRef.Name, err))
 		return ctrl.Result{}, err
 	}
 
-	// Get the connection
-	conn, err := r.ConnectionManager.GetOrCreateConnection(apiConn, nil)
+	conn, err := r.ConnectionManager.GetOrCreateConnection(apiConnResource, nil)
 	if err != nil {
-		// If connection is not initialized, requeue the request
 		if _, ok := err.(*NotInitializedError); ok {
-			logger.Info("Connection not initialized, requeueing", "error", err.Error())
+			logger.Info("Connection not initialized, requeueing", "connectionName", apiConnResource.Name, "error", err.Error())
 			return ctrl.Result{Requeue: true}, nil
 		}
 		r.updateDeploymentStatus(ctx, deployment, err, "GetConnectionFailed",
-			fmt.Sprintf("Failed to get connection: %v", err))
+			fmt.Sprintf("Failed to get active connection for %s: %v", apiConnResource.Name, err))
 		return ctrl.Result{}, err
 	}
 
-	// Create deployment client
-	deploymentClient, err := controllers2.NewFlinkDeploymentClient(conn, apiConn.Spec.Organization)
+	if apiConnResource.Spec.Organization == "" {
+		err := fmt.Errorf("organization is required in StreamNativeCloudConnection %s but not specified", apiConnResource.Name)
+		r.updateDeploymentStatus(ctx, deployment, err, "ValidationFailed", err.Error())
+		return ctrl.Result{}, err
+	}
+	deploymentClient, err := controllers2.NewFlinkDeploymentClient(conn, apiConnResource.Spec.Organization)
 	if err != nil {
 		r.updateDeploymentStatus(ctx, deployment, err, "CreateDeploymentClientFailed",
-			fmt.Sprintf("Failed to create deployment client: %v", err))
+			fmt.Sprintf("Failed to create Flink deployment client: %v", err))
 		return ctrl.Result{}, err
 	}
 
-	// Handle deletion
+	finalizerName := controllers2.FlinkDeploymentFinalizer
 	if !deployment.DeletionTimestamp.IsZero() {
-		if controllers2.ContainsString(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer) {
-			// Try to delete remote deployment
+		if controllerutil.ContainsFinalizer(deployment, finalizerName) {
 			if err := deploymentClient.DeleteFlinkDeployment(ctx, deployment); err != nil {
 				if !apierrors.IsNotFound(err) {
 					r.updateDeploymentStatus(ctx, deployment, err, "DeleteFailed",
-						fmt.Sprintf("Failed to delete external resources: %v", err))
+						fmt.Sprintf("Failed to delete remote FlinkDeployment: %v", err))
 					return ctrl.Result{}, err
 				}
-				// If the resource is already gone, that's fine
-				logger.Info("Remote FlinkDeployment already deleted or not found",
-					"deployment", deployment.Name)
+				logger.Info("Remote FlinkDeployment already deleted or not found", "deploymentName", deployment.Name)
 			}
 
-			// Remove finalizer after successful deletion
-			deployment.Finalizers = controllers2.RemoveString(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer)
+			controllerutil.RemoveFinalizer(deployment, finalizerName)
 			if err := r.Update(ctx, deployment); err != nil {
+				logger.Error(err, "Failed to remove finalizer from FlinkDeployment")
 				return ctrl.Result{}, err
 			}
+			logger.Info("Successfully removed finalizer from FlinkDeployment", "deploymentName", deployment.Name)
 		}
 		return ctrl.Result{}, nil
 	}
 
-	// Add finalizer if it doesn't exist
-	if !controllers2.ContainsString(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer) {
-		deployment.Finalizers = append(deployment.Finalizers, controllers2.FlinkDeploymentFinalizer)
+	if !controllerutil.ContainsFinalizer(deployment, finalizerName) {
+		controllerutil.AddFinalizer(deployment, finalizerName)
 		if err := r.Update(ctx, deployment); err != nil {
+			r.updateDeploymentStatus(ctx, deployment, err, "UpdateFinalizerFailed", fmt.Sprintf("Failed to add finalizer: %v", err))
 			return ctrl.Result{}, err
 		}
+		logger.Info("Successfully added finalizer to FlinkDeployment", "deploymentName", deployment.Name)
+		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Check if deployment exists
-	existingDeployment, err := deploymentClient.GetFlinkDeployment(ctx, deployment.Name)
+	existingRemoteDeployment, err := deploymentClient.GetFlinkDeployment(ctx, deployment.Name)
 	if err != nil {
 		if !apierrors.IsNotFound(err) {
-			r.updateDeploymentStatus(ctx, deployment, err, "GetDeploymentFailed",
-				fmt.Sprintf("Failed to get deployment: %v", err))
+			r.updateDeploymentStatus(ctx, deployment, err, "GetRemoteDeploymentFailed", fmt.Sprintf("Failed to get remote FlinkDeployment: %v", err))
 			return ctrl.Result{}, err
 		}
-		existingDeployment = nil
+		existingRemoteDeployment = nil
 	}
 
-	if existingDeployment == nil {
-		// Create deployment
-		resp, err := deploymentClient.CreateFlinkDeployment(ctx, deployment)
+	if existingRemoteDeployment == nil {
+		logger.Info("Remote FlinkDeployment not found, creating new one.", "deploymentName", deployment.Name)
+		createdRemoteDeployment, err := deploymentClient.CreateFlinkDeployment(ctx, deployment)
 		if err != nil {
-			r.updateDeploymentStatus(ctx, deployment, err, "CreateDeploymentFailed",
-				fmt.Sprintf("Failed to create deployment: %v", err))
+			r.updateDeploymentStatus(ctx, deployment, err, "CreateRemoteDeploymentFailed", fmt.Sprintf("Failed to create remote FlinkDeployment: %v", err))
 			return ctrl.Result{}, err
 		}
+		logger.Info("Successfully created remote FlinkDeployment.", "deploymentName", deployment.Name)
 
-		// Convert status to RawExtension
-		statusBytes, err := json.Marshal(resp.Status)
+		statusBytes, err := json.Marshal(createdRemoteDeployment.Status)
 		if err != nil {
-			r.updateDeploymentStatus(ctx, deployment, err, "StatusMarshalFailed",
-				fmt.Sprintf("Failed to marshal deployment status: %v", err))
+			r.updateDeploymentStatus(ctx, deployment, err, "StatusMarshalFailed", fmt.Sprintf("Failed to marshal created FlinkDeployment status: %v", err))
 			return ctrl.Result{}, err
 		}
-
-		deployment.Status.DeploymentStatus = &runtime.RawExtension{
-			Raw: statusBytes,
-		}
-		r.updateDeploymentStatus(ctx, deployment, nil, "Ready", "Deployment created successfully")
+		deployment.Status.DeploymentStatus = &runtime.RawExtension{Raw: statusBytes}
+		r.updateDeploymentStatus(ctx, deployment, nil, "Ready", "FlinkDeployment created and synced successfully")
 	} else {
-		// Update deployment
-		resp, err := deploymentClient.UpdateFlinkDeployment(ctx, deployment)
+		logger.Info("Remote FlinkDeployment found, attempting to update.", "deploymentName", deployment.Name)
+		updatedRemoteDeployment, err := deploymentClient.UpdateFlinkDeployment(ctx, deployment)
 		if err != nil {
-			r.updateDeploymentStatus(ctx, deployment, err, "UpdateDeploymentFailed",
-				fmt.Sprintf("Failed to update deployment: %v", err))
+			r.updateDeploymentStatus(ctx, deployment, err, "UpdateRemoteDeploymentFailed", fmt.Sprintf("Failed to update remote FlinkDeployment: %v", err))
 			return ctrl.Result{}, err
 		}
+		logger.Info("Successfully updated remote FlinkDeployment.", "deploymentName", deployment.Name)
 
-		// Convert status to RawExtension
-		statusBytes, err := json.Marshal(resp.Status)
+		statusBytes, err := json.Marshal(updatedRemoteDeployment.Status)
 		if err != nil {
-			r.updateDeploymentStatus(ctx, deployment, err, "StatusMarshalFailed",
-				fmt.Sprintf("Failed to marshal deployment status: %v", err))
+			r.updateDeploymentStatus(ctx, deployment, err, "StatusMarshalFailed", fmt.Sprintf("Failed to marshal updated FlinkDeployment status: %v", err))
 			return ctrl.Result{}, err
 		}
-
-		deployment.Status.DeploymentStatus = &runtime.RawExtension{
-			Raw: statusBytes,
-		}
-		r.updateDeploymentStatus(ctx, deployment, nil, "Ready", "Deployment updated successfully")
+		deployment.Status.DeploymentStatus = &runtime.RawExtension{Raw: statusBytes}
+		r.updateDeploymentStatus(ctx, deployment, nil, "Ready", "FlinkDeployment updated and synced successfully")
 	}
 
-	// Setup watch after deployment is created/updated
-	if err := r.setupWatch(ctx, deployment, deploymentClient); err != nil {
-		logger.Error(err, "Failed to setup watch")
-		// Don't return error, just log it
-	}
-
-	// Return with requeue interval for status sync
+	logger.Info("Successfully reconciled FlinkDeployment", "deploymentName", deployment.Name)
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
 func (r *FlinkDeploymentReconciler) updateDeploymentStatus(
 	ctx context.Context,
 	deployment *resourcev1alpha1.ComputeFlinkDeployment,
-	err error,
+	errEncountered error,
 	reason string,
 	message string,
 ) {
-	// Create new status for comparison
-	newStatus := deployment.Status.DeepCopy()
+	logger := log.FromContext(ctx)
 
-	// Create new condition
+	currentStatus := deployment.Status.DeepCopy()
+
 	condition := metav1.Condition{
 		Type:               "Ready",
 		Status:             metav1.ConditionTrue,
@@ -333,48 +215,42 @@ func (r *FlinkDeploymentReconciler) updateDeploymentStatus(
 		LastTransitionTime: metav1.Now(),
 	}
 
-	if err != nil {
+	if errEncountered != nil {
+		logger.Error(errEncountered, message, "flinkDeploymentName", deployment.Name)
 		condition.Status = metav1.ConditionFalse
 	}
 
-	// Create new conditions slice
-	newStatus.Conditions = make([]metav1.Condition, 0)
-	for _, c := range deployment.Status.Conditions {
-		if c.Type != condition.Type {
-			newStatus.Conditions = append(newStatus.Conditions, c)
+	newConditions := []metav1.Condition{}
+	foundReady := false
+	for _, c := range currentStatus.Conditions {
+		if c.Type == condition.Type {
+			if c.ObservedGeneration <= condition.ObservedGeneration {
+				newConditions = append(newConditions, condition)
+				foundReady = true
+			} else {
+				newConditions = append(newConditions, c)
+				foundReady = true
+			}
+		} else {
+			newConditions = append(newConditions, c)
 		}
 	}
-	newStatus.Conditions = append(newStatus.Conditions, condition)
-
-	// Check if status has actually changed
-	if !controllers2.FlinkDeploymentStatusHasChanged(&deployment.Status, newStatus) {
-		return
+	if !foundReady {
+		newConditions = append(newConditions, condition)
 	}
+	currentStatus.Conditions = newConditions
 
-	// Update status
-	deployment.Status = *newStatus
+	deployment.Status = *currentStatus
+
 	if err := r.Status().Update(ctx, deployment); err != nil {
-		log.FromContext(ctx).Error(err, "Failed to update FlinkDeployment status")
+		logger.Error(err, "Failed to update FlinkDeployment status", "flinkDeploymentName", deployment.Name)
 	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *FlinkDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	// Initialize the watcher map
-	r.watcherMap = make(map[types.NamespacedName]watch.Interface)
-
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.ComputeFlinkDeployment{}).
-		// Remove GenerationChangedPredicate to allow status updates
-		// Add periodic reconciliation to sync status
-		WithEventFilter(predicate.Or(
-			// Trigger on spec changes
-			predicate.GenerationChangedPredicate{},
-			// Trigger periodically to sync status
-			predicate.NewPredicateFuncs(func(object client.Object) bool {
-				// Trigger every minute to sync status
-				return true
-			}),
-		)).
+		WithEventFilter(predicate.GenerationChangedPredicate{}).
 		Complete(r)
 }

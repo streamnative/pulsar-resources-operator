@@ -43,7 +43,7 @@ func ExportPublicKeyAsPEM(privateKey *rsa.PrivateKey) (string, error) {
 	}
 
 	publicKeyBlock := &pem.Block{
-		Type:  "RSA PUBLIC KEY",
+		Type:  "PUBLIC KEY",
 		Bytes: publicKeyBytes,
 	}
 
