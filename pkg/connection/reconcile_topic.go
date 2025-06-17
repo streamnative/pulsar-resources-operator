@@ -265,13 +265,11 @@ func applySchema(pulsarAdmin admin.PulsarAdmin, topic *resourcev1alpha1.PulsarTo
 				return err
 			}
 		}
-	} else if schema != nil {
-		// Delete the schema when the schema exists and schema info is empty
-		log.Info("Deleting topic schema", "name", topic.Spec.Name)
-		if err := pulsarAdmin.DeleteSchema(topic.Spec.Name); err != nil {
-			return err
-		}
 	}
+	// Note: We intentionally do NOT delete existing schemas when schemaInfo is not specified.
+	// This preserves existing schemas that may have been created by producers/consumers,
+	// which is the expected behavior for most users. If schema deletion is needed,
+	// users should explicitly manage it through the Pulsar admin APIs.
 	return nil
 }
 
