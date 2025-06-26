@@ -140,6 +140,7 @@ type ClusterAuthOverride struct {
 	// AuthParameters contains the authentication parameters as a string.
 	// Format depends on the AuthPlugin:
 	// - For Token: "token:your-token-here"
+	// - For Token: "file://your-token-file-path-on-brokers"
 	// - For OAuth2: JSON string with client credentials
 	// +optional
 	AuthParameters *string `json:"authParameters,omitempty"`
