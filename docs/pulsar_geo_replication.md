@@ -28,6 +28,7 @@ The `PulsarGeoReplication` resource has the following specifications:
 | `connectionRef` | Reference to the PulsarConnection resource used to connect to the source Pulsar cluster. | Yes |
 | `destinationConnectionRef` | Reference to the PulsarConnection resource used to connect to the destination Pulsar cluster. | Yes |
 | `lifecyclePolicy` | Determines whether to keep or delete the geo-replication configuration when the Kubernetes resource is deleted. Options: `CleanUpAfterDeletion`, `KeepAfterDeletion`. Default is `CleanUpAfterDeletion`. | No |
+| `clusterParamsOverride` | Allows overriding specific cluster parameters when setting up geo-replication. This is useful when the destination cluster requires different configuration than what's defined in the `destinationConnectionRef`. See [Cluster Parameters Override](#cluster-parameters-override) for details. | No |
 
 The `PulsarGeoReplication` resource is designed to configure geo-replication between separate Pulsar instances. It creates a new "Cluster" in the destination Pulsar cluster identified by `destinationConnectionRef`. This setup allows configuring the replication of data from the source cluster (identified by `connectionRef`) to the destination cluster. By establishing this connection, the brokers in the source cluster can communicate with and replicate data to the brokers in the destination cluster, enabling geo-replication between the two separate Pulsar instances.
 
@@ -48,6 +49,67 @@ Both `connectionRef` and `destinationConnectionRef` are of type `corev1.LocalObj
 Note: When configuring geo-replication between `connectionRef` and `destinationConnectionRef`, it is important to ensure:
 
 1. The brokers in the `connectionRef` cluster are able to communicate with the `destinationConnectionRef` cluster, and the `destinationConnectionRef` cluster is able to authenticate the connections from the `connectionRef` cluster.
+
+### Cluster Parameters Override
+
+The `clusterParamsOverride` field provides a powerful way to customize cluster configuration for geo-replication without modifying the underlying `PulsarConnection` resource. This is particularly useful when:
+
+1. **Different authentication is required** for geo-replication compared to regular cluster operations
+2. **Alternative URLs need to be used** for inter-cluster communication
+3. **Specific TLS configurations** are needed for cross-cluster connections
+
+#### Supported Override Parameters
+
+The `clusterParamsOverride` supports the following fields:
+
+- **URL Configuration**:
+  - `serviceURL`: Override the HTTP(S) URL for the Pulsar cluster's admin service
+  - `serviceSecureURL`: Override the HTTPS URL for secure admin connections
+  - `brokerServiceURL`: Override the non-TLS URL for broker connections
+  - `brokerServiceSecureURL`: Override the TLS-enabled URL for secure broker connections
+
+- **TLS Configuration**:
+  - `brokerClientTrustCertsFilePath`: Override the path to trusted TLS certificates
+
+- **Authentication Configuration**:
+  - `authentication.authPlugin`: Override the authentication plugin class name
+  - `authentication.authParameters`: Override the authentication parameters
+
+#### Authentication Override Benefits
+
+When `authentication` is specified in the override, the system automatically:
+- **Skips secret validation checks** for the destination connection
+- **Avoids unnecessary Secret API calls** for improved performance
+- **Uses the override authentication directly** without processing the destinationConnectionRef authentication
+
+#### Example Usage
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarGeoReplication
+metadata:
+  name: us-east-to-west-geo-replication
+  namespace: us-east
+spec:
+  connectionRef:
+    name: us-east-local-connection
+  destinationConnectionRef:
+    name: us-east-to-west-connection
+  clusterParamsOverride:
+    # Override URLs for cross-cluster communication
+    serviceURL: "https://geo-replication-admin.us-west.example.com:8443"
+    brokerServiceURL: "pulsar://geo-replication-broker.us-west.example.com:6650"
+    # Override authentication for geo-replication
+    authentication:
+      authPlugin: "org.apache.pulsar.client.impl.auth.AuthenticationToken"
+      authParameters: "token:geo-replication-specific-token"
+```
+
+**Important Notes**:
+- Override parameters take precedence over the corresponding fields in `destinationConnectionRef`
+- Only non-null override values will replace the destination connection values
+- Authentication override is particularly useful for scenarios requiring different credentials for geo-replication
+- The override does not affect how the operator connects to manage other resources in the destination cluster
 
 ### Lifecycle Policy
 

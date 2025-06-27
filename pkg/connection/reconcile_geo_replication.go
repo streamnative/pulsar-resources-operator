@@ -181,7 +181,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return err
 	}
 
-	secretUpdated, err := r.checkSecretRefUpdate(*destConnection)
+	secretUpdated, err := r.checkSecretRefUpdate(*destConnection, geoReplication.Spec.ClusterParamsOverride)
 	if err != nil {
 		return err
 	}
@@ -198,7 +198,7 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 		return nil
 	}
 
-	clusterParam, err2 := createParams(ctx, destConnection, r.conn.client)
+	clusterParam, err2 := createParams(ctx, destConnection, r.conn.client, geoReplication.Spec.ClusterParamsOverride)
 	if err2 != nil {
 		return err2
 	}
@@ -252,7 +252,12 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 	return nil
 }
 
-func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourcev1alpha1.PulsarConnection) (bool, error) {
+func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourcev1alpha1.PulsarConnection, override *resourcev1alpha1.ClusterParamsOverride) (bool, error) {
+	// If authentication is overridden, skip secret update check
+	if override != nil && override.Authentication != nil {
+		return false, nil
+	}
+
 	auth := connection.Spec.Authentication
 	if auth == nil || (auth.Token != nil && auth.Token.SecretRef == nil) ||
 		(auth.OAuth2 != nil && auth.OAuth2.Key == nil) ||
@@ -291,7 +296,7 @@ func (r *PulsarGeoReplicationReconciler) checkSecretRefUpdate(connection resourc
 	return false, nil
 }
 
-func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client) (*admin.ClusterParams, error) {
+func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarConnection, client client.Client, override *resourcev1alpha1.ClusterParamsOverride) (*admin.ClusterParams, error) {
 	clusterParam := &admin.ClusterParams{
 		ServiceURL:                     destConnection.Spec.AdminServiceURL,
 		BrokerServiceURL:               destConnection.Spec.BrokerServiceURL,
@@ -300,44 +305,77 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 		BrokerClientTrustCertsFilePath: destConnection.Spec.BrokerClientTrustCertsFilePath,
 	}
 
-	hasAuth := false
-	if auth := destConnection.Spec.Authentication; auth != nil {
-		if auth.Token != nil {
-			value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
-			if err != nil {
-				return nil, err
-			}
-			if value != nil {
-				clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
-				clusterParam.AuthParameters = "token:" + *value
-				hasAuth = true
-			}
+	// Process authentication: use override if available, otherwise use destConnection auth
+	if override != nil && override.Authentication != nil {
+		// Use override authentication directly
+		if override.Authentication.AuthPlugin != nil {
+			clusterParam.AuthPlugin = *override.Authentication.AuthPlugin
 		}
-		if oauth2 := auth.OAuth2; !hasAuth && oauth2 != nil {
-			var paramsJSON = utils.ClientCredentials{
-				IssuerURL: oauth2.IssuerEndpoint,
-				Audience:  oauth2.Audience,
-				Scope:     oauth2.Scope,
-				ClientID:  oauth2.ClientID,
-			}
-			if oauth2.Key != nil {
-				value, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
+		if override.Authentication.AuthParameters != nil {
+			clusterParam.AuthParameters = *override.Authentication.AuthParameters
+		}
+	} else {
+		// Process destConnection authentication only if no override is provided
+		hasAuth := false
+		if auth := destConnection.Spec.Authentication; auth != nil {
+			if auth.Token != nil {
+				value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
 				if err != nil {
 					return nil, err
 				}
 				if value != nil {
-					paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
-					clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginOAuth2
-					paramsJSONString, err := json.Marshal(paramsJSON)
+					clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
+					clusterParam.AuthParameters = "token:" + *value
+					hasAuth = true
+				}
+			}
+			if oauth2 := auth.OAuth2; !hasAuth && oauth2 != nil {
+				var paramsJSON = utils.ClientCredentials{
+					IssuerURL: oauth2.IssuerEndpoint,
+					Audience:  oauth2.Audience,
+					Scope:     oauth2.Scope,
+					ClientID:  oauth2.ClientID,
+				}
+				if oauth2.Key != nil {
+					value, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
 					if err != nil {
 						return nil, err
 					}
-					clusterParam.AuthParameters = string(paramsJSONString)
+					if value != nil {
+						paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
+						clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginOAuth2
+						paramsJSONString, err := json.Marshal(paramsJSON)
+						if err != nil {
+							return nil, err
+						}
+						clusterParam.AuthParameters = string(paramsJSONString)
+					}
+				} else {
+					return nil, fmt.Errorf("OAuth2 key is empty")
 				}
-			} else {
-				return nil, fmt.Errorf("OAuth2 key is empty")
 			}
 		}
 	}
+
+	// Apply other override parameters if provided
+	if override != nil {
+		// Override URL parameters
+		if override.ServiceURL != nil {
+			clusterParam.ServiceURL = *override.ServiceURL
+		}
+		if override.ServiceSecureURL != nil {
+			clusterParam.ServiceSecureURL = *override.ServiceSecureURL
+		}
+		if override.BrokerServiceURL != nil {
+			clusterParam.BrokerServiceURL = *override.BrokerServiceURL
+		}
+		if override.BrokerServiceSecureURL != nil {
+			clusterParam.BrokerServiceSecureURL = *override.BrokerServiceSecureURL
+		}
+		if override.BrokerClientTrustCertsFilePath != nil {
+			clusterParam.BrokerClientTrustCertsFilePath = *override.BrokerClientTrustCertsFilePath
+		}
+	}
+
 	return clusterParam, nil
 }

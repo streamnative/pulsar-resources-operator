@@ -54,6 +54,54 @@ spec:
           spec:
             description: PulsarGeoReplicationSpec defines the desired state of PulsarGeoReplication
             properties:
+              clusterParamsOverride:
+                description: |-
+                  ClusterParamsOverride allows overriding specific cluster parameters when setting up
+                  geo-replication. This is useful when the destination cluster requires different
+                  configuration than what's defined in the DestinationConnectionRef.
+                properties:
+                  authentication:
+                    description: |-
+                      Authentication overrides the authentication configuration for the cluster.
+                      When this field is set, the secret update check will be skipped for this geo-replication.
+                    properties:
+                      authParameters:
+                        description: |-
+                          AuthParameters contains the authentication parameters as a string.
+                          Format depends on the AuthPlugin:
+                          - For Token: "token:your-token-here"
+                          - For Token: "file://your-token-file-path-on-brokers"
+                          - For OAuth2: JSON string with client credentials
+                        type: string
+                      authPlugin:
+                        description: |-
+                          AuthPlugin specifies the authentication plugin class name
+                          Common values: "org.apache.pulsar.client.impl.auth.AuthenticationToken",
+                          "org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2"
+                        type: string
+                    type: object
+                  brokerClientTrustCertsFilePath:
+                    description: |-
+                      BrokerClientTrustCertsFilePath overrides the file path to the trusted TLS certificate
+                      for outgoing connections to Pulsar brokers
+                    type: string
+                  brokerServiceSecureURL:
+                    description: BrokerServiceSecureURL overrides the TLS-enabled
+                      URL for secure connections to Pulsar brokers
+                    type: string
+                  brokerServiceURL:
+                    description: BrokerServiceURL overrides the non-TLS URL for connecting
+                      to Pulsar brokers
+                    type: string
+                  serviceSecureURL:
+                    description: ServiceSecureURL overrides the HTTPS URL for secure
+                      connections to the Pulsar admin service
+                    type: string
+                  serviceURL:
+                    description: ServiceURL overrides the HTTP(S) URL for the Pulsar
+                      cluster's admin service
+                    type: string
+                type: object
               connectionRef:
                 description: ConnectionRef is the reference to the source PulsarConnection
                 properties:
