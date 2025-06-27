@@ -38,11 +38,13 @@ type PulsarTopicSpec struct {
 
 	// Persistent determines if the topic is persistent (true) or non-persistent (false).
 	// Defaults to true if not specified.
+	// +kubebuilder:default=true
 	// +optional
 	Persistent *bool `json:"persistent,omitempty"`
 
 	// Partitions specifies the number of partitions for a partitioned topic.
 	// Set to 0 for a non-partitioned topic.
+	// +kubebuilder:default=0
 	// +optional
 	Partitions *int32 `json:"partitions,omitempty"`
 

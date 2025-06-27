@@ -184,12 +184,14 @@ spec:
                 description: Name is the topic name
                 type: string
               partitions:
+                default: 0
                 description: |-
                   Partitions specifies the number of partitions for a partitioned topic.
                   Set to 0 for a non-partitioned topic.
                 format: int32
                 type: integer
               persistent:
+                default: true
                 description: |-
                   Persistent determines if the topic is persistent (true) or non-persistent (false).
                   Defaults to true if not specified.
