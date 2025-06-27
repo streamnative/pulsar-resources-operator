@@ -150,11 +150,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	currentState := r.extractCurrentState(permission)
 
 	// Get previous state from annotation
-	previousState, err := r.getPreviousState(permission)
-	if err != nil {
-		log.Error(err, "Failed to get previous state from annotation")
-		return err
-	}
+	previousState := r.getPreviousState(permission)
 
 	// Check for context changes (ResourceType or ResourceName)
 	contextChanged := false
@@ -192,21 +188,23 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	// Only revoke roles that were previously managed by this PulsarPermission resource
 	// This prevents conflicts with other PulsarPermission resources managing the same target
 	for _, role := range previouslyManagedRoles {
-		// If this role is no longer in the incoming roles, and it currently exists, revoke it
-		if !slices.Contains(incomingRoles, role) && slices.Contains(currentRoles, role) {
-			log.Info("Revoking previously managed role", "role", role)
-			tempPermission := permission.DeepCopy()
-			tempPermission.Spec.Roles = []string{role}
-			per := GetPermissioner(tempPermission)
-			if err := pulsarAdmin.RevokePermissions(per); err != nil {
-				log.Error(err, "Revoke permission failed", "role", role)
-				meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
-				if err := r.conn.client.Status().Update(ctx, permission); err != nil {
-					log.Error(err, "Failed to update permission status")
-					return err
-				}
+		// If this role is still in incoming roles OR doesn't exist currently, skip it
+		if slices.Contains(incomingRoles, role) || !slices.Contains(currentRoles, role) {
+			continue
+		}
+
+		log.Info("Revoking previously managed role", "role", role)
+		tempPermission := permission.DeepCopy()
+		tempPermission.Spec.Roles = []string{role}
+		per := GetPermissioner(tempPermission)
+		if err := pulsarAdmin.RevokePermissions(per); err != nil {
+			log.Error(err, "Revoke permission failed", "role", role)
+			meta.SetStatusCondition(&permission.Status.Conditions, *NewErrorCondition(permission.Generation, err.Error()))
+			if err := r.conn.client.Status().Update(ctx, permission); err != nil {
+				log.Error(err, "Failed to update permission status")
 				return err
 			}
+			return err
 		}
 	}
 
@@ -305,17 +303,17 @@ func (r *PulsarPermissionReconciler) extractCurrentState(permission *resourcev1a
 }
 
 // getPreviousState retrieves the previous state from the resource annotation
-func (r *PulsarPermissionReconciler) getPreviousState(permission *resourcev1alpha1.PulsarPermission) (*PulsarPermissionState, error) {
+func (r *PulsarPermissionReconciler) getPreviousState(permission *resourcev1alpha1.PulsarPermission) *PulsarPermissionState {
 	annotations := permission.GetAnnotations()
 	if annotations == nil {
 		r.log.V(1).Info("No annotations found, treating as first reconciliation")
-		return nil, nil
+		return nil
 	}
 
 	stateJSON, exists := annotations[PulsarPermissionStateAnnotation]
 	if !exists {
 		r.log.V(1).Info("No previous state annotation found, treating as first reconciliation")
-		return nil, nil
+		return nil
 	}
 
 	// Try to unmarshal as PulsarPermissionState
@@ -323,10 +321,10 @@ func (r *PulsarPermissionReconciler) getPreviousState(permission *resourcev1alph
 	if err := json.Unmarshal([]byte(stateJSON), &previousState); err != nil {
 		r.log.Error(err, "Failed to unmarshal previous state annotation, treating as first reconciliation",
 			"annotation", stateJSON)
-		return nil, nil
+		return nil
 	}
 
-	return &previousState, nil
+	return &previousState
 }
 
 // updateStateAnnotation updates the annotation with the current state after successful reconciliation
