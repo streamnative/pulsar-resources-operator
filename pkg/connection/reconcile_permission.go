@@ -181,7 +181,7 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 	if previousState != nil && !contextChanged {
 		previouslyManagedRoles = previousState.Roles
 	}
-	
+
 	currentRoles := make([]string, 0, len(currentPermissions))
 	incomingRoles := permission.Spec.Roles
 
@@ -285,7 +285,6 @@ type PulsarPermissionState struct {
 	Actions      []string `json:"actions"`
 }
 
-
 // extractCurrentState extracts the current desired state from the PulsarPermission spec
 func (r *PulsarPermissionReconciler) extractCurrentState(permission *resourcev1alpha1.PulsarPermission) PulsarPermissionState {
 	// Sort roles and actions for consistent comparison
@@ -385,12 +384,12 @@ func (r *PulsarPermissionReconciler) cleanupPreviousContext(permission *resource
 	// Revoke all roles from the previous context
 	for _, role := range prevState.Roles {
 		r.log.Info("Revoking permission from previous context", "role", role)
-		
+
 		// Create a temporary permission for this specific role
 		rolePermission := tempPermission.DeepCopy()
 		rolePermission.Spec.Roles = []string{role}
 		rolePermissioner := GetPermissioner(rolePermission)
-		
+
 		if err := pulsarAdmin.RevokePermissions(rolePermissioner); err != nil {
 			r.log.Error(err, "Failed to revoke permission from previous context, continuing",
 				"role", role,
