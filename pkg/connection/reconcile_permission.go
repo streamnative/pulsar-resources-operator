@@ -146,13 +146,42 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		return err
 	}
 
-	// Get previously managed roles from the last observed state to enable proper cleanup
-	// The second return value indicates if a resource type/name change was detected and cleaned up
-	previouslyManagedRoles, wasCleanedUp := r.getPreviouslyManagedRoles(permission)
-	if wasCleanedUp {
-		log.Info("Old permissions were cleaned up due to resource type/name change, proceeding with fresh reconciliation")
+	// Extract current desired state
+	currentState := r.extractCurrentState(permission)
+
+	// Get previous state from annotation
+	previousState, err := r.getPreviousState(permission)
+	if err != nil {
+		log.Error(err, "Failed to get previous state from annotation")
+		return err
 	}
 
+	// Check for context changes (ResourceType or ResourceName)
+	contextChanged := false
+	if previousState != nil {
+		contextChanged = previousState.ResourceType != currentState.ResourceType ||
+			previousState.ResourceName != currentState.ResourceName
+	}
+
+	if contextChanged {
+		log.Info("Context change detected, cleaning up previous permissions",
+			"previousResourceType", previousState.ResourceType,
+			"currentResourceType", currentState.ResourceType,
+			"previousResourceName", previousState.ResourceName,
+			"currentResourceName", currentState.ResourceName)
+
+		// Clean up previous context
+		if err := r.cleanupPreviousContext(permission, *previousState); err != nil {
+			log.Error(err, "Failed to cleanup previous context, continuing with current operations")
+		}
+	}
+
+	// Determine roles to manage
+	var previouslyManagedRoles []string
+	if previousState != nil && !contextChanged {
+		previouslyManagedRoles = previousState.Roles
+	}
+	
 	currentRoles := make([]string, 0, len(currentPermissions))
 	incomingRoles := permission.Spec.Roles
 
@@ -197,15 +226,16 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 		}
 	}
 
-	// Update the managed roles tracking for future reconciliations
-	annotationUpdated := r.updateManagedRolesTracking(permission, incomingRoles)
+	// Update the state annotation
+	if err := r.updateStateAnnotation(permission, currentState); err != nil {
+		log.Error(err, "Failed to update state annotation")
+		return err
+	}
 
-	// Update the resource with new annotations if they changed
-	if annotationUpdated {
-		if err := r.conn.client.Update(ctx, permission); err != nil {
-			log.Error(err, "Failed to update permission annotations")
-			return err
-		}
+	// Update the resource with new annotations
+	if err := r.conn.client.Update(ctx, permission); err != nil {
+		log.Error(err, "Failed to update permission annotations")
+		return err
 	}
 
 	permission.Status.ObservedGeneration = permission.Generation
@@ -242,174 +272,133 @@ func GetPermissioner(p *resourcev1alpha1.PulsarPermission) admin.Permissioner {
 }
 
 const (
-	// ManagedRolesAnnotation stores the roles that this PulsarPermission resource manages
-	ManagedRolesAnnotation = "pulsarpermissions.resource.streamnative.io/managed-roles"
+	// PulsarPermissionStateAnnotation is the annotation key used to store the previous state
+	// of PulsarPermission resources for stateful reconciliation
+	PulsarPermissionStateAnnotation = "pulsarpermissions.resource.streamnative.io/managed-state"
 )
 
-// ManagedRolesData represents the structure stored in the managed roles annotation.
-// It includes resource type and name context to handle ResourceType changes properly.
-type ManagedRolesData struct {
+// PulsarPermissionState represents the state that needs to be tracked for PulsarPermission resources
+type PulsarPermissionState struct {
 	ResourceType string   `json:"resourceType"`
 	ResourceName string   `json:"resourceName"`
 	Roles        []string `json:"roles"`
+	Actions      []string `json:"actions"`
 }
 
-// getPreviouslyManagedRoles retrieves the list of roles that this PulsarPermission
-// resource managed in its previous reconciliation. This is used to properly clean up
-// roles that are removed from the spec while avoiding conflicts with other PulsarPermission resources.
-// It also handles ResourceType changes by cleaning up old permissions when the type changes.
-func (r *PulsarPermissionReconciler) getPreviouslyManagedRoles(permission *resourcev1alpha1.PulsarPermission) ([]string, bool) {
-	if permission.Annotations == nil {
-		// If no annotation exists, assume this is the first reconciliation
-		// In this case, we don't have previous state, so return empty list
-		return []string{}, false
-	}
 
-	managedRolesJSON, exists := permission.Annotations[ManagedRolesAnnotation]
-	if !exists {
-		return []string{}, false
-	}
+// extractCurrentState extracts the current desired state from the PulsarPermission spec
+func (r *PulsarPermissionReconciler) extractCurrentState(permission *resourcev1alpha1.PulsarPermission) PulsarPermissionState {
+	// Sort roles and actions for consistent comparison
+	roles := make([]string, len(permission.Spec.Roles))
+	copy(roles, permission.Spec.Roles)
+	slices.Sort(roles)
 
-	// Try to unmarshal as new format (ManagedRolesData) first
-	var managedData ManagedRolesData
-	if err := json.Unmarshal([]byte(managedRolesJSON), &managedData); err == nil {
-		// Check if ResourceType or ResourceName changed
-		typeChanged := managedData.ResourceType != string(permission.Spec.ResoureType)
-		nameChanged := managedData.ResourceName != permission.Spec.ResourceName
+	actions := make([]string, len(permission.Spec.Actions))
+	copy(actions, permission.Spec.Actions)
+	slices.Sort(actions)
 
-		if typeChanged || nameChanged {
-			// ResourceType or ResourceName changed, need to clean up old permissions
-			r.log.Info("Detected resource type or name change, will clean up old permissions",
-				"oldType", managedData.ResourceType,
-				"newType", permission.Spec.ResoureType,
-				"oldName", managedData.ResourceName,
-				"newName", permission.Spec.ResourceName)
-
-			// Clean up old permissions
-			r.cleanupOldPermissions(permission, managedData)
-
-			// Return empty list for current reconciliation (fresh start)
-			return []string{}, true
-		}
-
-		// Same resource type and name, return the roles
-		return managedData.Roles, false
-	}
-
-	// Try to unmarshal as legacy format ([]string) for backward compatibility
-	var legacyRoles []string
-	if err := json.Unmarshal([]byte(managedRolesJSON), &legacyRoles); err != nil {
-		r.log.Error(err, "Failed to unmarshal managed roles annotation, treating as empty", "annotation", managedRolesJSON)
-		return []string{}, false
-	}
-
-	// Legacy format doesn't have resource type info, assume no change needed
-	r.log.V(1).Info("Found legacy managed roles annotation, will upgrade to new format")
-	return legacyRoles, false
-}
-
-// updateManagedRolesTracking updates the annotation that tracks which roles this
-// PulsarPermission resource is responsible for managing. This enables proper cleanup
-// in future reconciliations when roles are removed from the spec.
-// Returns true if the annotation was updated, false otherwise.
-func (r *PulsarPermissionReconciler) updateManagedRolesTracking(permission *resourcev1alpha1.PulsarPermission, managedRoles []string) bool {
-	if permission.Annotations == nil {
-		permission.Annotations = make(map[string]string)
-	}
-
-	// Create the new format with resource type context
-	managedData := ManagedRolesData{
+	return PulsarPermissionState{
 		ResourceType: string(permission.Spec.ResoureType),
 		ResourceName: permission.Spec.ResourceName,
-		Roles:        managedRoles,
+		Roles:        roles,
+		Actions:      actions,
 	}
-
-	managedRolesJSON, err := json.Marshal(managedData)
-	if err != nil {
-		r.log.Error(err, "Failed to marshal managed roles for annotation, skipping tracking update")
-		return false
-	}
-
-	// Only update the annotation if it has changed to avoid unnecessary updates
-	currentValue, exists := permission.Annotations[ManagedRolesAnnotation]
-	newValue := string(managedRolesJSON)
-
-	if !exists || currentValue != newValue {
-		permission.Annotations[ManagedRolesAnnotation] = newValue
-		r.log.V(1).Info("Updated managed roles tracking", "managedRoles", managedRoles, "resourceType", managedData.ResourceType, "resourceName", managedData.ResourceName)
-		return true
-	}
-
-	return false
 }
 
-// cleanupOldPermissions removes permissions that were managed under the old resource type/name
-// when a ResourceType or ResourceName change is detected.
-func (r *PulsarPermissionReconciler) cleanupOldPermissions(permission *resourcev1alpha1.PulsarPermission, oldManagedData ManagedRolesData) {
-	if len(oldManagedData.Roles) == 0 {
-		return
+// getPreviousState retrieves the previous state from the resource annotation
+func (r *PulsarPermissionReconciler) getPreviousState(permission *resourcev1alpha1.PulsarPermission) (*PulsarPermissionState, error) {
+	annotations := permission.GetAnnotations()
+	if annotations == nil {
+		r.log.V(1).Info("No annotations found, treating as first reconciliation")
+		return nil, nil
 	}
 
-	// Get the old resource type to determine which API to use
-	var oldResourceType resourcev1alpha1.PulsarResourceType
-	switch oldManagedData.ResourceType {
-	case string(resourcev1alpha1.PulsarResourceTypeNamespace):
-		oldResourceType = resourcev1alpha1.PulsarResourceTypeNamespace
-	case string(resourcev1alpha1.PulsarResourceTypeTopic):
-		oldResourceType = resourcev1alpha1.PulsarResourceTypeTopic
-	default:
-		r.log.Error(nil, "Unknown old resource type, skipping cleanup", "resourceType", oldManagedData.ResourceType)
-		return
+	stateJSON, exists := annotations[PulsarPermissionStateAnnotation]
+	if !exists {
+		r.log.V(1).Info("No previous state annotation found, treating as first reconciliation")
+		return nil, nil
 	}
 
-	r.log.Info("Cleaning up old permissions due to resource type/name change",
-		"oldResourceType", oldManagedData.ResourceType,
-		"oldResourceName", oldManagedData.ResourceName,
-		"rolesToCleanup", oldManagedData.Roles)
-
-	// Create a temporary permission spec for the old resource to perform cleanup
-	tempPermission := &resourcev1alpha1.PulsarPermission{
-		Spec: resourcev1alpha1.PulsarPermissionSpec{
-			ConnectionRef: permission.Spec.ConnectionRef,
-			ResourceName:  oldManagedData.ResourceName,
-			ResoureType:   oldResourceType,
-			Roles:         oldManagedData.Roles,
-			Actions:       permission.Spec.Actions, // Use current actions for cleanup
-		},
+	// Try to unmarshal as PulsarPermissionState
+	var previousState PulsarPermissionState
+	if err := json.Unmarshal([]byte(stateJSON), &previousState); err != nil {
+		r.log.Error(err, "Failed to unmarshal previous state annotation, treating as first reconciliation",
+			"annotation", stateJSON)
+		return nil, nil
 	}
 
-	// Get the appropriate permissioner for the old resource type
+	return &previousState, nil
+}
+
+// updateStateAnnotation updates the annotation with the current state after successful reconciliation
+func (r *PulsarPermissionReconciler) updateStateAnnotation(permission *resourcev1alpha1.PulsarPermission, currentState PulsarPermissionState) error {
+	stateJSON, err := json.Marshal(currentState)
+	if err != nil {
+		return err
+	}
+
+	annotations := permission.GetAnnotations()
+	if annotations == nil {
+		annotations = make(map[string]string)
+		permission.SetAnnotations(annotations)
+	}
+
+	// Only update if the value has changed
+	currentValue := annotations[PulsarPermissionStateAnnotation]
+	newValue := string(stateJSON)
+
+	if currentValue != newValue {
+		annotations[PulsarPermissionStateAnnotation] = newValue
+		r.log.V(1).Info("Updated state annotation", "state", currentState)
+	}
+
+	return nil
+}
+
+// cleanupPreviousContext cleans up permissions from the previous resource context
+func (r *PulsarPermissionReconciler) cleanupPreviousContext(permission *resourcev1alpha1.PulsarPermission, prevState PulsarPermissionState) error {
+	if len(prevState.Roles) == 0 {
+		return nil
+	}
+
+	r.log.Info("Cleaning up permissions from previous context",
+		"previousResourceType", prevState.ResourceType,
+		"previousResourceName", prevState.ResourceName,
+		"rolesToCleanup", prevState.Roles)
+
+	// Create a temporary permission resource for the previous context
+	tempPermission := permission.DeepCopy()
+	tempPermission.Spec.ResourceName = prevState.ResourceName
+	tempPermission.Spec.ResoureType = resourcev1alpha1.PulsarResourceType(prevState.ResourceType)
+	tempPermission.Spec.Roles = prevState.Roles
+	tempPermission.Spec.Actions = prevState.Actions
+
+	// Get permissioner for the previous context
 	permissioner := GetPermissioner(tempPermission)
 	if permissioner == nil {
-		r.log.Error(nil, "Failed to get permissioner for old resource type cleanup",
-			"resourceType", oldManagedData.ResourceType,
-			"resourceName", oldManagedData.ResourceName)
-		return
+		return fmt.Errorf("failed to get permissioner for previous context")
 	}
 
-	// Revoke all old permissions
-	for _, role := range oldManagedData.Roles {
+	// Get the pulsar admin instance
+	pulsarAdmin := r.conn.pulsarAdmin
+
+	// Revoke all roles from the previous context
+	for _, role := range prevState.Roles {
+		r.log.Info("Revoking permission from previous context", "role", role)
+		
 		// Create a temporary permission for this specific role
-		rolePermission := &resourcev1alpha1.PulsarPermission{
-			Spec: resourcev1alpha1.PulsarPermissionSpec{
-				ConnectionRef: permission.Spec.ConnectionRef,
-				ResourceName:  oldManagedData.ResourceName,
-				ResoureType:   oldResourceType,
-				Roles:         []string{role},
-				Actions:       permission.Spec.Actions,
-			},
-		}
+		rolePermission := tempPermission.DeepCopy()
+		rolePermission.Spec.Roles = []string{role}
 		rolePermissioner := GetPermissioner(rolePermission)
-		if err := r.conn.pulsarAdmin.RevokePermissions(rolePermissioner); err != nil {
-			r.log.Error(err, "Failed to revoke old permission during cleanup, continuing with other roles",
+		
+		if err := pulsarAdmin.RevokePermissions(rolePermissioner); err != nil {
+			r.log.Error(err, "Failed to revoke permission from previous context, continuing",
 				"role", role,
-				"oldResourceType", oldManagedData.ResourceType,
-				"oldResourceName", oldManagedData.ResourceName)
-		} else {
-			r.log.Info("Successfully revoked old permission during cleanup",
-				"role", role,
-				"oldResourceType", oldManagedData.ResourceType,
-				"oldResourceName", oldManagedData.ResourceName)
+				"previousResourceType", prevState.ResourceType,
+				"previousResourceName", prevState.ResourceName)
+			// Continue with other roles even if one fails
 		}
 	}
+
+	return nil
 }
