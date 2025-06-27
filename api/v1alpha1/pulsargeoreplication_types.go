@@ -36,6 +36,12 @@ type PulsarGeoReplicationSpec struct {
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
+
+	// ClusterParamsOverride allows overriding specific cluster parameters when setting up
+	// geo-replication. This is useful when the destination cluster requires different
+	// configuration than what's defined in the DestinationConnectionRef.
+	// +optional
+	ClusterParamsOverride *ClusterParamsOverride `json:"clusterParamsOverride,omitempty"`
 }
 
 // PulsarGeoReplicationStatus defines the observed state of PulsarGeoReplication
@@ -88,4 +94,54 @@ type ClusterInfo struct {
 	Name string `json:"name,omitempty"`
 	// ConnectionRef is the connection reference that can connect to the pulsar cluster
 	ConnectionRef corev1.LocalObjectReference `json:"connectionRef"`
+}
+
+// ClusterParamsOverride allows overriding specific parameters when creating/updating cluster info
+// for geo-replication. This provides flexibility to customize cluster configuration without
+// modifying the underlying PulsarConnection.
+type ClusterParamsOverride struct {
+	// ServiceURL overrides the HTTP(S) URL for the Pulsar cluster's admin service
+	// +optional
+	ServiceURL *string `json:"serviceURL,omitempty"`
+
+	// ServiceSecureURL overrides the HTTPS URL for secure connections to the Pulsar admin service
+	// +optional
+	ServiceSecureURL *string `json:"serviceSecureURL,omitempty"`
+
+	// BrokerServiceURL overrides the non-TLS URL for connecting to Pulsar brokers
+	// +optional
+	BrokerServiceURL *string `json:"brokerServiceURL,omitempty"`
+
+	// BrokerServiceSecureURL overrides the TLS-enabled URL for secure connections to Pulsar brokers
+	// +optional
+	BrokerServiceSecureURL *string `json:"brokerServiceSecureURL,omitempty"`
+
+	// BrokerClientTrustCertsFilePath overrides the file path to the trusted TLS certificate
+	// for outgoing connections to Pulsar brokers
+	// +optional
+	BrokerClientTrustCertsFilePath *string `json:"brokerClientTrustCertsFilePath,omitempty"`
+
+	// Authentication overrides the authentication configuration for the cluster.
+	// When this field is set, the secret update check will be skipped for this geo-replication.
+	// +optional
+	Authentication *ClusterAuthOverride `json:"authentication,omitempty"`
+}
+
+// ClusterAuthOverride allows overriding authentication parameters for cluster configuration.
+// This is useful when the geo-replication target requires different authentication than
+// the source connection.
+type ClusterAuthOverride struct {
+	// AuthPlugin specifies the authentication plugin class name
+	// Common values: "org.apache.pulsar.client.impl.auth.AuthenticationToken",
+	// "org.apache.pulsar.client.impl.auth.oauth2.AuthenticationOAuth2"
+	// +optional
+	AuthPlugin *string `json:"authPlugin,omitempty"`
+
+	// AuthParameters contains the authentication parameters as a string.
+	// Format depends on the AuthPlugin:
+	// - For Token: "token:your-token-here"
+	// - For Token: "file://your-token-file-path-on-brokers"
+	// - For OAuth2: JSON string with client credentials
+	// +optional
+	AuthParameters *string `json:"authParameters,omitempty"`
 }
