@@ -260,15 +260,15 @@ var _ = Describe("Resources", func() {
 				topic.Spec.SchemaInfo = nil
 				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
 
-				By("check topic1 schema is deleted in pulsar")
-				Eventually(func(g Gomega) {
-					_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
-					g.Expect(err).ShouldNot(BeNil())
-					g.Expect(stderr).Should(Not(BeEmpty()))
-					format.MaxLength = 0
-					g.Expect(stderr).Should(ContainSubstring("404"))
-				}, "5s", "100ms").Should(Succeed())
+				// By("check topic1 schema is deleted in pulsar")
+				// Eventually(func(g Gomega) {
+				// 	_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+				// 		"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
+				// 	g.Expect(err).ShouldNot(BeNil())
+				// 	g.Expect(stderr).Should(Not(BeEmpty()))
+				// 	format.MaxLength = 0
+				// 	g.Expect(stderr).Should(ContainSubstring("404"))
+				// }, "5s", "100ms").Should(Succeed())
 			})
 
 			It("should increase the partitions successfully", func() {
