@@ -16,11 +16,14 @@ package operator_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"slices"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
+	"github.com/streamnative/pulsar-resources-operator/pkg/connection"
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -36,6 +39,69 @@ import (
 type testJSON struct {
 	ID   int    `json:"id"`
 	Name string `json:"name"`
+}
+
+// validatePermissionStateAnnotation validates the PulsarPermission state annotation
+func validatePermissionStateAnnotation(ctx context.Context, permissionName, namespaceName string, expected connection.PulsarPermissionState) {
+	permission := &v1alphav1.PulsarPermission{}
+	tns := types.NamespacedName{Namespace: namespaceName, Name: permissionName}
+	Expect(k8sClient.Get(ctx, tns, permission)).Should(Succeed())
+
+	annotations := permission.GetAnnotations()
+	Expect(annotations).ShouldNot(BeNil(), "Permission should have annotations")
+
+	stateJSON, exists := annotations[connection.PulsarPermissionStateAnnotation]
+	Expect(exists).Should(BeTrue(), "Permission should have state annotation")
+	Expect(stateJSON).ShouldNot(BeEmpty(), "State annotation should not be empty")
+
+	var actualState connection.PulsarPermissionState
+	err := json.Unmarshal([]byte(stateJSON), &actualState)
+	Expect(err).ShouldNot(HaveOccurred(), "State annotation should be valid JSON")
+
+	// Sort roles for consistent comparison
+	expectedRoles := make([]string, len(expected.Roles))
+	copy(expectedRoles, expected.Roles)
+	slices.Sort(expectedRoles)
+
+	actualRoles := make([]string, len(actualState.Roles))
+	copy(actualRoles, actualState.Roles)
+	slices.Sort(actualRoles)
+
+	// Sort actions for consistent comparison
+	expectedActions := make([]string, len(expected.Actions))
+	copy(expectedActions, expected.Actions)
+	slices.Sort(expectedActions)
+
+	actualActions := make([]string, len(actualState.Actions))
+	copy(actualActions, actualState.Actions)
+	slices.Sort(actualActions)
+
+	Expect(actualState.ResourceType).Should(Equal(expected.ResourceType),
+		"ResourceType should match expected value")
+	Expect(actualState.ResourceName).Should(Equal(expected.ResourceName),
+		"ResourceName should match expected value")
+	Expect(actualRoles).Should(Equal(expectedRoles),
+		"Roles should match expected values")
+	Expect(actualActions).Should(Equal(expectedActions),
+		"Actions should match expected values")
+}
+
+// validateTopicPermissionsContain validates that the topic contains the specified roles
+// but allows for additional roles to exist (for multi-permission testing)
+func validateTopicPermissionsContain(topicName string, expectedRoles []string) {
+	Eventually(func(g Gomega) {
+		podName := fmt.Sprintf("%s-broker-0", brokerName)
+		containerName := fmt.Sprintf("%s-broker", brokerName)
+		stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+			"./bin/pulsar-admin topics permissions "+topicName)
+		g.Expect(err).Should(Succeed())
+		g.Expect(stdout).Should(Not(BeEmpty()))
+
+		// Verify all expected roles exist
+		for _, role := range expectedRoles {
+			g.Expect(stdout).Should(ContainSubstring(role), "Topic should contain role: "+role)
+		}
+	}, "20s", "100ms").Should(Succeed())
 }
 
 var _ = Describe("Resources", func() {
@@ -59,6 +125,10 @@ var _ = Describe("Resources", func() {
 		topicName2          string = "persistent://cloud/stage/user2"
 		ppermission         *v1alphav1.PulsarPermission
 		ppermissionName     string = "test-permission"
+		ppermission2        *v1alphav1.PulsarPermission
+		ppermission2Name    string = "test-permission-2"
+		ppermission3        *v1alphav1.PulsarPermission
+		ppermission3Name    string = "test-permission-3"
 		exampleSchemaDef           = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
 			"\"fields\":[{\"name\":\"ID\",\"type\":\"int\"},{\"name\":\"Name\",\"type\":\"string\"}]}"
 		partitionedTopic = &v1alphav1.PulsarTopic{
@@ -109,6 +179,15 @@ var _ = Describe("Resources", func() {
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
+
+		// Additional permissions for multi-permission testing
+		roles2 := []string{"batman"}
+		actions2 := []string{"produce", "consume"}
+		ppermission2 = utils.MakePulsarPermission(namespaceName, ppermission2Name, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles2, actions2, v1alphav1.CleanUpAfterDeletion)
+
+		roles3 := []string{"superman"}
+		actions3 := []string{"functions"}
+		ppermission3 = utils.MakePulsarPermission(namespaceName, ppermission3Name, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles3, actions3, v1alphav1.CleanUpAfterDeletion)
 		ppackage = utils.MakePulsarPackage(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
 		pfunc = utils.MakePulsarFunction(namespaceName, pfuncName, ppackageurl, pconnName, lifecyclePolicy)
 		pfuncfailure = utils.MakePulsarFunction(namespaceName, pfuncFailureName, "function://not/exists/package@latest", pconnName, lifecyclePolicy)
@@ -306,6 +385,20 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(BeTrue())
 			})
 
+			It("should have correct initial state annotation", func() {
+				Eventually(func() error {
+					expectedState := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"ironman"},
+						Actions:      []string{"produce", "consume", "functions"},
+					}
+
+					validatePermissionStateAnnotation(ctx, ppermissionName, namespaceName, expectedState)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+
 			It("should add a new role", func() {
 				t := &v1alphav1.PulsarPermission{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
@@ -334,6 +427,20 @@ var _ = Describe("Resources", func() {
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					g.Expect(stdout).Should(ContainSubstring("ironman"))
 					g.Expect(stdout).Should(ContainSubstring("spiderman"))
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("should have updated state annotation with both roles", func() {
+				Eventually(func() error {
+					expectedState := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"ironman", "spiderman"},
+						Actions:      []string{"produce", "consume", "functions"},
+					}
+
+					validatePermissionStateAnnotation(ctx, ppermissionName, namespaceName, expectedState)
+					return nil
 				}, "20s", "100ms").Should(Succeed())
 			})
 
@@ -367,6 +474,169 @@ var _ = Describe("Resources", func() {
 					g.Expect(stdout).Should(ContainSubstring("ironman"))
 					g.Expect(stdout).Should(Not(ContainSubstring("spiderman")))
 				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("should have updated state annotation with only ironman role", func() {
+				Eventually(func() error {
+					expectedState := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"ironman"},
+						Actions:      []string{"produce", "consume", "functions"},
+					}
+
+					validatePermissionStateAnnotation(ctx, ppermissionName, namespaceName, expectedState)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+		})
+
+		Context("Multiple PulsarPermissions on same Topic", Label("Permissions"), func() {
+			It("should create multiple pulsarpermissions successfully", func() {
+				err := k8sClient.Create(ctx, ppermission2)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+				err = k8sClient.Create(ctx, ppermission3)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("both permissions should be ready", func() {
+				Eventually(func() bool {
+					perm2 := &v1alphav1.PulsarPermission{}
+					tns2 := types.NamespacedName{Namespace: namespaceName, Name: ppermission2Name}
+					Expect(k8sClient.Get(ctx, tns2, perm2)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(perm2)
+				}, "20s", "100ms").Should(BeTrue())
+
+				Eventually(func() bool {
+					perm3 := &v1alphav1.PulsarPermission{}
+					tns3 := types.NamespacedName{Namespace: namespaceName, Name: ppermission3Name}
+					Expect(k8sClient.Get(ctx, tns3, perm3)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(perm3)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct initial state annotations", func() {
+				Eventually(func() error {
+					expectedState2 := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"batman"},
+						Actions:      []string{"produce", "consume"},
+					}
+					validatePermissionStateAnnotation(ctx, ppermission2Name, namespaceName, expectedState2)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+
+				Eventually(func() error {
+					expectedState3 := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"superman"},
+						Actions:      []string{"functions"},
+					}
+					validatePermissionStateAnnotation(ctx, ppermission3Name, namespaceName, expectedState3)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("topic should contain all roles from both permissions", func() {
+				validateTopicPermissionsContain(topicName, []string{"batman", "superman"})
+			})
+
+			It("should modify first permission by adding wonderwoman", func() {
+				perm2 := &v1alphav1.PulsarPermission{}
+				tns2 := types.NamespacedName{Namespace: namespaceName, Name: ppermission2Name}
+				Expect(k8sClient.Get(ctx, tns2, perm2)).Should(Succeed())
+				perm2.Spec.Roles = append(perm2.Spec.Roles, "wonderwoman")
+				err := k8sClient.Update(ctx, perm2)
+				Expect(err).Should(Succeed())
+			})
+
+			It("first permission should be ready with updated roles", func() {
+				Eventually(func() bool {
+					perm2 := &v1alphav1.PulsarPermission{}
+					tns2 := types.NamespacedName{Namespace: namespaceName, Name: ppermission2Name}
+					Expect(k8sClient.Get(ctx, tns2, perm2)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(perm2)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("first permission should have updated state annotation", func() {
+				Eventually(func() error {
+					expectedState2 := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"batman", "wonderwoman"},
+						Actions:      []string{"produce", "consume"},
+					}
+					validatePermissionStateAnnotation(ctx, ppermission2Name, namespaceName, expectedState2)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("second permission should remain unaffected", func() {
+				Eventually(func() error {
+					expectedState3 := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"superman"},
+						Actions:      []string{"functions"},
+					}
+					validatePermissionStateAnnotation(ctx, ppermission3Name, namespaceName, expectedState3)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("topic should contain all roles after first permission modification", func() {
+				validateTopicPermissionsContain(topicName, []string{"batman", "wonderwoman", "superman"})
+			})
+
+			It("should modify second permission actions", func() {
+				perm3 := &v1alphav1.PulsarPermission{}
+				tns3 := types.NamespacedName{Namespace: namespaceName, Name: ppermission3Name}
+				Expect(k8sClient.Get(ctx, tns3, perm3)).Should(Succeed())
+				perm3.Spec.Actions = []string{"produce"}
+				err := k8sClient.Update(ctx, perm3)
+				Expect(err).Should(Succeed())
+			})
+
+			It("second permission should be ready with updated actions", func() {
+				Eventually(func() bool {
+					perm3 := &v1alphav1.PulsarPermission{}
+					tns3 := types.NamespacedName{Namespace: namespaceName, Name: ppermission3Name}
+					Expect(k8sClient.Get(ctx, tns3, perm3)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(perm3)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("second permission should have updated state annotation", func() {
+				Eventually(func() error {
+					expectedState3 := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"superman"},
+						Actions:      []string{"produce"},
+					}
+					validatePermissionStateAnnotation(ctx, ppermission3Name, namespaceName, expectedState3)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("first permission should remain unaffected by second permission changes", func() {
+				Eventually(func() error {
+					expectedState2 := connection.PulsarPermissionState{
+						ResourceType: "topic",
+						ResourceName: topicName,
+						Roles:        []string{"batman", "wonderwoman"},
+						Actions:      []string{"produce", "consume"},
+					}
+					validatePermissionStateAnnotation(ctx, ppermission2Name, namespaceName, expectedState2)
+					return nil
+				}, "20s", "100ms").Should(Succeed())
+			})
+
+			It("topic should still contain all roles after all modifications", func() {
+				validateTopicPermissionsContain(topicName, []string{"batman", "wonderwoman", "superman"})
 			})
 		})
 
@@ -617,6 +887,20 @@ var _ = Describe("Resources", func() {
 				tns := types.NamespacedName{Namespace: namespaceName, Name: ppermissionName}
 				g.Expect(k8sClient.Get(ctx, tns, perm)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, perm)).Should(Succeed())
+			}).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				perm2 := &v1alphav1.PulsarPermission{}
+				tns2 := types.NamespacedName{Namespace: namespaceName, Name: ppermission2Name}
+				g.Expect(k8sClient.Get(ctx, tns2, perm2)).Should(Succeed())
+				g.Expect(k8sClient.Delete(ctx, perm2)).Should(Succeed())
+			}).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				perm3 := &v1alphav1.PulsarPermission{}
+				tns3 := types.NamespacedName{Namespace: namespaceName, Name: ppermission3Name}
+				g.Expect(k8sClient.Get(ctx, tns3, perm3)).Should(Succeed())
+				g.Expect(k8sClient.Delete(ctx, perm3)).Should(Succeed())
 			}).Should(Succeed())
 		})
 	})
