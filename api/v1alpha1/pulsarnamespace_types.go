@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
@@ -63,6 +64,19 @@ type PulsarNamespaceSpec struct {
 	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
 	// +optional
 	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
+
+	// SchemaCompatibilityStrategy defines the schema compatibility strategy for this namespace.
+	// If not specified, the cluster's default schema compatibility strategy will be used.
+	// This setting controls how schema evolution is handled for topics within this namespace.
+	// +optional
+	// +kubebuilder:validation:Enum=AutoUpdateDisabled;Backward;Forward;Full;AlwaysCompatible;BackwardTransitive;ForwardTransitive;FullTransitive
+	SchemaCompatibilityStrategy *adminutils.SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
+
+	// SchemaValidationEnforced controls whether schema validation is enforced for this namespace.
+	// When enabled, producers must provide a schema when publishing messages.
+	// If not specified, the cluster's default schema validation enforcement setting will be used.
+	// +optional
+	SchemaValidationEnforced *bool `json:"schemaValidationEnforced,omitempty"`
 
 	// MaxProducersPerTopic sets the maximum number of producers allowed on a single topic in the namespace.
 	// +optional

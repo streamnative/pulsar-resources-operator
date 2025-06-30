@@ -238,6 +238,27 @@ spec:
                   Should be set in conjunction with RetentionSize for effective retention policy.
                   Retention Quota must exceed configured backlog quota for namespace
                 type: string
+              schemaCompatibilityStrategy:
+                description: |-
+                  SchemaCompatibilityStrategy defines the schema compatibility strategy for this namespace.
+                  If not specified, the cluster's default schema compatibility strategy will be used.
+                  This setting controls how schema evolution is handled for topics within this namespace.
+                enum:
+                - AutoUpdateDisabled
+                - Backward
+                - Forward
+                - Full
+                - AlwaysCompatible
+                - BackwardTransitive
+                - ForwardTransitive
+                - FullTransitive
+                type: string
+              schemaValidationEnforced:
+                description: |-
+                  SchemaValidationEnforced controls whether schema validation is enforced for this namespace.
+                  When enabled, producers must provide a schema when publishing messages.
+                  If not specified, the cluster's default schema validation enforcement setting will be used.
+                type: boolean
               topicAutoCreationConfig:
                 description: |-
                   TopicAutoCreationConfig controls whether automatic topic creation is allowed in this namespace
