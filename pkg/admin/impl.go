@@ -517,6 +517,17 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
+	schemaStrategy := utils.AlwaysCompatible // default value
+	if params.SchemaCompatibilityStrategy != nil {
+		schemaStrategy = *params.SchemaCompatibilityStrategy
+	}
+	if schemaStrategy != utils.AlwaysCompatible {
+		err = p.adminClient.Namespaces().SetSchemaAutoUpdateCompatibilityStrategy(*naName, schemaStrategy)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
