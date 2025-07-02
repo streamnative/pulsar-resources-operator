@@ -87,18 +87,12 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 		params.Bundles = ptr.To(int32(4))
 	}
 
-	schemaStrategy := utils.AlwaysCompatible // default value
-	if params.SchemaCompatibilityStrategy != nil {
-		schemaStrategy = *params.SchemaCompatibilityStrategy
-	}
-
 	err := p.adminClient.Namespaces().CreateNsWithPolices(name, utils.Policies{
 		Bundles: &utils.BundlesData{
 			NumBundles: int(*params.Bundles),
 		},
-		SchemaCompatibilityStrategy: schemaStrategy,
-		SubscriptionAuthMode:        utils.None,
-		ReplicationClusters:         []string{},
+		SubscriptionAuthMode: utils.None,
+		ReplicationClusters:  []string{},
 	})
 	if err != nil && !IsAlreadyExist(err) {
 		return err
@@ -519,7 +513,7 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 
 	if params.SchemaCompatibilityStrategy != nil {
 		schemaStrategy := *params.SchemaCompatibilityStrategy
-		err := p.adminClient.Namespaces().SetSchemaAutoUpdateCompatibilityStrategy(*naName, schemaStrategy)
+		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, schemaStrategy)
 		if err != nil {
 			return err
 		}
