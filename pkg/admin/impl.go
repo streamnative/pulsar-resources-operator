@@ -86,13 +86,13 @@ func (p *PulsarAdminClient) ApplyNamespace(name string, params *NamespaceParams)
 	if params.Bundles == nil {
 		params.Bundles = ptr.To(int32(4))
 	}
+
 	err := p.adminClient.Namespaces().CreateNsWithPolices(name, utils.Policies{
 		Bundles: &utils.BundlesData{
 			NumBundles: int(*params.Bundles),
 		},
-		SchemaCompatibilityStrategy: utils.AlwaysCompatible,
-		SubscriptionAuthMode:        utils.None,
-		ReplicationClusters:         []string{},
+		SubscriptionAuthMode: utils.None,
+		ReplicationClusters:  []string{},
 	})
 	if err != nil && !IsAlreadyExist(err) {
 		return err
@@ -499,6 +499,22 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		// If no configuration is specified, try to remove topic auto-creation configuration (ignore errors if it doesn't exist)
 		err = p.adminClient.Namespaces().RemoveTopicAutoCreation(*naName)
 		if err != nil && !IsNotFound(err) {
+			return err
+		}
+	}
+
+	// Handle schema validation enforcement
+	if params.SchemaValidationEnforced != nil {
+		err = p.adminClient.Namespaces().SetSchemaValidationEnforced(*naName, *params.SchemaValidationEnforced)
+		if err != nil {
+			return err
+		}
+	}
+
+	if params.SchemaCompatibilityStrategy != nil {
+		schemaStrategy := *params.SchemaCompatibilityStrategy
+		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, schemaStrategy)
+		if err != nil {
 			return err
 		}
 	}

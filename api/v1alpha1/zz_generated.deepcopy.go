@@ -19,7 +19,8 @@
 package v1alpha1
 
 import (
-	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
+	pkgutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1800,6 +1801,16 @@ func (in *PulsarNamespaceSpec) DeepCopyInto(out *PulsarNamespaceSpec) {
 		**out = **in
 	}
 	out.ConnectionRef = in.ConnectionRef
+	if in.SchemaCompatibilityStrategy != nil {
+		in, out := &in.SchemaCompatibilityStrategy, &out.SchemaCompatibilityStrategy
+		*out = new(utils.SchemaCompatibilityStrategy)
+		**out = **in
+	}
+	if in.SchemaValidationEnforced != nil {
+		in, out := &in.SchemaValidationEnforced, &out.SchemaValidationEnforced
+		*out = new(bool)
+		**out = **in
+	}
 	if in.MaxProducersPerTopic != nil {
 		in, out := &in.MaxProducersPerTopic, &out.MaxProducersPerTopic
 		*out = new(int32)
@@ -1817,12 +1828,12 @@ func (in *PulsarNamespaceSpec) DeepCopyInto(out *PulsarNamespaceSpec) {
 	}
 	if in.MessageTTL != nil {
 		in, out := &in.MessageTTL, &out.MessageTTL
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.RetentionTime != nil {
 		in, out := &in.RetentionTime, &out.RetentionTime
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.RetentionSize != nil {
@@ -1832,7 +1843,7 @@ func (in *PulsarNamespaceSpec) DeepCopyInto(out *PulsarNamespaceSpec) {
 	}
 	if in.BacklogQuotaLimitTime != nil {
 		in, out := &in.BacklogQuotaLimitTime, &out.BacklogQuotaLimitTime
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.BacklogQuotaLimitSize != nil {
@@ -1852,7 +1863,7 @@ func (in *PulsarNamespaceSpec) DeepCopyInto(out *PulsarNamespaceSpec) {
 	}
 	if in.OffloadThresholdTime != nil {
 		in, out := &in.OffloadThresholdTime, &out.OffloadThresholdTime
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.OffloadThresholdSize != nil {
@@ -2640,7 +2651,7 @@ func (in *PulsarTopicSpec) DeepCopyInto(out *PulsarTopicSpec) {
 	}
 	if in.MessageTTL != nil {
 		in, out := &in.MessageTTL, &out.MessageTTL
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.MaxUnAckedMessagesPerConsumer != nil {
@@ -2655,7 +2666,7 @@ func (in *PulsarTopicSpec) DeepCopyInto(out *PulsarTopicSpec) {
 	}
 	if in.RetentionTime != nil {
 		in, out := &in.RetentionTime, &out.RetentionTime
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.RetentionSize != nil {
@@ -2665,7 +2676,7 @@ func (in *PulsarTopicSpec) DeepCopyInto(out *PulsarTopicSpec) {
 	}
 	if in.BacklogQuotaLimitTime != nil {
 		in, out := &in.BacklogQuotaLimitTime, &out.BacklogQuotaLimitTime
-		*out = new(utils.Duration)
+		*out = new(pkgutils.Duration)
 		**out = **in
 	}
 	if in.BacklogQuotaLimitSize != nil {

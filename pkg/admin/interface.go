@@ -56,6 +56,8 @@ type NamespaceParams struct {
 	Deduplication               *bool
 	BookieAffinityGroup         *v1alpha1.BookieAffinityGroupData
 	TopicAutoCreationConfig     *v1alpha1.TopicAutoCreationConfig
+	SchemaCompatibilityStrategy *utils2.SchemaCompatibilityStrategy
+	SchemaValidationEnforced    *bool
 }
 
 // TopicParams indicates the parameters for creating a topic
