@@ -151,7 +151,7 @@ The `schemaInfo` field has the following structure:
 | Field | Description | Required |
 |-------|-------------|----------|
 | `type` | The schema type, which determines how to interpret the schema data. | Yes |
-| `schema` | The schema definition, which is a base64 encoded string representing the schema. | Yes |
+| `schema` | The schema definition. For AVRO and JSON schemas, this should be a JSON string of the schema definition. For PROTOBUF_NATIVE schemas, this should be the JSON string of protobuf definition string from [ProtobufNativeSchemaData](https://github.com/apache/pulsar/blob/master/pulsar-common/src/main/java/org/apache/pulsar/common/protocol/schema/ProtobufNativeSchemaData.java). | Yes |
 | `properties` | A map of user-defined properties as key-value pairs. Applications can use this for carrying any application-specific logic. | No |
 
 ### Supported Schema Types

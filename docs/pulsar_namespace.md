@@ -29,7 +29,7 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `deduplication`               | Whether to enable message deduplication for the namespace.                                                                                                                                                        | No       |
 | `bookieAffinityGroup`         | Set the bookie-affinity group for the namespace, which has two sub fields: `bookkeeperAffinityGroupPrimary(String)` is required, and `bookkeeperAffinityGroupSecondary(String)` is optional.                      | No       |
 | `topicAutoCreationConfig`     | Configures automatic topic creation behavior within this namespace. Contains settings for whether auto-creation is allowed, the type of topics created, and default number of partitions.                          | No       |
-| `schemaCompatibilityStrategy` | Schema compatibility strategy for this namespace. Controls how schema evolution is handled for topics within this namespace. Options: `AutoUpdateDisabled`, `Backward`, `Forward`, `Full`, `AlwaysCompatible`, `BackwardTransitive`, `ForwardTransitive`, `FullTransitive`.                                                          | No       |
+| `schemaCompatibilityStrategy` | Schema compatibility strategy for this namespace. Controls how schema evolution is handled for topics within this namespace. Options: `UNDEFINED`, `ALWAYS_INCOMPATIBLE`, `ALWAYS_COMPATIBLE`, `BACKWARD`, `FORWARD`, `FULL`, `BACKWARD_TRANSITIVE`, `FORWARD_TRANSITIVE`, `FULL_TRANSITIVE`.                                                          | No       |
 | `schemaValidationEnforced`    | Controls whether schema validation is enforced for this namespace. When enabled, producers must provide a schema when publishing messages. If not specified, the cluster's default schema validation enforcement setting will be used.                                                                                                  | No       |
 
 Note: Valid time units are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
@@ -82,37 +82,39 @@ The `schemaCompatibilityStrategy` field controls how Pulsar handles schema evolu
 
 #### Available Strategies
 
-1. **AutoUpdateDisabled**: Disables automatic schema updates and requires manual schema management. This is the most restrictive strategy, suitable for ultra-stable environments where strict schema control is required and no automatic schema evolution is desired.
+1. **UNDEFINED**: Uses the cluster's default schema compatibility strategy. When this value is set, the namespace inherits the schema compatibility settings from the Pulsar cluster configuration. This is useful when you want to maintain consistency with cluster-wide policies.
 
-2. **AlwaysCompatible**: Allows any schema changes without validation. This is the most permissive strategy but may lead to compatibility issues. Suitable for development/testing environments.
+2. **ALWAYS_INCOMPATIBLE**: Disallows any schema changes. This is the most restrictive strategy, suitable for ultra-stable environments where no schema evolution is desired and strict schema immutability is required.
 
-3. **Backward**: New schema can read data written with the previous schema. This strategy supports consumer-driven schema evolution, such as adding optional fields or removing fields.
+3. **ALWAYS_COMPATIBLE**: Allows any schema changes without validation. This is the most permissive strategy but may lead to compatibility issues. Suitable for development/testing environments where rapid iteration is needed.
 
-4. **BackwardTransitive**: New schema can read data written with any previous schema in the chain. This provides long-term backward compatibility across multiple schema versions.
+4. **BACKWARD**: New schema can read data written with the previous schema. This strategy supports consumer-driven schema evolution, such as adding optional fields or removing fields. Consumers with new schemas can process data from producers with older schemas.
 
-5. **Forward**: Previous schema can read data written with the new schema. This strategy supports producer-driven schema evolution, such as adding fields that older consumers can ignore.
+5. **FORWARD**: Previous schema can read data written with the new schema. This strategy supports producer-driven schema evolution, such as adding fields that older consumers can ignore. Consumers with older schemas can still process data from producers with newer schemas.
 
-6. **ForwardTransitive**: Any previous schema can read data written with the new schema. This ensures new data is readable by any older schema version.
+6. **FULL**: Schema changes are both forward and backward compatible. Both new and previous schemas can read data written by either schema. This provides strict compatibility requirements in both directions and is suitable for environments requiring maximum interoperability.
 
-7. **Full**: Schema changes are both forward and backward compatible. Both new and previous schemas can read data written by either schema. This provides strict compatibility requirements in both directions.
+7. **BACKWARD_TRANSITIVE**: New schema can read data written with any previous schema in the chain. This provides long-term backward compatibility across multiple schema versions, ensuring consumers can always read historical data regardless of schema evolution.
 
-8. **FullTransitive**: Schema changes are forward and backward compatible with all schemas. Any schema in the chain can read data written by any other schema in the chain. This provides maximum compatibility guarantees.
+8. **FORWARD_TRANSITIVE**: Any previous schema can read data written with the new schema. This ensures new data is readable by any older schema version, providing comprehensive forward compatibility across the entire schema evolution chain.
+
+9. **FULL_TRANSITIVE**: Schema changes are forward and backward compatible with all schemas. Any schema in the chain can read data written by any other schema in the chain. This provides maximum compatibility guarantees across all schema versions.
 
 #### Usage Examples
 
 **Development Environment**:
 ```yaml
-schemaCompatibilityStrategy: AlwaysCompatible
+schemaCompatibilityStrategy: ALWAYS_COMPATIBLE
 ```
 
 **Production Environment**:
 ```yaml
-schemaCompatibilityStrategy: Backward
+schemaCompatibilityStrategy: BACKWARD
 ```
 
 **Critical Systems**:
 ```yaml
-schemaCompatibilityStrategy: FullTransitive
+schemaCompatibilityStrategy: FULL_TRANSITIVE
 ```
 
 ### Schema Validation Enforcement
@@ -129,28 +131,28 @@ The `schemaValidationEnforced` field controls whether producers must provide a s
 
 #### Development/Testing Environment
 ```yaml
-schemaCompatibilityStrategy: AlwaysCompatible
+schemaCompatibilityStrategy: ALWAYS_COMPATIBLE
 schemaValidationEnforced: false
 ```
 This configuration allows rapid schema iteration and flexible schema validation for experimentation.
 
 #### Standard Production Environment
 ```yaml
-schemaCompatibilityStrategy: Backward
+schemaCompatibilityStrategy: BACKWARD
 schemaValidationEnforced: true
 ```
 This provides a good balance between flexibility and safety, ensuring consumers can handle schema changes while enforcing schema validation for data consistency.
 
 #### Mission-Critical Systems
 ```yaml
-schemaCompatibilityStrategy: FullTransitive
+schemaCompatibilityStrategy: FULL_TRANSITIVE
 schemaValidationEnforced: true
 ```
 This configuration provides maximum compatibility guarantees with strict schema validation enforcement.
 
 #### Legacy System Integration
 ```yaml
-schemaCompatibilityStrategy: ForwardTransitive
+schemaCompatibilityStrategy: FORWARD_TRANSITIVE
 schemaValidationEnforced: false
 ```
 This ensures older systems can consume new data while allowing gradual migration without strict schema requirements.
@@ -191,7 +193,7 @@ spec:
   bundles: 16
   messageTTL: 1h
   # Schema management configuration
-  # schemaCompatibilityStrategy: Backward
+  # schemaCompatibilityStrategy: BACKWARD
   # schemaValidationEnforced: true
   # backlogQuotaRetentionPolicy: producer_request_hold
   # maxProducersPerTopic: 2
