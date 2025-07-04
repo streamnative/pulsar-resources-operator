@@ -69,7 +69,7 @@ type PulsarNamespaceSpec struct {
 	// If not specified, the cluster's default schema compatibility strategy will be used.
 	// This setting controls how schema evolution is handled for topics within this namespace.
 	// +optional
-	// +kubebuilder:validation:Enum=AutoUpdateDisabled;Backward;Forward;Full;AlwaysCompatible;BackwardTransitive;ForwardTransitive;FullTransitive
+	// +kubebuilder:validation:Enum=UNDEFINED;ALWAYS_INCOMPATIBLE;ALWAYS_COMPATIBLE;BACKWARD;FORWARD;FULL;BACKWARD_TRANSITIVE;FORWARD_TRANSITIVE;FULL_TRANSITIVE
 	SchemaCompatibilityStrategy *adminutils.SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
 
 	// SchemaValidationEnforced controls whether schema validation is enforced for this namespace.
