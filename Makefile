@@ -162,8 +162,8 @@ redhat-preflight-check-image:
 
 .PHONY: report-preflight-check-result
 report-preflight-check-result:
-	preflight check container ${IMG} --submit --docker-config=${HOME}/.docker/config.json --certification-project-id=${PROJECT_ID_PULSAR_RESOURCES_OPERATOR} --pyxis-api-token=${REDHAT_API_KEY}
-	preflight check container ${IMG_LATEST} --submit --docker-config=${HOME}/.docker/config.json --certification-project-id=${PROJECT_ID_PULSAR_RESOURCES_OPERATOR} --pyxis-api-token=${REDHAT_API_KEY}
+	preflight check container ${IMG} --submit --docker-config=${HOME}/.docker/config.json --certification-component-id=${PROJECT_ID_PULSAR_RESOURCES_OPERATOR} --pyxis-api-token=${REDHAT_API_KEY}
+	# preflight check container ${IMG_LATEST} --submit --docker-config=${HOME}/.docker/config.json --certification-component-id=${PROJECT_ID_PULSAR_RESOURCES_OPERATOR} --pyxis-api-token=${REDHAT_API_KEY}
 
 ##@ Deployment
 

@@ -99,14 +99,29 @@ jobs:
           preflight -v
           make docker-push-redhat
           make redhat-preflight-check-image
-          make report-preflight-check-result  || {
-             echo "::warning::Preflight submission failed - image may already be published"
-             if [[ $? -eq 1 ]]; then
-               echo "Image appears to be already certified, continuing..."
-               exit 0
-             fi
-             exit 1
-           }
+          set +e
+          preflight_output=$(make report-preflight-check-result 2>&1)
+          exit_code=$?
+          set -e
+          
+          echo "$preflight_output"
+          
+          if [[ $exit_code -ne 0 ]]; then
+            echo "::warning::Preflight submission failed (exit code: $exit_code)"
+            
+            # Check if the failure is due to already published image
+            if echo "$preflight_output" | grep -i "published image can't be updated\|already published\|already certified\|cannot update published image"; then
+              echo "::notice::Image appears to be already certified/published - this is expected for existing releases"
+              echo "Continuing workflow as image certification is already complete"
+            else
+              echo "::error::Preflight submission failed with unexpected error"
+              echo "Error output: $preflight_output"
+              echo "Please check Red Hat certification status manually"
+              exit 1
+            fi
+          else
+            echo "::notice::Preflight submission completed successfully"
+          fi
 
           export BUNDLE_IMG=$IMAGE_TAG_BASE_QUAY-bundle:v$VERSION
           export CHANNELS=alpha,beta,stable
