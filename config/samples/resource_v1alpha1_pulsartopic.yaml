@@ -33,4 +33,5 @@ spec:
   # backlogQuotaLimitTime: 24h
   # backlogQuotaLimitSize: 1Gi
   # backlogQuotaRetentionPolicy: producer_request_hold
+  # compactionThreshold: 104857600  # 100MB in bytes
   lifecyclePolicy: CleanUpAfterDeletion
