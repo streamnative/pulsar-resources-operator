@@ -408,7 +408,7 @@ var _ = Describe("Resources", func() {
 					containerName := fmt.Sprintf("%s-broker", brokerName)
 					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsar-admin topics get-compaction-threshold "+compactionTopic.Spec.Name)
-					g.Expect(err).Should(Succeed())
+					g.Expect(err).Should(Succeed(), "stdout: %s", stdout)
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					// The output should contain the threshold value in bytes
 					g.Expect(stdout).Should(ContainSubstring("104857600"))
