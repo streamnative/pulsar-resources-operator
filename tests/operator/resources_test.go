@@ -381,7 +381,7 @@ var _ = Describe("Resources", func() {
 				compactionTopic = utils.MakePulsarTopicWithCompactionThreshold(
 					namespaceName,
 					compactionTopicName,
-					"persistent://cloud/stage/compaction-test",
+					"persistent://public/default/compaction-test",
 					pconnName,
 					compactionThreshold,
 					lifecyclePolicy,
