@@ -377,7 +377,7 @@ var _ = Describe("Resources", func() {
 				compactionThreshold int64  = 104857600 // 100MB in bytes
 			)
 
-			BeforeEach(func() {
+			BeforeAll(func() {
 				compactionTopic = utils.MakePulsarTopicWithCompactionThreshold(
 					namespaceName,
 					compactionTopicName,
@@ -490,10 +490,15 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(Succeed())
 			})
 
-			AfterEach(func() {
-				// Clean up the compaction test topic
+			AfterAll(func() {
+				// Clean up the compaction test topic after all tests complete
 				if compactionTopic != nil {
-					k8sClient.Delete(ctx, compactionTopic)
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
 				}
 			})
 		})
