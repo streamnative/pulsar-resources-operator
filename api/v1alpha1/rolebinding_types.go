@@ -50,43 +50,43 @@ type RoleBindingSpec struct {
 
 	// SRNOrganization is the organization of the SRN
 	// +optional
-	SRNOrganization *string `json:"srnOrganization,omitempty"`
+	SRNOrganization []string `json:"srnOrganization,omitempty"`
 
 	// SRNInstance is the pulsar instance of the SRN
 	// +optional
-	SRNInstance *string `json:"srnInstance,omitempty"`
+	SRNInstance []string `json:"srnInstance,omitempty"`
 
 	// SRNCluster is the cluster of the SRN
 	// +optional
-	SRNCluster *string `json:"srnCluster,omitempty"`
+	SRNCluster []string `json:"srnCluster,omitempty"`
 
 	// SRNTenant is the tenant of the SRN
 	// +optional
-	SRNTenant *string `json:"srnTenant,omitempty"`
+	SRNTenant []string `json:"srnTenant,omitempty"`
 
 	// SRNNamespace is the namespace of the SRN
 	// +optional
-	SRNNamespace *string `json:"srnNamespace,omitempty"`
+	SRNNamespace []string `json:"srnNamespace,omitempty"`
 
 	// SRNTopicDomain is the topic domain of the SRN
 	// +optional
-	SRNTopicDomain *string `json:"srnTopicDomain,omitempty"`
+	SRNTopicDomain []string `json:"srnTopicDomain,omitempty"`
 
 	// SRNTopicName is the topic of the SRN
 	// +optional
-	SRNTopicName *string `json:"srnTopicName,omitempty"`
+	SRNTopicName []string `json:"srnTopicName,omitempty"`
 
 	// SRNSubscription is the subscription of the SRN
 	// +optional
-	SRNSubscription *string `json:"srnSubscription,omitempty"`
+	SRNSubscription []string `json:"srnSubscription,omitempty"`
 
 	// SRNServiceAccount is the service account of the SRN
 	// +optional
-	SRNServiceAccount *string `json:"srnServiceAccount,omitempty"`
+	SRNServiceAccount []string `json:"srnServiceAccount,omitempty"`
 
 	// SRNSecret is the secret of the SRN
 	// +optional
-	SRNSecret *string `json:"srnSecret,omitempty"`
+	SRNSecret []string `json:"srnSecret,omitempty"`
 }
 
 // RoleBindingStatus defines the observed state of RoleBinding

@@ -76,16 +76,20 @@ func (c *RoleBindingClient) GetRoleBinding(ctx context.Context, name string) (*c
 }
 
 // convertToCloudRoleBinding converts a local RoleBinding to a cloud RoleBinding
-func convertToCloudRoleBinding(roleBinding *resourcev1alpha1.RoleBinding) *cloudapi.RoleBinding {
+func convertToCloudRoleBinding(roleBinding *resourcev1alpha1.RoleBinding, organization string) *cloudapi.RoleBinding {
 	// Convert to cloud API type
 	cloudRoleBinding := &cloudapi.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: roleBinding.Name,
 		},
 		Spec: cloudapi.RoleBindingSpec{
-			Subjects:      roleBinding.Spec.Subjects,
-			RoleRef:       roleBinding.Spec.RoleRef,
-			ResourceNames: roleBinding.Spec.ResourceNames,
+			Subjects: makeSubjects(roleBinding.Spec.Users, roleBinding.Spec.IdentityPools, roleBinding.Spec.ServiceAccounts),
+			RoleRef: cloudapi.RoleRef{
+				Kind:     "ClusterRole",
+				Name:     roleBinding.Spec.ClusterRole,
+				APIGroup: "cloud.streamnative.io",
+			},
+			ResourceNames: makeResourceNames(roleBinding.Spec, organization),
 		},
 	}
 
@@ -94,16 +98,96 @@ func convertToCloudRoleBinding(roleBinding *resourcev1alpha1.RoleBinding) *cloud
 		cloudRoleBinding.Spec.CEL = roleBinding.Spec.CEL
 	}
 
-	// Note: ConditionGroup field mapping would need to be handled here
-	// The local spec uses *string while cloud spec uses *ConditionGroup
-	// This might need additional conversion logic based on requirements
-
 	return cloudRoleBinding
+}
+
+// makeSubjects creates Subject array from Users, IdentityPools, and ServiceAccounts
+func makeSubjects(users []string, identityPools []string, serviceAccounts []string) []cloudapi.Subject {
+	var subjects []cloudapi.Subject
+
+	// Add users
+	for _, user := range users {
+		subjects = append(subjects, cloudapi.Subject{
+			Kind:     "User",
+			Name:     user,
+			APIGroup: "cloud.streamnative.io",
+		})
+	}
+
+	// Add identity pools
+	for _, pool := range identityPools {
+		subjects = append(subjects, cloudapi.Subject{
+			Kind:     "IdentityPool",
+			Name:     pool,
+			APIGroup: "cloud.streamnative.io",
+		})
+	}
+
+	// Add service accounts
+	for _, sa := range serviceAccounts {
+		subjects = append(subjects, cloudapi.Subject{
+			Kind:     "ServiceAccount",
+			Name:     sa,
+			APIGroup: "cloud.streamnative.io",
+		})
+	}
+
+	return subjects
+}
+
+// makeResourceNames creates ResourceName array from SRN fields
+func makeResourceNames(spec resourcev1alpha1.RoleBindingSpec, organization string) []cloudapi.ResourceName {
+	var resourceNames []cloudapi.ResourceName
+
+	for idx := range findLongestStrArray(spec.SRNOrganization, spec.SRNInstance, spec.SRNCluster, spec.SRNTenant, spec.SRNNamespace, spec.SRNTopicDomain, spec.SRNTopicName, spec.SRNSubscription, spec.SRNServiceAccount, spec.SRNSecret) {
+		resourceName := cloudapi.ResourceName{}
+		resourceName.Organization = organization
+		if len(spec.SRNInstance) > idx {
+			resourceName.Instance = spec.SRNInstance[idx]
+		}
+		if len(spec.SRNCluster) > idx {
+			resourceName.Cluster = spec.SRNCluster[idx]
+		}
+		if len(spec.SRNTenant) > idx {
+			resourceName.Tenant = spec.SRNTenant[idx]
+		}
+		if len(spec.SRNNamespace) > idx {
+			resourceName.Namespace = spec.SRNNamespace[idx]
+		}
+		if len(spec.SRNTopicDomain) > idx {
+			resourceName.TopicDomain = spec.SRNTopicDomain[idx]
+		}
+		if len(spec.SRNTopicName) > idx {
+			resourceName.TopicName = spec.SRNTopicName[idx]
+		}
+		if len(spec.SRNSubscription) > idx {
+			resourceName.Subscription = spec.SRNSubscription[idx]
+		}
+		if len(spec.SRNServiceAccount) > idx {
+			resourceName.ServiceAccount = spec.SRNServiceAccount[idx]
+		}
+		if len(spec.SRNSecret) > idx {
+			resourceName.Secret = spec.SRNSecret[idx]
+		}
+		resourceNames = append(resourceNames, resourceName)
+	}
+
+	return resourceNames
+}
+
+func findLongestStrArray(arrays ...[]string) []string {
+	var longest []string
+	for _, arr := range arrays {
+		if len(arr) > len(longest) {
+			longest = arr
+		}
+	}
+	return longest
 }
 
 // CreateRoleBinding creates a new RoleBinding
 func (c *RoleBindingClient) CreateRoleBinding(ctx context.Context, roleBinding *resourcev1alpha1.RoleBinding) (*cloudapi.RoleBinding, error) {
-	cloudRoleBinding := convertToCloudRoleBinding(roleBinding)
+	cloudRoleBinding := convertToCloudRoleBinding(roleBinding, c.organization)
 
 	// Create RoleBinding
 	return c.client.CloudV1alpha1().RoleBindings(c.organization).Create(ctx, cloudRoleBinding, metav1.CreateOptions{})
@@ -118,7 +202,7 @@ func (c *RoleBindingClient) UpdateRoleBinding(ctx context.Context, roleBinding *
 	}
 
 	// Create updated version
-	updated := convertToCloudRoleBinding(roleBinding)
+	updated := convertToCloudRoleBinding(roleBinding, c.organization)
 	// Preserve ResourceVersion for optimistic concurrency
 	updated.ResourceVersion = existing.ResourceVersion
 

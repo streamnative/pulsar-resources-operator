@@ -67,3 +67,12 @@ type ClusterRoleStatus struct {
 	// +listType=atomic
 	FailedClusters []FailedCluster `json:"failedClusters,omitempty" protobuf:"bytes,2,rep,name=failedClusters"`
 }
+
+//+kubebuilder:object:root=true
+
+// ClusterRoleList contains a list of ClusterRole
+type ClusterRoleList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []ClusterRole `json:"items"`
+}

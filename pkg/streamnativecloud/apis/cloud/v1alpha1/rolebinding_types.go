@@ -85,6 +85,15 @@ type RoleBindingStatus struct {
 	SyncedClusters map[string]int64 `json:"syncedClusters,omitempty" protobuf:"bytes,3,rep,name=syncedClusters"`
 }
 
+//+kubebuilder:object:root=true
+
+// RoleBindingList contains a list of RoleBinding
+type RoleBindingList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []RoleBinding `json:"items"`
+}
+
 // Deprecated sections
 
 type ConditionGroupRelation int

@@ -2864,53 +2864,53 @@ func (in *RoleBindingSpec) DeepCopyInto(out *RoleBindingSpec) {
 	}
 	if in.SRNOrganization != nil {
 		in, out := &in.SRNOrganization, &out.SRNOrganization
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNInstance != nil {
 		in, out := &in.SRNInstance, &out.SRNInstance
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNCluster != nil {
 		in, out := &in.SRNCluster, &out.SRNCluster
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNTenant != nil {
 		in, out := &in.SRNTenant, &out.SRNTenant
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNNamespace != nil {
 		in, out := &in.SRNNamespace, &out.SRNNamespace
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNTopicDomain != nil {
 		in, out := &in.SRNTopicDomain, &out.SRNTopicDomain
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNTopicName != nil {
 		in, out := &in.SRNTopicName, &out.SRNTopicName
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNSubscription != nil {
 		in, out := &in.SRNSubscription, &out.SRNSubscription
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNServiceAccount != nil {
 		in, out := &in.SRNServiceAccount, &out.SRNServiceAccount
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 	if in.SRNSecret != nil {
 		in, out := &in.SRNSecret, &out.SRNSecret
-		*out = new(string)
-		**out = **in
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 

@@ -100,34 +100,54 @@ spec:
                 type: array
               srnCluster:
                 description: SRNCluster is the cluster of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnInstance:
                 description: SRNInstance is the pulsar instance of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnNamespace:
                 description: SRNNamespace is the namespace of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnOrganization:
                 description: SRNOrganization is the organization of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnSecret:
                 description: SRNSecret is the secret of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnServiceAccount:
                 description: SRNServiceAccount is the service account of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnSubscription:
                 description: SRNSubscription is the subscription of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnTenant:
                 description: SRNTenant is the tenant of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnTopicDomain:
                 description: SRNTopicDomain is the topic domain of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               srnTopicName:
                 description: SRNTopicName is the topic of the SRN
-                type: string
+                items:
+                  type: string
+                type: array
               users:
                 description: Users is a list of Users that will be granted the role
                 items:
