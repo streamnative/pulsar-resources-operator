@@ -137,6 +137,7 @@ In this tutorial, a Kubernetes namespace called `test` is used for examples, whi
 - [StreamNative Cloud APIKey](docs/apikey.md)
 - [StreamNative Cloud ServiceAccount](docs/serviceaccount.md)
 - [StreamNative Cloud ServiceAccountBinding](docs/serviceaccountbinding.md)
+- [StreamNative Cloud RBAC RoleBinding](docs/rolebinding.md)
 
 # Contributing
 
