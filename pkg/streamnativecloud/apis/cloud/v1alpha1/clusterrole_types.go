@@ -20,7 +20,7 @@ import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +genclient:nonNamespaced
 
-// ClusterRole
+// ClusterRole is a resource that defines a set of permissions that can be applied to a set of subjects.
 // +k8s:openapi-gen=true
 // +resource:path=clusterroles,strategy=ClusterRoleStrategy
 // +kubebuilder:categories=all

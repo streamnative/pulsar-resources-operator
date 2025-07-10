@@ -31,8 +31,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-
-	cloudapi "github.com/streamnative/pulsar-resources-operator/pkg/streamnativecloud/apis/cloud/v1alpha1"
 )
 
 const (
@@ -163,16 +161,16 @@ func (r *RoleBindingReconciler) reconcileRoleBinding(ctx context.Context, rbClie
 	logger.Info("Reconciling RoleBinding", "name", roleBinding.Name)
 
 	// Check if RoleBinding exists on the API server
-	cloudRoleBinding, err := rbClient.GetRoleBinding(ctx, roleBinding.Name)
+	_, err := rbClient.GetRoleBinding(ctx, roleBinding.Name)
 	if err != nil {
 		if apierrors.IsNotFound(err) {
 			// RoleBinding doesn't exist, create it
 			logger.Info("RoleBinding not found on API server, creating", "name", roleBinding.Name)
-			cloudRoleBinding, err = rbClient.CreateRoleBinding(ctx, roleBinding)
-			if err != nil {
-				logger.Error(err, "Failed to create RoleBinding on API server")
-				r.updateRoleBindingStatus(ctx, roleBinding, err, "CreationError", "Failed to create RoleBinding on API server")
-				return ctrl.Result{}, err
+			_, createErr := rbClient.CreateRoleBinding(ctx, roleBinding)
+			if createErr != nil {
+				logger.Error(createErr, "Failed to create RoleBinding on API server")
+				r.updateRoleBindingStatus(ctx, roleBinding, createErr, "CreationError", "Failed to create RoleBinding on API server")
+				return ctrl.Result{}, createErr
 			}
 			logger.Info("Successfully created RoleBinding on API server", "name", roleBinding.Name)
 		} else {
@@ -182,13 +180,13 @@ func (r *RoleBindingReconciler) reconcileRoleBinding(ctx context.Context, rbClie
 		}
 	} else {
 		// RoleBinding exists, check if it needs to be updated
-		if r.needsUpdate(roleBinding, cloudRoleBinding) {
+		if r.needsUpdate(roleBinding) {
 			logger.Info("RoleBinding needs update", "name", roleBinding.Name)
-			cloudRoleBinding, err = rbClient.UpdateRoleBinding(ctx, roleBinding)
-			if err != nil {
-				logger.Error(err, "Failed to update RoleBinding on API server")
-				r.updateRoleBindingStatus(ctx, roleBinding, err, "UpdateError", "Failed to update RoleBinding on API server")
-				return ctrl.Result{}, err
+			_, updateErr := rbClient.UpdateRoleBinding(ctx, roleBinding)
+			if updateErr != nil {
+				logger.Error(updateErr, "Failed to update RoleBinding on API server")
+				r.updateRoleBindingStatus(ctx, roleBinding, updateErr, "UpdateError", "Failed to update RoleBinding on API server")
+				return ctrl.Result{}, updateErr
 			}
 			logger.Info("Successfully updated RoleBinding on API server", "name", roleBinding.Name)
 		}
@@ -203,9 +201,8 @@ func (r *RoleBindingReconciler) reconcileRoleBinding(ctx context.Context, rbClie
 	return ctrl.Result{RequeueAfter: requeueInterval}, nil
 }
 
-func (r *RoleBindingReconciler) needsUpdate(local *resourcev1alpha1.RoleBinding, cloud *cloudapi.RoleBinding) bool {
-	// For now, we'll assume updates are needed if the generation has changed
-	// In a more sophisticated implementation, we would compare the specs
+// needsUpdate returns true if the role binding needs to be updated
+func (r *RoleBindingReconciler) needsUpdate(local *resourcev1alpha1.RoleBinding) bool {
 	return local.Generation != local.Status.ObservedGeneration
 }
 

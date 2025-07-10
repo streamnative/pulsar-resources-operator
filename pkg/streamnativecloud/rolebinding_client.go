@@ -103,7 +103,7 @@ func convertToCloudRoleBinding(roleBinding *resourcev1alpha1.RoleBinding, organi
 
 // makeSubjects creates Subject array from Users, IdentityPools, and ServiceAccounts
 func makeSubjects(users []string, identityPools []string, serviceAccounts []string) []cloudapi.Subject {
-	var subjects []cloudapi.Subject
+	subjects := make([]cloudapi.Subject, 0, len(users)+len(identityPools)+len(serviceAccounts))
 
 	// Add users
 	for _, user := range users {
@@ -137,9 +137,10 @@ func makeSubjects(users []string, identityPools []string, serviceAccounts []stri
 
 // makeResourceNames creates ResourceName array from SRN fields
 func makeResourceNames(spec resourcev1alpha1.RoleBindingSpec, organization string) []cloudapi.ResourceName {
-	var resourceNames []cloudapi.ResourceName
+	longest := findLongestStrArray(spec.SRNOrganization, spec.SRNInstance, spec.SRNCluster, spec.SRNTenant, spec.SRNNamespace, spec.SRNTopicDomain, spec.SRNTopicName, spec.SRNSubscription, spec.SRNServiceAccount, spec.SRNSecret)
+	resourceNames := make([]cloudapi.ResourceName, 0, len(longest))
 
-	for idx := range findLongestStrArray(spec.SRNOrganization, spec.SRNInstance, spec.SRNCluster, spec.SRNTenant, spec.SRNNamespace, spec.SRNTopicDomain, spec.SRNTopicName, spec.SRNSubscription, spec.SRNServiceAccount, spec.SRNSecret) {
+	for idx := range longest {
 		resourceName := cloudapi.ResourceName{}
 		resourceName.Organization = organization
 		if len(spec.SRNInstance) > idx {

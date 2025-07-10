@@ -21,7 +21,7 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
-// RoleBinding
+// RoleBinding is a resource that grants a set of permissions to a set of subjects.
 // +k8s:openapi-gen=true
 // +resource:path=rolebindings,strategy=RoleBindingStrategy
 // +kubebuilder:categories=all
@@ -60,9 +60,11 @@ type ResourceName struct {
 	TopicName      string `json:"topicName,omitempty" protobuf:"bytes,7,opt,name=topicName"`
 	Subscription   string `json:"subscription,omitempty" protobuf:"bytes,8,opt,name=subscription"`
 	ServiceAccount string `json:"serviceAccount,omitempty" protobuf:"bytes,9,opt,name=serviceAccount"`
-	ApiKey         string `json:"apiKey,omitempty" protobuf:"bytes,10,opt,name=apiKey"`
+	APIKey         string `json:"apiKey,omitempty" protobuf:"bytes,10,opt,name=apiKey"`
 	Secret         string `json:"secret,omitempty" protobuf:"bytes,11,opt,name=secret"`
-} // RoleBindingStatus defines the observed state of RoleBinding
+}
+
+// RoleBindingStatus defines the observed state of RoleBinding
 type RoleBindingStatus struct {
 	// Conditions is an array of current observed conditions.
 	// +optional
@@ -85,15 +87,6 @@ type RoleBindingStatus struct {
 	SyncedClusters map[string]int64 `json:"syncedClusters,omitempty" protobuf:"bytes,3,rep,name=syncedClusters"`
 }
 
-//+kubebuilder:object:root=true
-
-// RoleBindingList contains a list of RoleBinding
-type RoleBindingList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []RoleBinding `json:"items"`
-}
-
 // Deprecated sections
 
 type ConditionGroupRelation int
@@ -108,15 +101,15 @@ const (
 	OperatorRegexMatch RoleBindingConditionOperator = 1
 )
 
-// ConditionGroup
+// ConditionGroup is a group of conditions that are used to determine if a role binding should be applied.
 // Deprecated
 type ConditionGroup struct {
 	Relation        ConditionGroupRelation `json:"relation,omitempty" protobuf:"bytes,1,opt,name=relation"`
-	Conditions      []RoleBindingCondition `json:"conditions,required" protobuf:"bytes,2,req,name=conditions"`
+	Conditions      []RoleBindingCondition `json:"conditions" protobuf:"bytes,2,req,name=conditions"`
 	ConditionGroups []ConditionGroup       `json:"conditionGroups,omitempty" protobuf:"bytes,3,opt,name=conditionGroups"`
 }
 
-// Srn
+// Srn is a StreamNative Resource Name.
 // Deprecated
 type Srn struct {
 	Schema       string `json:"schema,omitempty" protobuf:"bytes,1,opt,name=schema"`
@@ -131,10 +124,19 @@ type Srn struct {
 	Subscription string `json:"subscription,omitempty" protobuf:"bytes,10,opt,name=subscription"`
 }
 
-// RoleBindingCondition
+// RoleBindingCondition is a condition that is used to determine if a role binding should be applied.
 // Deprecated
 type RoleBindingCondition struct {
 	Type     RoleBindingConditionType     `json:"type,omitempty" protobuf:"bytes,1,opt,name=type"`
 	Operator RoleBindingConditionOperator `json:"operator,omitempty" protobuf:"bytes,2,opt,name=operator"`
 	Srn      Srn                          `json:"srn,omitempty" protobuf:"bytes,3,opt,name=srn"`
+}
+
+//+kubebuilder:object:root=true
+
+// RoleBindingList contains a list of RoleBinding
+type RoleBindingList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []RoleBinding `json:"items"`
 }
