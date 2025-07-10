@@ -60,6 +60,8 @@ func addKnownTypes(scheme *runtime.Scheme) error {
 	scheme.AddKnownTypes(SchemeGroupVersion,
 		&APIKey{},
 		&APIKeyList{},
+		&ClusterRole{},
+		&RoleBinding{},
 		&Secret{},
 		&SecretList{},
 		&ServiceAccount{},

@@ -23,6 +23,10 @@ import (
 type Interface interface {
 	// APIKeys returns a APIKeyInformer.
 	APIKeys() APIKeyInformer
+	// ClusterRoles returns a ClusterRoleInformer.
+	ClusterRoles() ClusterRoleInformer
+	// RoleBindings returns a RoleBindingInformer.
+	RoleBindings() RoleBindingInformer
 	// Secrets returns a SecretInformer.
 	Secrets() SecretInformer
 	// ServiceAccounts returns a ServiceAccountInformer.
@@ -45,6 +49,16 @@ func New(f internalinterfaces.SharedInformerFactory, namespace string, tweakList
 // APIKeys returns a APIKeyInformer.
 func (v *version) APIKeys() APIKeyInformer {
 	return &aPIKeyInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
+}
+
+// ClusterRoles returns a ClusterRoleInformer.
+func (v *version) ClusterRoles() ClusterRoleInformer {
+	return &clusterRoleInformer{factory: v.factory, tweakListOptions: v.tweakListOptions}
+}
+
+// RoleBindings returns a RoleBindingInformer.
+func (v *version) RoleBindings() RoleBindingInformer {
+	return &roleBindingInformer{factory: v.factory, namespace: v.namespace, tweakListOptions: v.tweakListOptions}
 }
 
 // Secrets returns a SecretInformer.

@@ -26,6 +26,8 @@ import (
 type CloudV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	APIKeysGetter
+	ClusterRolesGetter
+	RoleBindingsGetter
 	SecretsGetter
 	ServiceAccountsGetter
 	ServiceAccountBindingsGetter
@@ -38,6 +40,14 @@ type CloudV1alpha1Client struct {
 
 func (c *CloudV1alpha1Client) APIKeys(namespace string) APIKeyInterface {
 	return newAPIKeys(c, namespace)
+}
+
+func (c *CloudV1alpha1Client) ClusterRoles() ClusterRoleInterface {
+	return newClusterRoles(c)
+}
+
+func (c *CloudV1alpha1Client) RoleBindings(namespace string) RoleBindingInterface {
+	return newRoleBindings(c, namespace)
 }
 
 func (c *CloudV1alpha1Client) Secrets(namespace string) SecretInterface {

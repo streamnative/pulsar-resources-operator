@@ -53,6 +53,10 @@ func (f *sharedInformerFactory) ForResource(resource schema.GroupVersionResource
 	// Group=cloud.streamnative.io, Version=v1alpha1
 	case v1alpha1.SchemeGroupVersion.WithResource("apikeys"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().APIKeys().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("clusterroles"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().ClusterRoles().Informer()}, nil
+	case v1alpha1.SchemeGroupVersion.WithResource("rolebindings"):
+		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().RoleBindings().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("secrets"):
 		return &genericInformer{resource: resource.GroupResource(), informer: f.Cloud().V1alpha1().Secrets().Informer()}, nil
 	case v1alpha1.SchemeGroupVersion.WithResource("serviceaccounts"):
