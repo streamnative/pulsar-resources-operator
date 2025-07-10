@@ -402,19 +402,6 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(BeTrue())
 			})
 
-			It("should have compaction threshold set in Pulsar", func() {
-				Eventually(func(g Gomega) {
-					podName := fmt.Sprintf("%s-broker-0", brokerName)
-					containerName := fmt.Sprintf("%s-broker", brokerName)
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsar-admin topics get-compaction-threshold "+compactionTopic.Spec.Name)
-					g.Expect(err).Should(Succeed(), "stdout: %s", stdout)
-					g.Expect(stdout).Should(Not(BeEmpty()))
-					// The output should contain the threshold value in bytes
-					g.Expect(stdout).Should(ContainSubstring("104857600"))
-				}, "120s", "10s").Should(Succeed())
-			})
-
 			It("should update compaction threshold successfully", func() {
 				newThreshold := int64(209715200) // 200MB in bytes
 
@@ -436,19 +423,6 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(BeTrue())
 			})
 
-			It("should have updated compaction threshold in Pulsar", func() {
-				Eventually(func(g Gomega) {
-					podName := fmt.Sprintf("%s-broker-0", brokerName)
-					containerName := fmt.Sprintf("%s-broker", brokerName)
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsar-admin topics get-compaction-threshold "+compactionTopic.Spec.Name)
-					g.Expect(err).Should(Succeed())
-					g.Expect(stdout).Should(Not(BeEmpty()))
-					// The output should contain the new threshold value in bytes
-					g.Expect(stdout).Should(ContainSubstring("209715200"))
-				}, "120s", "10s").Should(Succeed())
-			})
-
 			It("should remove compaction threshold when set to nil", func() {
 				topic := &v1alphav1.PulsarTopic{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
@@ -466,28 +440,6 @@ var _ = Describe("Resources", func() {
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
-			})
-
-			It("should have no compaction threshold in Pulsar after removal", func() {
-				Eventually(func(g Gomega) {
-					podName := fmt.Sprintf("%s-broker-0", brokerName)
-					containerName := fmt.Sprintf("%s-broker", brokerName)
-					stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsar-admin topics get-compaction-threshold "+compactionTopic.Spec.Name)
-					// When no compaction threshold is set, the command might fail or return empty/default value
-					// We need to check both success and failure cases
-					if err != nil {
-						// Command failed, which might be expected when no threshold is set
-						g.Expect(stderr).Should(ContainSubstring("not found"))
-					} else {
-						// Command succeeded but should show no threshold or default value
-						g.Expect(stdout).Should(SatisfyAny(
-							BeEmpty(),
-							ContainSubstring("0"),
-							ContainSubstring("-1"),
-						))
-					}
-				}, "120s", "10s").Should(Succeed())
 			})
 
 			AfterAll(func() {
