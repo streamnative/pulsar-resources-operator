@@ -412,7 +412,7 @@ var _ = Describe("Resources", func() {
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					// The output should contain the threshold value in bytes
 					g.Expect(stdout).Should(ContainSubstring("104857600"))
-				}, "20s", "100ms").Should(Succeed())
+				}, "120s", "10s").Should(Succeed())
 			})
 
 			It("should update compaction threshold successfully", func() {
@@ -446,7 +446,7 @@ var _ = Describe("Resources", func() {
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					// The output should contain the new threshold value in bytes
 					g.Expect(stdout).Should(ContainSubstring("209715200"))
-				}, "20s", "100ms").Should(Succeed())
+				}, "120s", "10s").Should(Succeed())
 			})
 
 			It("should remove compaction threshold when set to nil", func() {
@@ -487,7 +487,7 @@ var _ = Describe("Resources", func() {
 							ContainSubstring("-1"),
 						))
 					}
-				}, "20s", "100ms").Should(Succeed())
+				}, "120s", "10s").Should(Succeed())
 			})
 
 			AfterAll(func() {

@@ -231,6 +231,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	}
 
 	creationErr, policyErr := pulsarAdmin.ApplyTopic(topic.Spec.Name, params)
+	log.Info("Apply topic", "creationErr", creationErr, "policyErr", policyErr)
 	if policyErr != nil {
 		policyErrs = append(policyErrs, policyErr)
 	}
