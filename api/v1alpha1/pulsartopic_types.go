@@ -131,6 +131,11 @@ type PulsarTopicSpec struct {
 	// Deduplication controls whether to enable message deduplication for the topic.
 	// +optional
 	Deduplication *bool `json:"deduplication,omitempty"`
+
+	// CompactionThreshold specifies the size threshold in bytes for automatic topic compaction.
+	// When the topic reaches this size, compaction will be triggered automatically.
+	// +optional
+	CompactionThreshold *int64 `json:"compactionThreshold,omitempty"`
 }
 
 // SchemaInfo defines the Pulsar Schema for a topic.

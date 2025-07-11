@@ -76,6 +76,7 @@ type TopicParams struct {
 	BacklogQuotaRetentionPolicy       *string
 	ReplicationClusters               []string
 	Deduplication                     *bool
+	CompactionThreshold               *int64
 }
 
 // ClusterParams indicate the parameters for creating a cluster

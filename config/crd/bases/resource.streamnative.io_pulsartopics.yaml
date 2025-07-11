@@ -98,6 +98,12 @@ spec:
                   BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
                   Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
                 type: string
+              compactionThreshold:
+                description: |-
+                  CompactionThreshold specifies the size threshold in bytes for automatic topic compaction.
+                  When the topic reaches this size, compaction will be triggered automatically.
+                format: int64
+                type: integer
               connectionRef:
                 description: |-
                   ConnectionRef is the reference to the PulsarConnection resource

@@ -107,6 +107,24 @@ func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v
 	}
 }
 
+// MakePulsarTopicWithCompactionThreshold will generate a object of PulsarTopic with compaction threshold
+func MakePulsarTopicWithCompactionThreshold(namespace, name, topicName, connectionName string, compactionThreshold int64, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:                topicName,
+			CompactionThreshold: &compactionThreshold,
+			LifecyclePolicy:     policy,
+		},
+	}
+}
+
 // MakePulsarPermission will generate a object of PulsarPermission
 func MakePulsarPermission(namespace, name, resourceName, connectionName string, resourceType v1alpha1.PulsarResourceType,
 	roles, actions []string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarPermission {
