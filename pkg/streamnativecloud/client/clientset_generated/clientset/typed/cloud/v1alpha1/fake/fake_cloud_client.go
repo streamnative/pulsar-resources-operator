@@ -29,6 +29,14 @@ func (c *FakeCloudV1alpha1) APIKeys(namespace string) v1alpha1.APIKeyInterface {
 	return &FakeAPIKeys{c, namespace}
 }
 
+func (c *FakeCloudV1alpha1) ClusterRoles() v1alpha1.ClusterRoleInterface {
+	return &FakeClusterRoles{c}
+}
+
+func (c *FakeCloudV1alpha1) RoleBindings(namespace string) v1alpha1.RoleBindingInterface {
+	return &FakeRoleBindings{c, namespace}
+}
+
 func (c *FakeCloudV1alpha1) Secrets(namespace string) v1alpha1.SecretInterface {
 	return &FakeSecrets{c, namespace}
 }

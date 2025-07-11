@@ -23,6 +23,18 @@ type APIKeyListerExpansion interface{}
 // APIKeyNamespaceLister.
 type APIKeyNamespaceListerExpansion interface{}
 
+// ClusterRoleListerExpansion allows custom methods to be added to
+// ClusterRoleLister.
+type ClusterRoleListerExpansion interface{}
+
+// RoleBindingListerExpansion allows custom methods to be added to
+// RoleBindingLister.
+type RoleBindingListerExpansion interface{}
+
+// RoleBindingNamespaceListerExpansion allows custom methods to be added to
+// RoleBindingNamespaceLister.
+type RoleBindingNamespaceListerExpansion interface{}
+
 // SecretListerExpansion allows custom methods to be added to
 // SecretLister.
 type SecretListerExpansion interface{}

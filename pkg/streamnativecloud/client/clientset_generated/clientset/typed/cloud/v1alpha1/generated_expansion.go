@@ -17,6 +17,10 @@ package v1alpha1
 
 type APIKeyExpansion interface{}
 
+type ClusterRoleExpansion interface{}
+
+type RoleBindingExpansion interface{}
+
 type SecretExpansion interface{}
 
 type ServiceAccountExpansion interface{}
