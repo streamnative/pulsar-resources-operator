@@ -201,6 +201,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	// Set up RoleBinding controller
+	if err = (&controllers.RoleBindingReconciler{
+		Client:            mgr.GetClient(),
+		Scheme:            mgr.GetScheme(),
+		ConnectionManager: connectionManager,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "RoleBinding")
+		os.Exit(1)
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
