@@ -370,6 +370,91 @@ var _ = Describe("Resources", func() {
 
 		})
 
+		Context("PulsarTopic Compaction Threshold", Ordered, func() {
+			var (
+				compactionTopic     *v1alphav1.PulsarTopic
+				compactionTopicName string = "test-compaction-topic"
+				compactionThreshold int64  = 104857600 // 100MB in bytes
+			)
+
+			BeforeAll(func() {
+				compactionTopic = utils.MakePulsarTopicWithCompactionThreshold(
+					namespaceName,
+					compactionTopicName,
+					"persistent://public/default/compaction-test",
+					pconnName,
+					compactionThreshold,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with compaction threshold successfully", func() {
+				err := k8sClient.Create(ctx, compactionTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should update compaction threshold successfully", func() {
+				newThreshold := int64(209715200) // 200MB in bytes
+
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				topic.Spec.CompactionThreshold = &newThreshold
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should remove compaction threshold when set to nil", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				topic.Spec.CompactionThreshold = nil
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after removing threshold", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				// Clean up the compaction test topic after all tests complete
+				if compactionTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
 		Context("PulsarPermission operation", Label("Permissions"), func() {
 			It("should grant the pulsarpermission successfully", func() {
 				err := k8sClient.Create(ctx, ppermission)

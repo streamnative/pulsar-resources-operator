@@ -296,6 +296,13 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 	}
 
+	if params.CompactionThreshold != nil {
+		err = p.adminClient.Topics().SetCompactionThreshold(*topicName, *params.CompactionThreshold)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
