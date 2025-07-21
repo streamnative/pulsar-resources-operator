@@ -508,3 +508,29 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - rolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - rolebindings/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - rolebindings/status
+  verbs:
+  - get
+  - patch
+  - update
