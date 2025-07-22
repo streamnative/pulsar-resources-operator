@@ -167,6 +167,18 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		TopicAutoCreationConfig:     namespace.Spec.TopicAutoCreationConfig,
 		SchemaCompatibilityStrategy: namespace.Spec.SchemaCompatibilityStrategy,
 		SchemaValidationEnforced:    namespace.Spec.SchemaValidationEnforced,
+		DispatchRate:                namespace.Spec.DispatchRate,
+		SubscriptionDispatchRate:    namespace.Spec.SubscriptionDispatchRate,
+		ReplicatorDispatchRate:      namespace.Spec.ReplicatorDispatchRate,
+		PublishRate:                 namespace.Spec.PublishRate,
+		SubscribeRate:               namespace.Spec.SubscribeRate,
+		PersistencePolicies:         namespace.Spec.PersistencePolicies,
+		CompactionThreshold:         namespace.Spec.CompactionThreshold,
+		InactiveTopicPolicies:       namespace.Spec.InactiveTopicPolicies,
+		SubscriptionExpirationTime:  namespace.Spec.SubscriptionExpirationTime,
+		Properties:                  namespace.Spec.Properties,
+		IsAllowAutoUpdateSchema:     namespace.Spec.IsAllowAutoUpdateSchema,
+		ValidateProducerName:        namespace.Spec.ValidateProducerName,
 	}
 
 	if refs := namespace.Spec.GeoReplicationRefs; len(refs) != 0 || len(namespace.Spec.ReplicationClusters) > 0 {

@@ -58,6 +58,18 @@ type NamespaceParams struct {
 	TopicAutoCreationConfig     *v1alpha1.TopicAutoCreationConfig
 	SchemaCompatibilityStrategy *utils2.SchemaCompatibilityStrategy
 	SchemaValidationEnforced    *bool
+	DispatchRate                *v1alpha1.DispatchRate
+	SubscriptionDispatchRate    *v1alpha1.DispatchRate
+	ReplicatorDispatchRate      *v1alpha1.DispatchRate
+	PublishRate                 *v1alpha1.PublishRate
+	SubscribeRate               *v1alpha1.SubscribeRate
+	PersistencePolicies         *v1alpha1.PersistencePolicies
+	CompactionThreshold         *int64
+	InactiveTopicPolicies       *v1alpha1.InactiveTopicPolicies
+	SubscriptionExpirationTime  *utils.Duration
+	Properties                  map[string]string
+	IsAllowAutoUpdateSchema     *bool
+	ValidateProducerName        *bool
 }
 
 // TopicParams indicates the parameters for creating a topic
