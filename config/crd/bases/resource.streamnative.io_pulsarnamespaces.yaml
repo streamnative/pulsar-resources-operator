@@ -76,6 +76,11 @@ spec:
               PulsarNamespaceSpec defines the desired state of a Pulsar namespace.
               It corresponds to the configuration options available in Pulsar's namespace admin API.
             properties:
+              antiAffinityGroup:
+                description: |-
+                  AntiAffinityGroup specifies the anti-affinity group for this namespace.
+                  Namespaces in the same anti-affinity group will be placed on different brokers.
+                type: string
               backlogQuotaLimitSize:
                 anyOf:
                 - type: integer
@@ -173,6 +178,11 @@ spec:
                     minimum: 1
                     type: integer
                 type: object
+              encryptionRequired:
+                description: |-
+                  EncryptionRequired specifies whether message encryption is required for this namespace.
+                  When enabled, all messages published to topics in this namespace must be encrypted.
+                type: boolean
               geoReplicationRefs:
                 description: |-
                   GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
@@ -381,6 +391,21 @@ spec:
                   Should be set in conjunction with RetentionSize for effective retention policy.
                   Retention Quota must exceed configured backlog quota for namespace
                 type: string
+              schemaAutoUpdateCompatibilityStrategy:
+                description: |-
+                  SchemaAutoUpdateCompatibilityStrategy specifies the compatibility strategy for automatic schema updates.
+                  This controls how schema evolution is handled when schemas are automatically updated.
+                enum:
+                - UNDEFINED
+                - ALWAYS_INCOMPATIBLE
+                - ALWAYS_COMPATIBLE
+                - BACKWARD
+                - FORWARD
+                - FULL
+                - BACKWARD_TRANSITIVE
+                - FORWARD_TRANSITIVE
+                - FULL_TRANSITIVE
+                type: string
               schemaCompatibilityStrategy:
                 description: |-
                   SchemaCompatibilityStrategy defines the schema compatibility strategy for this namespace.
@@ -422,6 +447,14 @@ spec:
                     format: int32
                     type: integer
                 type: object
+              subscriptionAuthMode:
+                description: |-
+                  SubscriptionAuthMode specifies the subscription authentication mode for this namespace.
+                  Valid values are "None" and "Prefix".
+                enum:
+                - None
+                - Prefix
+                type: string
               subscriptionDispatchRate:
                 description: |-
                   SubscriptionDispatchRate sets the subscription dispatch rate for topics in this namespace.

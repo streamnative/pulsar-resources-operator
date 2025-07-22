@@ -314,6 +314,28 @@ type PulsarNamespaceSpec struct {
 	// When enabled, producer names must follow specific naming conventions.
 	// +optional
 	ValidateProducerName *bool `json:"validateProducerName,omitempty"`
+
+	// EncryptionRequired specifies whether message encryption is required for this namespace.
+	// When enabled, all messages published to topics in this namespace must be encrypted.
+	// +optional
+	EncryptionRequired *bool `json:"encryptionRequired,omitempty"`
+
+	// SubscriptionAuthMode specifies the subscription authentication mode for this namespace.
+	// Valid values are "None" and "Prefix".
+	// +kubebuilder:validation:Enum=None;Prefix
+	// +optional
+	SubscriptionAuthMode *adminutils.SubscriptionAuthMode `json:"subscriptionAuthMode,omitempty"`
+
+	// AntiAffinityGroup specifies the anti-affinity group for this namespace.
+	// Namespaces in the same anti-affinity group will be placed on different brokers.
+	// +optional
+	AntiAffinityGroup *string `json:"antiAffinityGroup,omitempty"`
+
+	// SchemaAutoUpdateCompatibilityStrategy specifies the compatibility strategy for automatic schema updates.
+	// This controls how schema evolution is handled when schemas are automatically updated.
+	// +optional
+	// +kubebuilder:validation:Enum=UNDEFINED;ALWAYS_INCOMPATIBLE;ALWAYS_COMPATIBLE;BACKWARD;FORWARD;FULL;BACKWARD_TRANSITIVE;FORWARD_TRANSITIVE;FULL_TRANSITIVE
+	SchemaAutoUpdateCompatibilityStrategy *adminutils.SchemaAutoUpdateCompatibilityStrategy `json:"schemaAutoUpdateCompatibilityStrategy,omitempty"`
 }
 
 type BookieAffinityGroupData struct {

@@ -269,6 +269,55 @@ var _ = Describe("Resources", func() {
 					return v1alphav1.IsPulsarResourceReady(ns)
 				}, "20s", "100ms").Should(BeTrue())
 			})
+
+			It("should have correct TopicAutoCreationConfig", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pnamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify TopicAutoCreationConfig is set correctly
+				Expect(ns.Spec.TopicAutoCreationConfig).ShouldNot(BeNil())
+				Expect(ns.Spec.TopicAutoCreationConfig.Allow).Should(BeTrue())
+				Expect(ns.Spec.TopicAutoCreationConfig.Type).Should(Equal("partitioned"))
+				Expect(ns.Spec.TopicAutoCreationConfig.Partitions).ShouldNot(BeNil())
+				Expect(*ns.Spec.TopicAutoCreationConfig.Partitions).Should(Equal(int32(10)))
+			})
+
+			It("should update TopicAutoCreationConfig successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pnamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Update TopicAutoCreationConfig
+				ns.Spec.TopicAutoCreationConfig.Allow = false
+				ns.Spec.TopicAutoCreationConfig.Type = "non-partitioned"
+				ns.Spec.TopicAutoCreationConfig.Partitions = pointer.Int32(5)
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after TopicAutoCreationConfig update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pnamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated TopicAutoCreationConfig values", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pnamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify updated values
+				Expect(ns.Spec.TopicAutoCreationConfig).ShouldNot(BeNil())
+				Expect(ns.Spec.TopicAutoCreationConfig.Allow).Should(BeFalse())
+				Expect(ns.Spec.TopicAutoCreationConfig.Type).Should(Equal("non-partitioned"))
+				Expect(ns.Spec.TopicAutoCreationConfig.Partitions).ShouldNot(BeNil())
+				Expect(*ns.Spec.TopicAutoCreationConfig.Partitions).Should(Equal(int32(5)))
+			})
 		})
 
 		Context("PulsarTopic operation", Ordered, func() {
@@ -450,6 +499,520 @@ var _ = Describe("Resources", func() {
 						tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
 						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarNamespace Rate Limiting", Ordered, func() {
+			var (
+				rateLimitingNamespace     *v1alphav1.PulsarNamespace
+				rateLimitingNamespaceName string = "test-ratelimiting-namespace"
+				rateLimitingPulsarNSName  string = "cloud/ratelimiting"
+			)
+
+			BeforeAll(func() {
+				rateLimitingNamespace = utils.MakePulsarNamespaceWithRateLimiting(
+					namespaceName,
+					rateLimitingNamespaceName,
+					rateLimitingPulsarNSName,
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create namespace with rate limiting configuration successfully", func() {
+				err := k8sClient.Create(ctx, rateLimitingNamespace)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct dispatch rate configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify DispatchRate
+				Expect(ns.Spec.DispatchRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.DispatchRate.DispatchThrottlingRateInMsg).Should(Equal(int32(1000)))
+				Expect(*ns.Spec.DispatchRate.DispatchThrottlingRateInByte).Should(Equal(int64(1048576)))
+				Expect(*ns.Spec.DispatchRate.RatePeriodInSecond).Should(Equal(int32(1)))
+			})
+
+			It("should have correct subscription dispatch rate configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify SubscriptionDispatchRate
+				Expect(ns.Spec.SubscriptionDispatchRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.SubscriptionDispatchRate.DispatchThrottlingRateInMsg).Should(Equal(int32(500)))
+				Expect(*ns.Spec.SubscriptionDispatchRate.DispatchThrottlingRateInByte).Should(Equal(int64(524288)))
+				Expect(*ns.Spec.SubscriptionDispatchRate.RatePeriodInSecond).Should(Equal(int32(1)))
+			})
+
+			It("should have correct replicator dispatch rate configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify ReplicatorDispatchRate
+				Expect(ns.Spec.ReplicatorDispatchRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.ReplicatorDispatchRate.DispatchThrottlingRateInMsg).Should(Equal(int32(800)))
+				Expect(*ns.Spec.ReplicatorDispatchRate.DispatchThrottlingRateInByte).Should(Equal(int64(838860)))
+				Expect(*ns.Spec.ReplicatorDispatchRate.RatePeriodInSecond).Should(Equal(int32(1)))
+			})
+
+			It("should have correct publish rate configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify PublishRate
+				Expect(ns.Spec.PublishRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.PublishRate.PublishThrottlingRateInMsg).Should(Equal(int32(2000)))
+				Expect(*ns.Spec.PublishRate.PublishThrottlingRateInByte).Should(Equal(int64(2097152)))
+			})
+
+			It("should have correct subscribe rate configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify SubscribeRate
+				Expect(ns.Spec.SubscribeRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.SubscribeRate.SubscribeThrottlingRatePerConsumer).Should(Equal(int32(10)))
+				Expect(*ns.Spec.SubscribeRate.RatePeriodInSecond).Should(Equal(int32(30)))
+			})
+
+			It("should update dispatch rate successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Update DispatchRate
+				ns.Spec.DispatchRate.DispatchThrottlingRateInMsg = pointer.Int32(1500)
+				ns.Spec.DispatchRate.DispatchThrottlingRateInByte = pointer.Int64(1572864) // 1.5MB
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after rate update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated dispatch rate values", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify updated DispatchRate
+				Expect(ns.Spec.DispatchRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.DispatchRate.DispatchThrottlingRateInMsg).Should(Equal(int32(1500)))
+				Expect(*ns.Spec.DispatchRate.DispatchThrottlingRateInByte).Should(Equal(int64(1572864)))
+			})
+
+			AfterAll(func() {
+				// Clean up the rate limiting namespace
+				if rateLimitingNamespace != nil {
+					Eventually(func(g Gomega) {
+						ns := &v1alphav1.PulsarNamespace{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: rateLimitingNamespaceName}
+						g.Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarNamespace Storage Policies", Ordered, func() {
+			var (
+				storagePoliciesNamespace     *v1alphav1.PulsarNamespace
+				storagePoliciesNamespaceName string = "test-storage-namespace"
+				storagePoliciesPulsarNSName  string = "cloud/storage"
+			)
+
+			BeforeAll(func() {
+				storagePoliciesNamespace = utils.MakePulsarNamespaceWithStoragePolicies(
+					namespaceName,
+					storagePoliciesNamespaceName,
+					storagePoliciesPulsarNSName,
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create namespace with storage policies successfully", func() {
+				err := k8sClient.Create(ctx, storagePoliciesNamespace)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct persistence policies configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify PersistencePolicies
+				Expect(ns.Spec.PersistencePolicies).ShouldNot(BeNil())
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperEnsemble).Should(Equal(int32(5)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperWriteQuorum).Should(Equal(int32(3)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperAckQuorum).Should(Equal(int32(2)))
+				Expect(*ns.Spec.PersistencePolicies.ManagedLedgerMaxMarkDeleteRate).Should(Equal("1.5"))
+			})
+
+			It("should have correct retention policies", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify retention policies
+				Expect(ns.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*ns.Spec.RetentionTime)).Should(Equal("48h"))
+				Expect(ns.Spec.RetentionSize).ShouldNot(BeNil())
+
+				// Verify backlog quota
+				Expect(ns.Spec.BacklogQuotaLimitSize).ShouldNot(BeNil())
+				Expect(ns.Spec.BacklogQuotaLimitTime).ShouldNot(BeNil())
+				Expect(ns.Spec.BacklogQuotaRetentionPolicy).ShouldNot(BeNil())
+				Expect(*ns.Spec.BacklogQuotaRetentionPolicy).Should(Equal("producer_request_hold"))
+				Expect(ns.Spec.BacklogQuotaType).ShouldNot(BeNil())
+				Expect(*ns.Spec.BacklogQuotaType).Should(Equal("destination_storage"))
+			})
+
+			It("should have correct compaction threshold", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify CompactionThreshold
+				Expect(ns.Spec.CompactionThreshold).ShouldNot(BeNil())
+				Expect(*ns.Spec.CompactionThreshold).Should(Equal(int64(104857600))) // 100MB
+			})
+
+			It("should have correct inactive topic policies", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify InactiveTopicPolicies
+				Expect(ns.Spec.InactiveTopicPolicies).ShouldNot(BeNil())
+				Expect(*ns.Spec.InactiveTopicPolicies.InactiveTopicDeleteMode).Should(Equal("delete_when_no_subscriptions"))
+				Expect(*ns.Spec.InactiveTopicPolicies.MaxInactiveDurationInSeconds).Should(Equal(int32(3600)))
+				Expect(*ns.Spec.InactiveTopicPolicies.DeleteWhileInactive).Should(BeTrue())
+			})
+
+			It("should have correct subscription expiration time", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify SubscriptionExpirationTime
+				Expect(ns.Spec.SubscriptionExpirationTime).ShouldNot(BeNil())
+				Expect(string(*ns.Spec.SubscriptionExpirationTime)).Should(Equal("7d"))
+			})
+
+			It("should have correct custom properties", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify Properties
+				Expect(ns.Spec.Properties).ShouldNot(BeNil())
+				Expect(ns.Spec.Properties["environment"]).Should(Equal("test"))
+				Expect(ns.Spec.Properties["team"]).Should(Equal("qa"))
+			})
+
+			It("should update persistence policies successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Update PersistencePolicies
+				ns.Spec.PersistencePolicies.BookkeeperEnsemble = pointer.Int32(7)
+				ns.Spec.PersistencePolicies.BookkeeperWriteQuorum = pointer.Int32(4)
+				ns.Spec.PersistencePolicies.BookkeeperAckQuorum = pointer.Int32(3)
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after persistence policies update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated persistence policies values", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify updated PersistencePolicies
+				Expect(ns.Spec.PersistencePolicies).ShouldNot(BeNil())
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperEnsemble).Should(Equal(int32(7)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperWriteQuorum).Should(Equal(int32(4)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperAckQuorum).Should(Equal(int32(3)))
+			})
+
+			It("should update compaction threshold successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Update CompactionThreshold
+				newThreshold := int64(209715200) // 200MB
+				ns.Spec.CompactionThreshold = &newThreshold
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after compaction threshold update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated compaction threshold value", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify updated CompactionThreshold
+				Expect(ns.Spec.CompactionThreshold).ShouldNot(BeNil())
+				Expect(*ns.Spec.CompactionThreshold).Should(Equal(int64(209715200))) // 200MB
+			})
+
+			AfterAll(func() {
+				// Clean up the storage policies namespace
+				if storagePoliciesNamespace != nil {
+					Eventually(func(g Gomega) {
+						ns := &v1alphav1.PulsarNamespace{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+						g.Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarNamespace Security Configuration", Ordered, func() {
+			var (
+				securityNamespace     *v1alphav1.PulsarNamespace
+				securityNamespaceName string = "test-security-namespace"
+				securityPulsarNSName  string = "cloud/security"
+			)
+
+			BeforeAll(func() {
+				securityNamespace = utils.MakePulsarNamespaceWithSecurityConfig(
+					namespaceName,
+					securityNamespaceName,
+					securityPulsarNSName,
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create namespace with security configuration successfully", func() {
+				err := k8sClient.Create(ctx, securityNamespace)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct security configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify security settings
+				Expect(ns.Spec.EncryptionRequired).ShouldNot(BeNil())
+				Expect(*ns.Spec.EncryptionRequired).Should(BeTrue())
+				Expect(ns.Spec.ValidateProducerName).ShouldNot(BeNil())
+				Expect(*ns.Spec.ValidateProducerName).Should(BeTrue())
+				Expect(ns.Spec.IsAllowAutoUpdateSchema).ShouldNot(BeNil())
+				Expect(*ns.Spec.IsAllowAutoUpdateSchema).Should(BeFalse())
+			})
+
+			It("should have correct anti-affinity configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify anti-affinity group
+				Expect(ns.Spec.AntiAffinityGroup).ShouldNot(BeNil())
+				Expect(*ns.Spec.AntiAffinityGroup).Should(Equal("high-availability"))
+			})
+
+			It("should have correct schema validation enforcement", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify schema validation
+				Expect(ns.Spec.SchemaValidationEnforced).ShouldNot(BeNil())
+				Expect(*ns.Spec.SchemaValidationEnforced).Should(BeTrue())
+			})
+
+			It("should have security-focused rate limiting", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify security-focused rate limits
+				Expect(ns.Spec.PublishRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.PublishRate.PublishThrottlingRateInMsg).Should(Equal(int32(1000)))
+				Expect(*ns.Spec.PublishRate.PublishThrottlingRateInByte).Should(Equal(int64(1048576)))
+
+				Expect(ns.Spec.SubscribeRate).ShouldNot(BeNil())
+				Expect(*ns.Spec.SubscribeRate.SubscribeThrottlingRatePerConsumer).Should(Equal(int32(5)))
+				Expect(*ns.Spec.SubscribeRate.RatePeriodInSecond).Should(Equal(int32(60)))
+			})
+
+			It("should have security-focused storage policies", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify high-replication persistence for security
+				Expect(ns.Spec.PersistencePolicies).ShouldNot(BeNil())
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperEnsemble).Should(Equal(int32(5)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperWriteQuorum).Should(Equal(int32(3)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperAckQuorum).Should(Equal(int32(3))) // Higher ack quorum for security
+
+				// Verify long retention for audit
+				Expect(ns.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*ns.Spec.RetentionTime)).Should(Equal("720h")) // 30 days
+			})
+
+			It("should have security metadata in properties", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify security properties
+				Expect(ns.Spec.Properties).ShouldNot(BeNil())
+				Expect(ns.Spec.Properties["security-level"]).Should(Equal("high"))
+				Expect(ns.Spec.Properties["compliance"]).Should(Equal("required"))
+				Expect(ns.Spec.Properties["data-classification"]).Should(Equal("confidential"))
+			})
+
+			It("should have deduplication enabled", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify deduplication for data integrity
+				Expect(ns.Spec.Deduplication).ShouldNot(BeNil())
+				Expect(*ns.Spec.Deduplication).Should(BeTrue())
+			})
+
+			It("should update encryption requirement successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Temporarily disable encryption requirement
+				ns.Spec.EncryptionRequired = pointer.Bool(false)
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after security config update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated encryption requirement", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify updated encryption requirement
+				Expect(ns.Spec.EncryptionRequired).ShouldNot(BeNil())
+				Expect(*ns.Spec.EncryptionRequired).Should(BeFalse())
+			})
+
+			It("should update producer name validation successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Disable producer name validation
+				ns.Spec.ValidateProducerName = pointer.Bool(false)
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after producer validation update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated producer name validation", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify updated producer name validation
+				Expect(ns.Spec.ValidateProducerName).ShouldNot(BeNil())
+				Expect(*ns.Spec.ValidateProducerName).Should(BeFalse())
+			})
+
+			AfterAll(func() {
+				// Clean up the security namespace
+				if securityNamespace != nil {
+					Eventually(func(g Gomega) {
+						ns := &v1alphav1.PulsarNamespace{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: securityNamespaceName}
+						g.Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
 					}).Should(Succeed())
 				}
 			})

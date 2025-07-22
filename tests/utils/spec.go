@@ -91,6 +91,180 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 	}
 }
 
+// MakePulsarNamespaceWithRateLimiting will generate a PulsarNamespace with rate limiting configurations
+func MakePulsarNamespaceWithRateLimiting(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
+	backlogSize := resource.MustParse("5Gi")
+	bundle := int32(16)
+	var du rsutils.Duration = "12h"
+	limitTime := &du
+	ttl := &du
+
+	return &v1alpha1.PulsarNamespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarNamespaceSpec{
+			Name: namespaceName,
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			BacklogQuotaLimitTime: limitTime,
+			BacklogQuotaLimitSize: &backlogSize,
+			Bundles:               &bundle,
+			MessageTTL:            ttl,
+			LifecyclePolicy:       policy,
+
+			// Rate limiting configurations
+			DispatchRate: &v1alpha1.DispatchRate{
+				DispatchThrottlingRateInMsg:  ptr.To[int32](1000),
+				DispatchThrottlingRateInByte: ptr.To[int64](1048576), // 1MB
+				RatePeriodInSecond:           ptr.To[int32](1),
+			},
+			SubscriptionDispatchRate: &v1alpha1.DispatchRate{
+				DispatchThrottlingRateInMsg:  ptr.To[int32](500),
+				DispatchThrottlingRateInByte: ptr.To[int64](524288), // 512KB
+				RatePeriodInSecond:           ptr.To[int32](1),
+			},
+			ReplicatorDispatchRate: &v1alpha1.DispatchRate{
+				DispatchThrottlingRateInMsg:  ptr.To[int32](800),
+				DispatchThrottlingRateInByte: ptr.To[int64](838860), // ~800KB
+				RatePeriodInSecond:           ptr.To[int32](1),
+			},
+			PublishRate: &v1alpha1.PublishRate{
+				PublishThrottlingRateInMsg:  ptr.To[int32](2000),
+				PublishThrottlingRateInByte: ptr.To[int64](2097152), // 2MB
+			},
+			SubscribeRate: &v1alpha1.SubscribeRate{
+				SubscribeThrottlingRatePerConsumer: ptr.To[int32](10),
+				RatePeriodInSecond:                 ptr.To[int32](30),
+			},
+		},
+	}
+}
+
+// MakePulsarNamespaceWithStoragePolicies will generate a PulsarNamespace with storage and persistence configurations
+func MakePulsarNamespaceWithStoragePolicies(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
+	backlogSize := resource.MustParse("20Gi")
+	retentionSize := resource.MustParse("50Gi")
+	bundle := int32(32)
+	var retentionTime rsutils.Duration = "48h"
+	var subscriptionExpTime rsutils.Duration = "7d"
+	limitTime := &retentionTime
+
+	return &v1alpha1.PulsarNamespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarNamespaceSpec{
+			Name: namespaceName,
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Bundles:         &bundle,
+			LifecyclePolicy: policy,
+
+			// Storage and persistence configurations
+			RetentionTime:               limitTime,
+			RetentionSize:               &retentionSize,
+			BacklogQuotaLimitSize:       &backlogSize,
+			BacklogQuotaLimitTime:       limitTime,
+			BacklogQuotaRetentionPolicy: ptr.To("producer_request_hold"),
+			BacklogQuotaType:            ptr.To("destination_storage"),
+			SubscriptionExpirationTime:  &subscriptionExpTime,
+
+			PersistencePolicies: &v1alpha1.PersistencePolicies{
+				BookkeeperEnsemble:             ptr.To[int32](5),
+				BookkeeperWriteQuorum:          ptr.To[int32](3),
+				BookkeeperAckQuorum:            ptr.To[int32](2),
+				ManagedLedgerMaxMarkDeleteRate: ptr.To("1.5"),
+			},
+
+			CompactionThreshold: ptr.To[int64](104857600), // 100MB
+
+			InactiveTopicPolicies: &v1alpha1.InactiveTopicPolicies{
+				InactiveTopicDeleteMode:      ptr.To("delete_when_no_subscriptions"),
+				MaxInactiveDurationInSeconds: ptr.To[int32](3600), // 1 hour
+				DeleteWhileInactive:          ptr.To(true),
+			},
+
+			Properties: map[string]string{
+				"environment": "test",
+				"team":        "qa",
+			},
+		},
+	}
+}
+
+// MakePulsarNamespaceWithSecurityConfig will generate a PulsarNamespace with security configurations
+func MakePulsarNamespaceWithSecurityConfig(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
+	backlogSize := resource.MustParse("10Gi")
+	retentionSize := resource.MustParse("100Gi")
+	bundle := int32(16)
+	var retentionTime rsutils.Duration = "720h"       // 30 days
+	var subscriptionExpTime rsutils.Duration = "168h" // 7 days
+	limitTime := &retentionTime
+
+	return &v1alpha1.PulsarNamespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarNamespaceSpec{
+			Name: namespaceName,
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Bundles:         &bundle,
+			LifecyclePolicy: policy,
+
+			// Security configurations
+			EncryptionRequired:      ptr.To(true),
+			ValidateProducerName:    ptr.To(true),
+			IsAllowAutoUpdateSchema: ptr.To(false),
+			AntiAffinityGroup:       ptr.To("high-availability"),
+
+			// Schema policies for security
+			SchemaValidationEnforced: ptr.To(true),
+
+			// Rate limiting for security (prevent spam)
+			PublishRate: &v1alpha1.PublishRate{
+				PublishThrottlingRateInMsg:  ptr.To[int32](1000),
+				PublishThrottlingRateInByte: ptr.To[int64](1048576), // 1MB
+			},
+			SubscribeRate: &v1alpha1.SubscribeRate{
+				SubscribeThrottlingRatePerConsumer: ptr.To[int32](5),
+				RatePeriodInSecond:                 ptr.To[int32](60),
+			},
+
+			// Storage policies for audit and compliance
+			RetentionTime:               limitTime,
+			RetentionSize:               &retentionSize,
+			BacklogQuotaLimitSize:       &backlogSize,
+			BacklogQuotaLimitTime:       &subscriptionExpTime,
+			BacklogQuotaRetentionPolicy: ptr.To("producer_request_hold"),
+			SubscriptionExpirationTime:  &subscriptionExpTime,
+
+			PersistencePolicies: &v1alpha1.PersistencePolicies{
+				BookkeeperEnsemble:    ptr.To[int32](5),
+				BookkeeperWriteQuorum: ptr.To[int32](3),
+				BookkeeperAckQuorum:   ptr.To[int32](3), // Higher ack quorum for security
+			},
+
+			CompactionThreshold: ptr.To[int64](52428800), // 50MB - more frequent compaction
+
+			Properties: map[string]string{
+				"security-level":      "high",
+				"compliance":          "required",
+				"data-classification": "confidential",
+			},
+
+			Deduplication: ptr.To(true),
+		},
+	}
+}
+
 // MakePulsarTopic will generate a object of PulsarTopic
 func MakePulsarTopic(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
 	return &v1alpha1.PulsarTopic{

@@ -654,6 +654,44 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
+	// Handle encryption requirement
+	if params.EncryptionRequired != nil {
+		err = p.adminClient.Namespaces().SetEncryptionRequiredStatus(*naName, *params.EncryptionRequired)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscription authentication mode
+	if params.SubscriptionAuthMode != nil {
+		err = p.adminClient.Namespaces().SetSubscriptionAuthMode(*naName, *params.SubscriptionAuthMode)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle anti-affinity group
+	if params.AntiAffinityGroup != nil {
+		err = p.adminClient.Namespaces().SetNamespaceAntiAffinityGroup(completeNSName, *params.AntiAffinityGroup)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Remove anti-affinity group if not specified
+		err = p.adminClient.Namespaces().DeleteNamespaceAntiAffinityGroup(completeNSName)
+		if err != nil && !IsNotFound(err) {
+			return err
+		}
+	}
+
+	// Handle schema auto update compatibility strategy
+	if params.SchemaAutoUpdateCompatibilityStrategy != nil {
+		err = p.adminClient.Namespaces().SetSchemaAutoUpdateCompatibilityStrategy(*naName, *params.SchemaAutoUpdateCompatibilityStrategy)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

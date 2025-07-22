@@ -39,37 +39,41 @@ type TenantParams struct {
 
 // NamespaceParams indicates the parameters for creating a namespace
 type NamespaceParams struct {
-	Bundles                     *int32
-	MaxProducersPerTopic        *int32
-	MaxConsumersPerTopic        *int32
-	MaxConsumersPerSubscription *int32
-	MessageTTL                  *utils.Duration
-	RetentionTime               *utils.Duration
-	RetentionSize               *resource.Quantity
-	BacklogQuotaLimitTime       *utils.Duration
-	BacklogQuotaLimitSize       *resource.Quantity
-	BacklogQuotaRetentionPolicy *string
-	BacklogQuotaType            *string
-	OffloadThresholdTime        *utils.Duration
-	OffloadThresholdSize        *resource.Quantity
-	ReplicationClusters         []string
-	Deduplication               *bool
-	BookieAffinityGroup         *v1alpha1.BookieAffinityGroupData
-	TopicAutoCreationConfig     *v1alpha1.TopicAutoCreationConfig
-	SchemaCompatibilityStrategy *utils2.SchemaCompatibilityStrategy
-	SchemaValidationEnforced    *bool
-	DispatchRate                *v1alpha1.DispatchRate
-	SubscriptionDispatchRate    *v1alpha1.DispatchRate
-	ReplicatorDispatchRate      *v1alpha1.DispatchRate
-	PublishRate                 *v1alpha1.PublishRate
-	SubscribeRate               *v1alpha1.SubscribeRate
-	PersistencePolicies         *v1alpha1.PersistencePolicies
-	CompactionThreshold         *int64
-	InactiveTopicPolicies       *v1alpha1.InactiveTopicPolicies
-	SubscriptionExpirationTime  *utils.Duration
-	Properties                  map[string]string
-	IsAllowAutoUpdateSchema     *bool
-	ValidateProducerName        *bool
+	Bundles                               *int32
+	MaxProducersPerTopic                  *int32
+	MaxConsumersPerTopic                  *int32
+	MaxConsumersPerSubscription           *int32
+	MessageTTL                            *utils.Duration
+	RetentionTime                         *utils.Duration
+	RetentionSize                         *resource.Quantity
+	BacklogQuotaLimitTime                 *utils.Duration
+	BacklogQuotaLimitSize                 *resource.Quantity
+	BacklogQuotaRetentionPolicy           *string
+	BacklogQuotaType                      *string
+	OffloadThresholdTime                  *utils.Duration
+	OffloadThresholdSize                  *resource.Quantity
+	ReplicationClusters                   []string
+	Deduplication                         *bool
+	BookieAffinityGroup                   *v1alpha1.BookieAffinityGroupData
+	TopicAutoCreationConfig               *v1alpha1.TopicAutoCreationConfig
+	SchemaCompatibilityStrategy           *utils2.SchemaCompatibilityStrategy
+	SchemaValidationEnforced              *bool
+	DispatchRate                          *v1alpha1.DispatchRate
+	SubscriptionDispatchRate              *v1alpha1.DispatchRate
+	ReplicatorDispatchRate                *v1alpha1.DispatchRate
+	PublishRate                           *v1alpha1.PublishRate
+	SubscribeRate                         *v1alpha1.SubscribeRate
+	PersistencePolicies                   *v1alpha1.PersistencePolicies
+	CompactionThreshold                   *int64
+	InactiveTopicPolicies                 *v1alpha1.InactiveTopicPolicies
+	SubscriptionExpirationTime            *utils.Duration
+	Properties                            map[string]string
+	IsAllowAutoUpdateSchema               *bool
+	ValidateProducerName                  *bool
+	EncryptionRequired                    *bool
+	SubscriptionAuthMode                  *utils2.SubscriptionAuthMode
+	AntiAffinityGroup                     *string
+	SchemaAutoUpdateCompatibilityStrategy *utils2.SchemaAutoUpdateCompatibilityStrategy
 }
 
 // TopicParams indicates the parameters for creating a topic
