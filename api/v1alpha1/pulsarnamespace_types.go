@@ -334,7 +334,7 @@ type PulsarNamespaceSpec struct {
 	// SchemaAutoUpdateCompatibilityStrategy specifies the compatibility strategy for automatic schema updates.
 	// This controls how schema evolution is handled when schemas are automatically updated.
 	// +optional
-	// +kubebuilder:validation:Enum=UNDEFINED;ALWAYS_INCOMPATIBLE;ALWAYS_COMPATIBLE;BACKWARD;FORWARD;FULL;BACKWARD_TRANSITIVE;FORWARD_TRANSITIVE;FULL_TRANSITIVE
+	// +kubebuilder:validation:Enum=AutoUpdateDisabled;Backward;Forward;Full;AlwaysCompatible;BackwardTransitive;ForwardTransitive;FullTransitive
 	SchemaAutoUpdateCompatibilityStrategy *adminutils.SchemaAutoUpdateCompatibilityStrategy `json:"schemaAutoUpdateCompatibilityStrategy,omitempty"`
 }
 
