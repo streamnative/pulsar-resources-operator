@@ -149,8 +149,10 @@ func MakePulsarNamespaceWithStoragePolicies(namespace, name, namespaceName, conn
 	retentionSize := resource.MustParse("50Gi")
 	bundle := int32(32)
 	var retentionTime rsutils.Duration = "48h"
+	var backlogQuotaTime rsutils.Duration = "24h" // Must be less than retentionTime to avoid conflicts
 	var subscriptionExpTime rsutils.Duration = "7d"
 	limitTime := &retentionTime
+	backlogLimitTime := &backlogQuotaTime
 
 	return &v1alpha1.PulsarNamespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -169,7 +171,7 @@ func MakePulsarNamespaceWithStoragePolicies(namespace, name, namespaceName, conn
 			RetentionTime:               limitTime,
 			RetentionSize:               &retentionSize,
 			BacklogQuotaLimitSize:       &backlogSize,
-			BacklogQuotaLimitTime:       limitTime,
+			BacklogQuotaLimitTime:       backlogLimitTime,
 			BacklogQuotaRetentionPolicy: ptr.To("producer_request_hold"),
 			BacklogQuotaType:            ptr.To("destination_storage"),
 			SubscriptionExpirationTime:  &subscriptionExpTime,
