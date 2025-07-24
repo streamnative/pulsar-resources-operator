@@ -31,6 +31,22 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `topicAutoCreationConfig`     | Configures automatic topic creation behavior within this namespace. Contains settings for whether auto-creation is allowed, the type of topics created, and default number of partitions.                          | No       |
 | `schemaCompatibilityStrategy` | Schema compatibility strategy for this namespace. Controls how schema evolution is handled for topics within this namespace. Options: `UNDEFINED`, `ALWAYS_INCOMPATIBLE`, `ALWAYS_COMPATIBLE`, `BACKWARD`, `FORWARD`, `FULL`, `BACKWARD_TRANSITIVE`, `FORWARD_TRANSITIVE`, `FULL_TRANSITIVE`.                                                          | No       |
 | `schemaValidationEnforced`    | Controls whether schema validation is enforced for this namespace. When enabled, producers must provide a schema when publishing messages. If not specified, the cluster's default schema validation enforcement setting will be used.                                                                                                  | No       |
+| `dispatchRate`                | Sets the message dispatch rate for topics in this namespace. Controls how fast messages are delivered to consumers. Contains `dispatchThrottlingRateInMsg`, `dispatchThrottlingRateInByte`, and `ratePeriodInSecond`.                                                                                               | No       |
+| `subscriptionDispatchRate`    | Sets the subscription dispatch rate for topics in this namespace. Controls the rate at which subscriptions can dispatch messages. Uses the same structure as `dispatchRate`.                                        | No       |
+| `replicatorDispatchRate`      | Sets the replicator dispatch rate for topics in this namespace. Controls the rate at which messages are replicated across clusters. Uses the same structure as `dispatchRate`.                                     | No       |
+| `publishRate`                 | Sets the publish rate limit for producers in this namespace. Controls how fast producers can publish messages. Contains `publishThrottlingRateInMsg` and `publishThrottlingRateInByte`.                           | No       |
+| `subscribeRate`               | Sets the subscribe rate limit for consumers in this namespace. Controls how fast consumers can subscribe to topics. Contains `subscribeThrottlingRatePerConsumer` and `ratePeriodInSecond`.                        | No       |
+| `persistencePolicies`         | Sets the persistence policies for this namespace. Controls how data is stored and replicated in BookKeeper. Contains ensemble, write quorum, ack quorum, and mark delete rate settings.                           | No       |
+| `compactionThreshold`         | Sets the compaction threshold for topics in this namespace. Topics will be compacted when they reach this size threshold (in bytes).                                                                              | No       |
+| `inactiveTopicPolicies`       | Sets the policies for handling inactive topics in this namespace. Controls automatic cleanup of unused topics. Contains delete mode, max inactive duration, and deletion flags.                                    | No       |
+| `subscriptionExpirationTime`  | Specifies the time after which inactive subscriptions will expire. Subscriptions that haven't consumed messages for this duration will be automatically deleted.                                                   | No       |
+| `properties`                  | A map of custom properties for this namespace. These are arbitrary key-value pairs that can be used for namespace metadata.                                                                                        | No       |
+| `isAllowAutoUpdateSchema`     | Specifies whether to allow automatic schema updates. When enabled, producers can automatically update schemas without manual approval.                                                                             | No       |
+| `validateProducerName`        | Specifies whether to validate producer names. When enabled, producer names must follow specific naming conventions.                                                                                                | No       |
+| `encryptionRequired`          | Specifies whether message encryption is required for this namespace. When enabled, all messages published to topics in this namespace must be encrypted.                                                          | No       |
+| `subscriptionAuthMode`        | Specifies the subscription authentication mode for this namespace. Valid values are "None" and "Prefix".                                                                                                         | No       |
+| `antiAffinityGroup`           | Specifies the anti-affinity group for this namespace. Namespaces in the same anti-affinity group will be placed on different brokers.                                                                           | No       |
+| `schemaAutoUpdateCompatibilityStrategy` | Specifies the compatibility strategy for automatic schema updates. This controls how schema evolution is handled when schemas are automatically updated. Options: `AutoUpdateDisabled`, `Backward`, `Forward`, `Full`, `AlwaysCompatible`, `BackwardTransitive`, `ForwardTransitive`, `FullTransitive`. | No       |
 
 Note: Valid time units are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
 
@@ -157,6 +173,208 @@ schemaValidationEnforced: false
 ```
 This ensures older systems can consume new data while allowing gradual migration without strict schema requirements.
 
+### Schema Compatibility vs Auto-Update Compatibility
+
+It's important to note that there are two separate schema compatibility strategy fields in PulsarNamespace:
+
+1. **`schemaCompatibilityStrategy`**: Controls schema compatibility for manual schema updates and general schema evolution. Uses uppercase enum values like `BACKWARD`, `FORWARD`, `FULL`, `UNDEFINED`, etc.
+
+2. **`schemaAutoUpdateCompatibilityStrategy`**: Specifically controls compatibility strategy when schemas are automatically updated by producers. Uses title case enum values like `Backward`, `Forward`, `Full`, `AutoUpdateDisabled`, etc.
+
+These fields serve different purposes and use different enum value formats, allowing fine-grained control over schema evolution in different scenarios.
+
+## Rate Limiting Configuration
+
+Pulsar namespaces support fine-grained rate limiting controls to manage message throughput and system performance. These configurations help prevent resource exhaustion and ensure fair resource distribution across applications.
+
+### Dispatch Rate Configuration
+
+Dispatch rate controls how fast messages are delivered to consumers. You can configure separate dispatch rates for different components:
+
+#### Message Dispatch Rate (`dispatchRate`)
+Controls the overall message delivery rate for topics in the namespace:
+
+```yaml
+dispatchRate:
+  dispatchThrottlingRateInMsg: 1000    # Maximum 1000 messages per second
+  dispatchThrottlingRateInByte: 1048576 # Maximum 1MB per second
+  ratePeriodInSecond: 1                # Rate calculation window (default: 1 second)
+```
+
+#### Subscription Dispatch Rate (`subscriptionDispatchRate`)
+Controls the rate at which subscriptions can dispatch messages:
+
+```yaml
+subscriptionDispatchRate:
+  dispatchThrottlingRateInMsg: 500     # Maximum 500 messages per second per subscription
+  dispatchThrottlingRateInByte: 524288 # Maximum 512KB per second per subscription
+  ratePeriodInSecond: 1
+```
+
+#### Replicator Dispatch Rate (`replicatorDispatchRate`)
+Controls the rate at which messages are replicated across clusters:
+
+```yaml
+replicatorDispatchRate:
+  dispatchThrottlingRateInMsg: 200     # Maximum 200 messages per second for replication
+  dispatchThrottlingRateInByte: 262144 # Maximum 256KB per second for replication
+  ratePeriodInSecond: 1
+```
+
+### Producer Rate Configuration
+
+#### Publish Rate (`publishRate`)
+Controls how fast producers can publish messages:
+
+```yaml
+publishRate:
+  publishThrottlingRateInMsg: 100      # Maximum 100 messages per second per producer
+  publishThrottlingRateInByte: 104857  # Maximum 100KB per second per producer
+```
+
+#### Subscribe Rate (`subscribeRate`)
+Controls how fast consumers can subscribe to topics:
+
+```yaml
+subscribeRate:
+  subscribeThrottlingRatePerConsumer: 10 # Maximum 10 subscriptions per consumer
+  ratePeriodInSecond: 30                 # Rate calculation window (default: 30 seconds)
+```
+
+**Note**: Set rate values to `-1` to indicate unlimited rate.
+
+## Persistence Policies
+
+Persistence policies control how data is stored and replicated in BookKeeper, affecting durability and performance characteristics.
+
+### BookKeeper Configuration
+
+```yaml
+persistencePolicies:
+  bookkeeperEnsemble: 3                    # Number of bookies to use for a ledger
+  bookkeeperWriteQuorum: 2                 # Number of replicas to write for each entry
+  bookkeeperAckQuorum: 2                   # Number of replicas to wait for acknowledgment
+  managedLedgerMaxMarkDeleteRate: "1.0"    # Maximum mark-delete operations per second
+```
+
+### Configuration Guidelines
+
+- **Ensemble Size**: Should be >= Write Quorum >= Ack Quorum
+- **Write Quorum**: Must be <= Ensemble Size
+- **Ack Quorum**: Must be <= Write Quorum
+- **Mark Delete Rate**: Controls acknowledgment processing rate (string value, e.g., "1.5", "2.0")
+
+### Use Case Examples
+
+#### High Availability Setup
+```yaml
+persistencePolicies:
+  bookkeeperEnsemble: 5
+  bookkeeperWriteQuorum: 3
+  bookkeeperAckQuorum: 2
+```
+
+#### Performance Optimized Setup
+```yaml
+persistencePolicies:
+  bookkeeperEnsemble: 3
+  bookkeeperWriteQuorum: 2
+  bookkeeperAckQuorum: 1
+  managedLedgerMaxMarkDeleteRate: "10.0"
+```
+
+## Topic Management Policies
+
+### Compaction Configuration
+
+Topic compaction helps manage storage by removing duplicate keys, keeping only the latest value for each key:
+
+```yaml
+compactionThreshold: 104857600  # Compact topics when they reach 100MB
+```
+
+### Inactive Topic Policies
+
+Configure automatic cleanup of unused topics to manage resources:
+
+```yaml
+inactiveTopicPolicies:
+  inactiveTopicDeleteMode: "delete_when_no_subscriptions"  # or "delete_when_subscriptions_caught_up"
+  maxInactiveDurationInSeconds: 3600                       # 1 hour
+  deleteWhileInactive: true
+```
+
+#### Delete Modes
+
+- **`delete_when_no_subscriptions`**: Delete topics when no active subscriptions exist
+- **`delete_when_subscriptions_caught_up`**: Delete topics when all subscriptions have caught up
+
+### Subscription Management
+
+Configure automatic cleanup of inactive subscriptions:
+
+```yaml
+subscriptionExpirationTime: 24h  # Expire subscriptions inactive for 24 hours
+```
+
+## Security and Validation
+
+### Message Encryption
+
+Enforce encryption for all messages in the namespace:
+
+```yaml
+encryptionRequired: true  # All messages must be encrypted
+```
+
+### Producer Validation
+
+Enable producer name validation:
+
+```yaml
+validateProducerName: true  # Enforce naming conventions for producers
+```
+
+### Subscription Authentication
+
+Configure subscription authentication mode:
+
+```yaml
+subscriptionAuthMode: "Prefix"  # Options: "None", "Prefix"
+```
+
+## Advanced Configuration
+
+### Schema Auto-Update
+
+Control automatic schema updates:
+
+```yaml
+isAllowAutoUpdateSchema: true
+schemaAutoUpdateCompatibilityStrategy: "Backward"  # Options: AutoUpdateDisabled, Backward, Forward, Full, AlwaysCompatible, BackwardTransitive, ForwardTransitive, FullTransitive
+```
+
+**Note**: The `schemaAutoUpdateCompatibilityStrategy` uses different enum values than `schemaCompatibilityStrategy`. While `schemaCompatibilityStrategy` uses uppercase values like `BACKWARD`, `FORWARD`, `FULL`, etc., `schemaAutoUpdateCompatibilityStrategy` uses title case values like `Backward`, `Forward`, `Full`, etc.
+
+### Anti-Affinity Groups
+
+Distribute namespaces across different brokers:
+
+```yaml
+antiAffinityGroup: "critical-workload"  # Namespaces with same group placed on different brokers
+```
+
+### Custom Properties
+
+Add custom metadata to the namespace:
+
+```yaml
+properties:
+  environment: "production"
+  team: "data-platform"
+  costCenter: "engineering"
+```
+
 ## replicationClusters vs geoReplicationRefs
 
 The `replicationClusters` and `geoReplicationRefs` fields serve different purposes in configuring replication for a Pulsar namespace:
@@ -192,21 +410,69 @@ spec:
   backlogQuotaLimitTime: 24h
   bundles: 16
   messageTTL: 1h
+  
   # Schema management configuration
   # schemaCompatibilityStrategy: BACKWARD
   # schemaValidationEnforced: true
+  
+  # Rate limiting configuration
+  # dispatchRate:
+  #   dispatchThrottlingRateInMsg: 1000
+  #   dispatchThrottlingRateInByte: 1048576
+  #   ratePeriodInSecond: 1
+  # subscriptionDispatchRate:
+  #   dispatchThrottlingRateInMsg: 500
+  #   dispatchThrottlingRateInByte: 524288
+  # replicatorDispatchRate:
+  #   dispatchThrottlingRateInMsg: 200
+  #   dispatchThrottlingRateInByte: 262144
+  # publishRate:
+  #   publishThrottlingRateInMsg: 100
+  #   publishThrottlingRateInByte: 104857
+  # subscribeRate:
+  #   subscribeThrottlingRatePerConsumer: 10
+  #   ratePeriodInSecond: 30
+  
+  # Persistence configuration
+  # persistencePolicies:
+  #   bookkeeperEnsemble: 3
+  #   bookkeeperWriteQuorum: 2
+  #   bookkeeperAckQuorum: 2
+  #   managedLedgerMaxMarkDeleteRate: "1.0"
+  
+  # Topic management
+  # compactionThreshold: 104857600
+  # inactiveTopicPolicies:
+  #   inactiveTopicDeleteMode: "delete_when_no_subscriptions"
+  #   maxInactiveDurationInSeconds: 3600
+  #   deleteWhileInactive: true
+  # subscriptionExpirationTime: 24h
+  
+  # Security and validation
+  # encryptionRequired: false
+  # validateProducerName: false
+  # subscriptionAuthMode: "None"
+  
+  # Advanced configuration
+  # isAllowAutoUpdateSchema: false
+  # schemaAutoUpdateCompatibilityStrategy: "Backward"
+  # antiAffinityGroup: "default"
+  # properties:
+  #   environment: "test"
+  #   team: "platform"
+  
+  # Basic namespace policies (commented for reference)
   # backlogQuotaRetentionPolicy: producer_request_hold
   # maxProducersPerTopic: 2
   # maxConsumersPerTopic: 2
-  # optional
   # maxConsumersPerSubscription: 2
   # retentionTime: 20h
   # retentionSize: 2Gi
   # lifecyclePolicy: CleanUpAfterDeletion
   # topicAutoCreationConfig:
-  #  allow: true
-  #  type: "partitioned"
-  #  partitions: 4
+  #   allow: true
+  #   type: "partitioned"
+  #   partitions: 4
 ```
 
 2. Apply the YAML file to create the namespace.
@@ -234,7 +500,14 @@ Please note the following important points:
 
 1. The fields `name` and `bundles` cannot be updated after the namespace is created. These are immutable properties of the namespace.
 
-2. Other fields such as `backlogQuotaLimitSize`, `backlogQuotaLimitTime`, `messageTTL`, `maxProducersPerTopic`, `maxConsumersPerTopic`, `maxConsumersPerSubscription`, `retentionTime`, `retentionSize`, `topicAutoCreationConfig`, `schemaCompatibilityStrategy`, and `schemaValidationEnforced` can be modified.
+2. Most fields can be modified after namespace creation, including:
+   - **Message and Quota Policies**: `backlogQuotaLimitSize`, `backlogQuotaLimitTime`, `messageTTL`, `retentionTime`, `retentionSize`
+   - **Consumer/Producer Limits**: `maxProducersPerTopic`, `maxConsumersPerTopic`, `maxConsumersPerSubscription`
+   - **Rate Limiting**: `dispatchRate`, `subscriptionDispatchRate`, `replicatorDispatchRate`, `publishRate`, `subscribeRate`
+   - **Schema Management**: `schemaCompatibilityStrategy`, `schemaValidationEnforced`, `isAllowAutoUpdateSchema`, `schemaAutoUpdateCompatibilityStrategy` (note: uses different enum values than `schemaCompatibilityStrategy`)
+   - **Topic Management**: `topicAutoCreationConfig`, `compactionThreshold`, `inactiveTopicPolicies`, `subscriptionExpirationTime`
+   - **Security**: `encryptionRequired`, `validateProducerName`, `subscriptionAuthMode`
+   - **Advanced Settings**: `persistencePolicies`, `antiAffinityGroup`, `properties`
 
 3. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
 
@@ -253,6 +526,12 @@ Please note the following important points:
    The `OBSERVED_GENERATION` should increment, and `READY` should become `True` when the update is complete.
 
 6. Be cautious when updating namespace policies, as changes may affect existing producers and consumers. It's recommended to test changes in a non-production environment first.
+
+7. **Important Notes for New Fields**:
+   - **Rate Limiting Changes**: Updating rate limiting policies (`dispatchRate`, `publishRate`, etc.) will immediately affect message throughput. Monitor your applications after changes.
+   - **Persistence Policy Changes**: Modifications to `persistencePolicies` only affect new ledgers; existing data remains with previous settings.
+   - **Security Policy Changes**: Enabling `encryptionRequired` will reject unencrypted messages immediately; ensure all producers support encryption before enabling.
+   - **Topic Management Changes**: `inactiveTopicPolicies` changes will affect topic cleanup behavior; review existing topics before applying aggressive cleanup policies.
 
 ## Delete A Pulsar Namespace
 

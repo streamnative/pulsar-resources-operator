@@ -518,9 +518,175 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
+	// Handle dispatch rate limiting
+	if params.DispatchRate != nil {
+		rate := utils.DispatchRate{
+			DispatchThrottlingRateInMsg:  -1, // default to unlimited
+			DispatchThrottlingRateInByte: -1, // default to unlimited
+			RatePeriodInSecond:           1,  // default period
+		}
+
+		if params.DispatchRate.DispatchThrottlingRateInMsg != nil {
+			rate.DispatchThrottlingRateInMsg = int(*params.DispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.DispatchRate.DispatchThrottlingRateInByte != nil {
+			rate.DispatchThrottlingRateInByte = *params.DispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.DispatchRate.RatePeriodInSecond != nil {
+			rate.RatePeriodInSecond = int(*params.DispatchRate.RatePeriodInSecond)
+		}
+
+		err = p.adminClient.Namespaces().SetDispatchRate(*naName, rate)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscription dispatch rate limiting
+	if params.SubscriptionDispatchRate != nil {
+		rate := utils.DispatchRate{
+			DispatchThrottlingRateInMsg:  -1, // default to unlimited
+			DispatchThrottlingRateInByte: -1, // default to unlimited
+			RatePeriodInSecond:           1,  // default period
+		}
+
+		if params.SubscriptionDispatchRate.DispatchThrottlingRateInMsg != nil {
+			rate.DispatchThrottlingRateInMsg = int(*params.SubscriptionDispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.SubscriptionDispatchRate.DispatchThrottlingRateInByte != nil {
+			rate.DispatchThrottlingRateInByte = *params.SubscriptionDispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.SubscriptionDispatchRate.RatePeriodInSecond != nil {
+			rate.RatePeriodInSecond = int(*params.SubscriptionDispatchRate.RatePeriodInSecond)
+		}
+
+		err = p.adminClient.Namespaces().SetSubscriptionDispatchRate(*naName, rate)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle replicator dispatch rate limiting
+	if params.ReplicatorDispatchRate != nil {
+		rate := utils.DispatchRate{
+			DispatchThrottlingRateInMsg:  -1, // default to unlimited
+			DispatchThrottlingRateInByte: -1, // default to unlimited
+			RatePeriodInSecond:           1,  // default period
+		}
+
+		if params.ReplicatorDispatchRate.DispatchThrottlingRateInMsg != nil {
+			rate.DispatchThrottlingRateInMsg = int(*params.ReplicatorDispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.ReplicatorDispatchRate.DispatchThrottlingRateInByte != nil {
+			rate.DispatchThrottlingRateInByte = *params.ReplicatorDispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.ReplicatorDispatchRate.RatePeriodInSecond != nil {
+			rate.RatePeriodInSecond = int(*params.ReplicatorDispatchRate.RatePeriodInSecond)
+		}
+
+		err = p.adminClient.Namespaces().SetReplicatorDispatchRate(*naName, rate)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle publish rate limiting
+	if params.PublishRate != nil {
+		rate := utils.PublishRate{
+			PublishThrottlingRateInMsg:  -1, // default to unlimited
+			PublishThrottlingRateInByte: -1, // default to unlimited
+		}
+
+		if params.PublishRate.PublishThrottlingRateInMsg != nil {
+			rate.PublishThrottlingRateInMsg = int(*params.PublishRate.PublishThrottlingRateInMsg)
+		}
+		if params.PublishRate.PublishThrottlingRateInByte != nil {
+			rate.PublishThrottlingRateInByte = *params.PublishRate.PublishThrottlingRateInByte
+		}
+
+		err = p.adminClient.Namespaces().SetPublishRate(*naName, rate)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscribe rate limiting
+	if params.SubscribeRate != nil {
+		rate := utils.SubscribeRate{
+			SubscribeThrottlingRatePerConsumer: -1, // default to unlimited
+			RatePeriodInSecond:                 30, // default period
+		}
+
+		if params.SubscribeRate.SubscribeThrottlingRatePerConsumer != nil {
+			rate.SubscribeThrottlingRatePerConsumer = int(*params.SubscribeRate.SubscribeThrottlingRatePerConsumer)
+		}
+		if params.SubscribeRate.RatePeriodInSecond != nil {
+			rate.RatePeriodInSecond = int(*params.SubscribeRate.RatePeriodInSecond)
+		}
+
+		err = p.adminClient.Namespaces().SetSubscribeRate(*naName, rate)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle compaction threshold
+	if params.CompactionThreshold != nil {
+		err = p.adminClient.Namespaces().SetCompactionThreshold(*naName, *params.CompactionThreshold)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle schema auto-update policy
+	if params.IsAllowAutoUpdateSchema != nil {
+		err = p.adminClient.Namespaces().SetIsAllowAutoUpdateSchema(*naName, *params.IsAllowAutoUpdateSchema)
+		if err != nil {
+			return err
+		}
+	}
+
 	if params.SchemaCompatibilityStrategy != nil {
 		schemaStrategy := *params.SchemaCompatibilityStrategy
 		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, schemaStrategy)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle encryption requirement
+	if params.EncryptionRequired != nil {
+		err = p.adminClient.Namespaces().SetEncryptionRequiredStatus(*naName, *params.EncryptionRequired)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscription authentication mode
+	if params.SubscriptionAuthMode != nil {
+		err = p.adminClient.Namespaces().SetSubscriptionAuthMode(*naName, *params.SubscriptionAuthMode)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle anti-affinity group
+	if params.AntiAffinityGroup != nil {
+		err = p.adminClient.Namespaces().SetNamespaceAntiAffinityGroup(completeNSName, *params.AntiAffinityGroup)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Remove anti-affinity group if not specified
+		err = p.adminClient.Namespaces().DeleteNamespaceAntiAffinityGroup(completeNSName)
+		if err != nil && !IsNotFound(err) {
+			return err
+		}
+	}
+
+	// Handle schema auto update compatibility strategy
+	if params.SchemaAutoUpdateCompatibilityStrategy != nil {
+		err = p.adminClient.Namespaces().SetSchemaAutoUpdateCompatibilityStrategy(*naName, *params.SchemaAutoUpdateCompatibilityStrategy)
 		if err != nil {
 			return err
 		}
