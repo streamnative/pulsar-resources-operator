@@ -93,6 +93,11 @@ type TopicParams struct {
 	ReplicationClusters               []string
 	Deduplication                     *bool
 	CompactionThreshold               *int64
+	PersistencePolicies               *v1alpha1.PersistencePolicies
+	DelayedDelivery                   *v1alpha1.DelayedDeliveryData
+	DispatchRate                      *v1alpha1.DispatchRate
+	PublishRate                       *v1alpha1.PublishRate
+	InactiveTopicPolicies             *v1alpha1.InactiveTopicPolicies
 }
 
 // ClusterParams indicate the parameters for creating a cluster
