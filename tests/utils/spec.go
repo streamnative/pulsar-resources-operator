@@ -301,6 +301,156 @@ func MakePulsarTopicWithCompactionThreshold(namespace, name, topicName, connecti
 	}
 }
 
+// MakePulsarTopicWithPersistencePolicies will generate a PulsarTopic with persistence configurations
+func MakePulsarTopicWithPersistencePolicies(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			PersistencePolicies: &v1alpha1.PersistencePolicies{
+				BookkeeperEnsemble:             ptr.To[int32](3),
+				BookkeeperWriteQuorum:          ptr.To[int32](2),
+				BookkeeperAckQuorum:            ptr.To[int32](2),
+				ManagedLedgerMaxMarkDeleteRate: ptr.To("2.0"),
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithDelayedDelivery will generate a PulsarTopic with delayed delivery configuration
+func MakePulsarTopicWithDelayedDelivery(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			DelayedDelivery: &v1alpha1.DelayedDeliveryData{
+				Active:         ptr.To(true),
+				TickTimeMillis: ptr.To[int64](1000), // 1 second
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithDispatchRate will generate a PulsarTopic with dispatch rate configuration
+func MakePulsarTopicWithDispatchRate(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			DispatchRate: &v1alpha1.DispatchRate{
+				DispatchThrottlingRateInMsg:  ptr.To[int32](500),
+				DispatchThrottlingRateInByte: ptr.To[int64](524288), // 512KB
+				RatePeriodInSecond:           ptr.To[int32](1),
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithPublishRate will generate a PulsarTopic with publish rate configuration
+func MakePulsarTopicWithPublishRate(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			PublishRate: &v1alpha1.PublishRate{
+				PublishThrottlingRateInMsg:  ptr.To[int32](1000),
+				PublishThrottlingRateInByte: ptr.To[int64](1048576), // 1MB
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithInactiveTopicPolicies will generate a PulsarTopic with inactive topic policies
+func MakePulsarTopicWithInactiveTopicPolicies(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			InactiveTopicPolicies: &v1alpha1.InactiveTopicPolicies{
+				InactiveTopicDeleteMode:      ptr.To("delete_when_no_subscriptions"),
+				MaxInactiveDurationInSeconds: ptr.To[int32](1800), // 30 minutes
+				DeleteWhileInactive:          ptr.To(true),
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithAllNewPolicies will generate a PulsarTopic with all new policy configurations
+func MakePulsarTopicWithAllNewPolicies(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			PersistencePolicies: &v1alpha1.PersistencePolicies{
+				BookkeeperEnsemble:             ptr.To[int32](5),
+				BookkeeperWriteQuorum:          ptr.To[int32](3),
+				BookkeeperAckQuorum:            ptr.To[int32](2),
+				ManagedLedgerMaxMarkDeleteRate: ptr.To("1.5"),
+			},
+			DelayedDelivery: &v1alpha1.DelayedDeliveryData{
+				Active:         ptr.To(true),
+				TickTimeMillis: ptr.To[int64](2000), // 2 seconds
+			},
+			DispatchRate: &v1alpha1.DispatchRate{
+				DispatchThrottlingRateInMsg:  ptr.To[int32](750),
+				DispatchThrottlingRateInByte: ptr.To[int64](786432), // 768KB
+				RatePeriodInSecond:           ptr.To[int32](1),
+			},
+			PublishRate: &v1alpha1.PublishRate{
+				PublishThrottlingRateInMsg:  ptr.To[int32](1500),
+				PublishThrottlingRateInByte: ptr.To[int64](1572864), // 1.5MB
+			},
+			InactiveTopicPolicies: &v1alpha1.InactiveTopicPolicies{
+				InactiveTopicDeleteMode:      ptr.To("delete_when_subscriptions_caught_up"),
+				MaxInactiveDurationInSeconds: ptr.To[int32](3600), // 1 hour
+				DeleteWhileInactive:          ptr.To(false),
+			},
+		},
+	}
+}
+
 // MakePulsarPermission will generate a object of PulsarPermission
 func MakePulsarPermission(namespace, name, resourceName, connectionName string, resourceType v1alpha1.PulsarResourceType,
 	roles, actions []string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarPermission {

@@ -504,6 +504,380 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
+		Context("PulsarTopic Persistence Policies", Ordered, func() {
+			var (
+				persistenceTopic     *v1alphav1.PulsarTopic
+				persistenceTopicName string = "test-persistence-topic"
+			)
+
+			BeforeAll(func() {
+				persistenceTopic = utils.MakePulsarTopicWithPersistencePolicies(
+					namespaceName,
+					persistenceTopicName,
+					"persistent://public/default/persistence-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with persistence policies successfully", func() {
+				err := k8sClient.Create(ctx, persistenceTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: persistenceTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct persistence policies configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: persistenceTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify PersistencePolicies
+				Expect(topic.Spec.PersistencePolicies).ShouldNot(BeNil())
+				Expect(*topic.Spec.PersistencePolicies.BookkeeperEnsemble).Should(Equal(int32(3)))
+				Expect(*topic.Spec.PersistencePolicies.BookkeeperWriteQuorum).Should(Equal(int32(2)))
+				Expect(*topic.Spec.PersistencePolicies.BookkeeperAckQuorum).Should(Equal(int32(2)))
+				Expect(*topic.Spec.PersistencePolicies.ManagedLedgerMaxMarkDeleteRate).Should(Equal("2.0"))
+			})
+
+			It("should update persistence policies successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: persistenceTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update persistence policies
+				topic.Spec.PersistencePolicies.BookkeeperEnsemble = pointer.Int32(5)
+				topic.Spec.PersistencePolicies.BookkeeperWriteQuorum = pointer.Int32(3)
+				topic.Spec.PersistencePolicies.BookkeeperAckQuorum = pointer.Int32(3)
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: persistenceTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if persistenceTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: persistenceTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Delayed Delivery", Ordered, func() {
+			var (
+				delayedDeliveryTopic     *v1alphav1.PulsarTopic
+				delayedDeliveryTopicName string = "test-delayed-delivery-topic"
+			)
+
+			BeforeAll(func() {
+				delayedDeliveryTopic = utils.MakePulsarTopicWithDelayedDelivery(
+					namespaceName,
+					delayedDeliveryTopicName,
+					"persistent://public/default/delayed-delivery-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with delayed delivery successfully", func() {
+				err := k8sClient.Create(ctx, delayedDeliveryTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: delayedDeliveryTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct delayed delivery configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: delayedDeliveryTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify DelayedDelivery
+				Expect(topic.Spec.DelayedDelivery).ShouldNot(BeNil())
+				Expect(*topic.Spec.DelayedDelivery.Active).Should(Equal(true))
+				Expect(*topic.Spec.DelayedDelivery.TickTimeMillis).Should(Equal(int64(1000)))
+			})
+
+			It("should update delayed delivery configuration successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: delayedDeliveryTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update delayed delivery
+				topic.Spec.DelayedDelivery.TickTimeMillis = pointer.Int64(2000)
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: delayedDeliveryTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if delayedDeliveryTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: delayedDeliveryTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Dispatch Rate", Ordered, func() {
+			var (
+				dispatchRateTopic     *v1alphav1.PulsarTopic
+				dispatchRateTopicName string = "test-dispatch-rate-topic"
+			)
+
+			BeforeAll(func() {
+				dispatchRateTopic = utils.MakePulsarTopicWithDispatchRate(
+					namespaceName,
+					dispatchRateTopicName,
+					"persistent://public/default/dispatch-rate-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with dispatch rate successfully", func() {
+				err := k8sClient.Create(ctx, dispatchRateTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: dispatchRateTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct dispatch rate configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: dispatchRateTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify DispatchRate
+				Expect(topic.Spec.DispatchRate).ShouldNot(BeNil())
+				Expect(*topic.Spec.DispatchRate.DispatchThrottlingRateInMsg).Should(Equal(int32(500)))
+				Expect(*topic.Spec.DispatchRate.DispatchThrottlingRateInByte).Should(Equal(int64(524288)))
+				Expect(*topic.Spec.DispatchRate.RatePeriodInSecond).Should(Equal(int32(1)))
+			})
+
+			It("should update dispatch rate successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: dispatchRateTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update dispatch rate
+				topic.Spec.DispatchRate.DispatchThrottlingRateInMsg = pointer.Int32(1000)
+				topic.Spec.DispatchRate.DispatchThrottlingRateInByte = pointer.Int64(1048576)
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: dispatchRateTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if dispatchRateTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: dispatchRateTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Publish Rate", Ordered, func() {
+			var (
+				publishRateTopic     *v1alphav1.PulsarTopic
+				publishRateTopicName string = "test-publish-rate-topic"
+			)
+
+			BeforeAll(func() {
+				publishRateTopic = utils.MakePulsarTopicWithPublishRate(
+					namespaceName,
+					publishRateTopicName,
+					"persistent://public/default/publish-rate-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with publish rate successfully", func() {
+				err := k8sClient.Create(ctx, publishRateTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: publishRateTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct publish rate configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: publishRateTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify PublishRate
+				Expect(topic.Spec.PublishRate).ShouldNot(BeNil())
+				Expect(*topic.Spec.PublishRate.PublishThrottlingRateInMsg).Should(Equal(int32(1000)))
+				Expect(*topic.Spec.PublishRate.PublishThrottlingRateInByte).Should(Equal(int64(1048576)))
+			})
+
+			It("should update publish rate successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: publishRateTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update publish rate
+				topic.Spec.PublishRate.PublishThrottlingRateInMsg = pointer.Int32(2000)
+				topic.Spec.PublishRate.PublishThrottlingRateInByte = pointer.Int64(2097152)
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: publishRateTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if publishRateTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: publishRateTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Inactive Topic Policies", Ordered, func() {
+			var (
+				inactiveTopicPoliciesTopic     *v1alphav1.PulsarTopic
+				inactiveTopicPoliciesTopicName string = "test-inactive-topic-policies-topic"
+			)
+
+			BeforeAll(func() {
+				inactiveTopicPoliciesTopic = utils.MakePulsarTopicWithInactiveTopicPolicies(
+					namespaceName,
+					inactiveTopicPoliciesTopicName,
+					"persistent://public/default/inactive-topic-policies-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with inactive topic policies successfully", func() {
+				err := k8sClient.Create(ctx, inactiveTopicPoliciesTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: inactiveTopicPoliciesTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct inactive topic policies configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: inactiveTopicPoliciesTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify InactiveTopicPolicies
+				Expect(topic.Spec.InactiveTopicPolicies).ShouldNot(BeNil())
+				Expect(*topic.Spec.InactiveTopicPolicies.InactiveTopicDeleteMode).Should(Equal("delete_when_no_subscriptions"))
+				Expect(*topic.Spec.InactiveTopicPolicies.MaxInactiveDurationInSeconds).Should(Equal(int32(1800)))
+				Expect(*topic.Spec.InactiveTopicPolicies.DeleteWhileInactive).Should(Equal(true))
+			})
+
+			It("should update inactive topic policies successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: inactiveTopicPoliciesTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update inactive topic policies
+				topic.Spec.InactiveTopicPolicies.MaxInactiveDurationInSeconds = pointer.Int32(3600)
+				topic.Spec.InactiveTopicPolicies.DeleteWhileInactive = pointer.Bool(false)
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: inactiveTopicPoliciesTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if inactiveTopicPoliciesTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: inactiveTopicPoliciesTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
 		Context("PulsarNamespace Rate Limiting", Ordered, func() {
 			var (
 				rateLimitingNamespace     *v1alphav1.PulsarNamespace
