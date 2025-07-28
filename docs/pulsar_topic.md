@@ -29,6 +29,12 @@ The `PulsarTopic` resource defines a topic in a Pulsar cluster. It allows you to
 | `geoReplicationRefs`                | List of references to PulsarGeoReplication resources, used to enable geo-replication at the topic level.                                                                                | No       |
 | `replicationClusters`               | List of clusters to which the topic is replicated. Use only if replicating clusters within the same Pulsar instance.                                                                    | No       |
 | `deduplication`                     | whether to enable message deduplication for the topic.                                                                                                                                  | No       |
+| `compactionThreshold`               | Size threshold in bytes for automatic topic compaction. When the topic reaches this size, compaction will be triggered automatically.                                                   | No       |
+| `persistencePolicies`               | Persistence configuration for the topic, controlling how data is stored and replicated in BookKeeper. See [persistencePolicies](#persistencePolicies) for more details.               | No       |
+| `delayedDelivery`                   | Delayed delivery policy for the topic, allowing messages to be delivered with a delay. See [delayedDelivery](#delayedDelivery) for more details.                                       | No       |
+| `dispatchRate`                      | Message dispatch rate limiting policy for the topic, controlling the rate at which messages are delivered to consumers. See [dispatchRate](#dispatchRate) for more details.            | No       |
+| `publishRate`                       | Message publish rate limiting policy for the topic, controlling the rate at which producers can publish messages. See [publishRate](#publishRate) for more details.                    | No       |
+| `inactiveTopicPolicies`             | Inactive topic cleanup policy for the topic, controlling how inactive topics are automatically cleaned up. See [inactiveTopicPolicies](#inactiveTopicPolicies) for more details.       | No       |
 
 Note: Valid time units for duration fields are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
 
@@ -77,6 +83,26 @@ spec:
 # backlogQuotaLimitSize: 1Gi
 # backlogQuotaRetentionPolicy: producer_request_hold
 # lifecyclePolicy: CleanUpAfterDeletion
+# compactionThreshold: 104857600  # 100MB
+# persistencePolicies:
+#   bookkeeperEnsemble: 3
+#   bookkeeperWriteQuorum: 2
+#   bookkeeperAckQuorum: 2
+#   managedLedgerMaxMarkDeleteRate: "1.0"
+# delayedDelivery:
+#   active: true
+#   tickTimeMillis: 1000
+# dispatchRate:
+#   dispatchThrottlingRateInMsg: 1000
+#   dispatchThrottlingRateInByte: 1048576
+#   ratePeriodInSecond: 1
+# publishRate:
+#   publishThrottlingRateInMsg: 2000
+#   publishThrottlingRateInByte: 2097152
+# inactiveTopicPolicies:
+#   inactiveTopicDeleteMode: "delete_when_no_subscriptions"
+#   maxInactiveDurationInSeconds: 3600
+#   deleteWhileInactive: true
 ```
 
 2. Apply the YAML file to create the topic.
@@ -104,7 +130,7 @@ Important notes when updating a Pulsar topic:
 
 1. The fields `name` and `persistent` are immutable and cannot be updated after the topic is created.
 
-2. Other fields such as `partitions`, `maxProducers`, `maxConsumers`, `messageTTL`, `retentionTime`, `retentionSize`, `backlogQuotaLimitTime`, `backlogQuotaLimitSize`, and `backlogQuotaRetentionPolicy` can be modified.
+2. Other fields such as `partitions`, `maxProducers`, `maxConsumers`, `messageTTL`, `retentionTime`, `retentionSize`, `backlogQuotaLimitTime`, `backlogQuotaLimitSize`, `backlogQuotaRetentionPolicy`, `compactionThreshold`, `persistencePolicies`, `delayedDelivery`, `dispatchRate`, `publishRate`, and `inactiveTopicPolicies` can be modified.
 
 3. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
 
@@ -140,6 +166,103 @@ If you want to delete the topic in the pulsar cluster, you can use the following
 
 ```shell
 pulsarctl topics delete persistent://test-tenant/testns/topic123
+```
+
+## Topic-Level Policies
+
+The PulsarTopic resource supports several advanced topic-level policies that provide fine-grained control over topic behavior.
+
+### persistencePolicies
+
+The `persistencePolicies` field configures how data is stored and replicated in BookKeeper, the storage layer for Pulsar.
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `bookkeeperEnsemble` | Number of bookies to store ledger data across | int32 | No |
+| `bookkeeperWriteQuorum` | Number of replicas to write for each ledger entry | int32 | No |
+| `bookkeeperAckQuorum` | Number of replicas that must acknowledge writes | int32 | No |
+| `managedLedgerMaxMarkDeleteRate` | Rate limit for mark-delete operations as a string (e.g., "1.0", "2.5") | string | No |
+
+**Example:**
+```yaml
+spec:
+  persistencePolicies:
+    bookkeeperEnsemble: 3
+    bookkeeperWriteQuorum: 2
+    bookkeeperAckQuorum: 2
+    managedLedgerMaxMarkDeleteRate: "1.5"
+```
+
+### delayedDelivery
+
+The `delayedDelivery` field configures delayed message delivery, allowing messages to be delivered after a specified delay.
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `active` | Whether delayed delivery is enabled for the topic | bool | No |
+| `tickTimeMillis` | Tick time for delayed message delivery in milliseconds | int64 | No |
+
+**Example:**
+```yaml
+spec:
+  delayedDelivery:
+    active: true
+    tickTimeMillis: 1000  # 1 second
+```
+
+### dispatchRate
+
+The `dispatchRate` field configures rate limiting for message delivery to consumers.
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `dispatchThrottlingRateInMsg` | Maximum number of messages dispatched per rate period | int32 | No |
+| `dispatchThrottlingRateInByte` | Maximum number of bytes dispatched per rate period | int64 | No |
+| `ratePeriodInSecond` | Rate period in seconds | int32 | No |
+
+**Example:**
+```yaml
+spec:
+  dispatchRate:
+    dispatchThrottlingRateInMsg: 1000
+    dispatchThrottlingRateInByte: 1048576  # 1MB
+    ratePeriodInSecond: 1
+```
+
+### publishRate
+
+The `publishRate` field configures rate limiting for message publishing from producers.
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `publishThrottlingRateInMsg` | Maximum number of messages published per rate period | int32 | No |
+| `publishThrottlingRateInByte` | Maximum number of bytes published per rate period | int64 | No |
+
+**Example:**
+```yaml
+spec:
+  publishRate:
+    publishThrottlingRateInMsg: 2000
+    publishThrottlingRateInByte: 2097152  # 2MB
+```
+
+### inactiveTopicPolicies
+
+The `inactiveTopicPolicies` field configures automatic cleanup of inactive topics.
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `inactiveTopicDeleteMode` | How to delete inactive topics: "delete_when_no_subscriptions" or "delete_when_subscriptions_caught_up" | string | No |
+| `maxInactiveDurationInSeconds` | Maximum time in seconds a topic can be inactive before deletion | int32 | No |
+| `deleteWhileInactive` | Whether to delete the topic while it's inactive | bool | No |
+
+**Example:**
+```yaml
+spec:
+  inactiveTopicPolicies:
+    inactiveTopicDeleteMode: "delete_when_no_subscriptions"
+    maxInactiveDurationInSeconds: 3600  # 1 hour
+    deleteWhileInactive: true
 ```
 
 ## SchemaInfo
@@ -205,3 +328,78 @@ spec:
 ```
 
 This example defines a JSON schema with two fields, `ID` and `Name`, both of which are required. The `type` field is set to `JSON`, indicating that the schema is in JSON format. The `schema` field contains the actual JSON schema definition. The `properties` field is optional and can be used to add any application-specific logic.
+
+## Complete Example with Advanced Policies
+
+Here's a comprehensive example of a PulsarTopic resource that demonstrates the use of the new topic-level policies:
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarTopic
+metadata:
+  name: "advanced-pulsar-topic"
+  namespace: production
+spec:
+  name: persistent://production-tenant/high-throughput/events
+  connectionRef:
+    name: "production-pulsar-connection"
+  persistent: true
+  partitions: 4
+  maxProducers: 10
+  maxConsumers: 20
+  messageTTL: 7d
+  retentionTime: 30d
+  retentionSize: 100Gi
+  compactionThreshold: 1073741824  # 1GB
+  
+  # Advanced persistence configuration for high availability
+  persistencePolicies:
+    bookkeeperEnsemble: 5
+    bookkeeperWriteQuorum: 3
+    bookkeeperAckQuorum: 2
+    managedLedgerMaxMarkDeleteRate: "2.0"
+  
+  # Enable delayed delivery for scheduled messages
+  delayedDelivery:
+    active: true
+    tickTimeMillis: 1000
+  
+  # Rate limiting for consumer message delivery
+  dispatchRate:
+    dispatchThrottlingRateInMsg: 10000
+    dispatchThrottlingRateInByte: 10485760  # 10MB
+    ratePeriodInSecond: 1
+  
+  # Rate limiting for producer message publishing
+  publishRate:
+    publishThrottlingRateInMsg: 5000
+    publishThrottlingRateInByte: 5242880   # 5MB
+  
+  # Automatic cleanup of inactive topics
+  inactiveTopicPolicies:
+    inactiveTopicDeleteMode: "delete_when_no_subscriptions"
+    maxInactiveDurationInSeconds: 86400  # 24 hours
+    deleteWhileInactive: false
+  
+  # Message deduplication
+  deduplication: true
+  
+  # Schema definition
+  schemaInfo:
+    type: "JSON"
+    schema: "{\"type\":\"record\",\"name\":\"Event\",\"fields\":[{\"name\":\"id\",\"type\":\"string\"},{\"name\":\"timestamp\",\"type\":\"long\"},{\"name\":\"data\",\"type\":\"string\"}]}"
+    properties:
+      "version": "1.0"
+      "owner": "data-platform-team"
+
+  lifecyclePolicy: CleanUpAfterDeletion
+```
+
+This example demonstrates a production-ready topic configuration with:
+- High availability persistence settings (5 bookies ensemble, 3 write quorum)
+- Rate limiting for both producers and consumers
+- Delayed delivery capability for scheduled messages  
+- Automatic topic compaction at 1GB
+- Inactive topic cleanup after 24 hours
+- Message deduplication enabled
+- JSON schema enforcement

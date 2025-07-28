@@ -290,6 +290,11 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 		BacklogQuotaRetentionPolicy:       topic.Spec.BacklogQuotaRetentionPolicy,
 		Deduplication:                     topic.Spec.Deduplication,
 		CompactionThreshold:               topic.Spec.CompactionThreshold,
+		PersistencePolicies:               topic.Spec.PersistencePolicies,
+		DelayedDelivery:                   topic.Spec.DelayedDelivery,
+		DispatchRate:                      topic.Spec.DispatchRate,
+		PublishRate:                       topic.Spec.PublishRate,
+		InactiveTopicPolicies:             topic.Spec.InactiveTopicPolicies,
 	}
 }
 

@@ -136,6 +136,42 @@ type PulsarTopicSpec struct {
 	// When the topic reaches this size, compaction will be triggered automatically.
 	// +optional
 	CompactionThreshold *int64 `json:"compactionThreshold,omitempty"`
+
+	// PersistencePolicies defines the persistence configuration for the topic.
+	// This controls how data is stored and replicated in BookKeeper.
+	// +optional
+	PersistencePolicies *PersistencePolicies `json:"persistencePolicies,omitempty"`
+
+	// DelayedDelivery defines the delayed delivery policy for the topic.
+	// This allows messages to be delivered with a delay.
+	// +optional
+	DelayedDelivery *DelayedDeliveryData `json:"delayedDelivery,omitempty"`
+
+	// DispatchRate defines the message dispatch rate limiting policy for the topic.
+	// This controls the rate at which messages are delivered to consumers.
+	// +optional
+	DispatchRate *DispatchRate `json:"dispatchRate,omitempty"`
+
+	// PublishRate defines the message publish rate limiting policy for the topic.
+	// This controls the rate at which producers can publish messages.
+	// +optional
+	PublishRate *PublishRate `json:"publishRate,omitempty"`
+
+	// InactiveTopicPolicies defines the inactive topic cleanup policy for the topic.
+	// This controls how inactive topics are automatically cleaned up.
+	// +optional
+	InactiveTopicPolicies *InactiveTopicPolicies `json:"inactiveTopicPolicies,omitempty"`
+}
+
+// DelayedDeliveryData defines the delayed delivery policy for a topic
+type DelayedDeliveryData struct {
+	// Active determines whether delayed delivery is enabled for the topic
+	// +optional
+	Active *bool `json:"active,omitempty"`
+
+	// TickTimeMillis specifies the tick time for delayed message delivery in milliseconds
+	// +optional
+	TickTimeMillis *int64 `json:"tickTimeMillis,omitempty"`
 }
 
 // SchemaInfo defines the Pulsar Schema for a topic.
