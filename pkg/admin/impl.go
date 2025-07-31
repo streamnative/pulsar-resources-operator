@@ -400,6 +400,132 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 	}
 
+	// Handle subscribe rate
+	if params.SubscribeRate != nil {
+		subscribeRateData := utils.SubscribeRate{
+			SubscribeThrottlingRatePerConsumer: -1, // default to unlimited
+			RatePeriodInSecond:                 30, // default period
+		}
+		if params.SubscribeRate.SubscribeThrottlingRatePerConsumer != nil {
+			subscribeRateData.SubscribeThrottlingRatePerConsumer = int(*params.SubscribeRate.SubscribeThrottlingRatePerConsumer)
+		}
+		if params.SubscribeRate.RatePeriodInSecond != nil {
+			subscribeRateData.RatePeriodInSecond = int(*params.SubscribeRate.RatePeriodInSecond)
+		}
+		err = p.adminClient.Topics().SetSubscribeRate(*topicName, subscribeRateData)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle max message size
+	if params.MaxMessageSize != nil {
+		err = p.adminClient.Topics().SetMaxMessageSize(*topicName, int(*params.MaxMessageSize))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle max consumers per subscription
+	if params.MaxConsumersPerSubscription != nil {
+		err = p.adminClient.Topics().SetMaxConsumersPerSubscription(*topicName, int(*params.MaxConsumersPerSubscription))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle max subscriptions per topic
+	if params.MaxSubscriptionsPerTopic != nil {
+		err = p.adminClient.Topics().SetMaxSubscriptionsPerTopic(*topicName, int(*params.MaxSubscriptionsPerTopic))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle schema validation enforced
+	if params.SchemaValidationEnforced != nil {
+		err = p.adminClient.Topics().SetSchemaValidationEnforced(*topicName, *params.SchemaValidationEnforced)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscription dispatch rate
+	if params.SubscriptionDispatchRate != nil {
+		dispatchRateData := utils.DispatchRateData{}
+		if params.SubscriptionDispatchRate.DispatchThrottlingRateInMsg != nil {
+			dispatchRateData.DispatchThrottlingRateInMsg = int64(*params.SubscriptionDispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.SubscriptionDispatchRate.DispatchThrottlingRateInByte != nil {
+			dispatchRateData.DispatchThrottlingRateInByte = *params.SubscriptionDispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.SubscriptionDispatchRate.RatePeriodInSecond != nil {
+			dispatchRateData.RatePeriodInSecond = int64(*params.SubscriptionDispatchRate.RatePeriodInSecond)
+		}
+		err = p.adminClient.Topics().SetSubscriptionDispatchRate(*topicName, dispatchRateData)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle replicator dispatch rate
+	if params.ReplicatorDispatchRate != nil {
+		dispatchRateData := utils.DispatchRateData{}
+		if params.ReplicatorDispatchRate.DispatchThrottlingRateInMsg != nil {
+			dispatchRateData.DispatchThrottlingRateInMsg = int64(*params.ReplicatorDispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.ReplicatorDispatchRate.DispatchThrottlingRateInByte != nil {
+			dispatchRateData.DispatchThrottlingRateInByte = *params.ReplicatorDispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.ReplicatorDispatchRate.RatePeriodInSecond != nil {
+			dispatchRateData.RatePeriodInSecond = int64(*params.ReplicatorDispatchRate.RatePeriodInSecond)
+		}
+		err = p.adminClient.Topics().SetReplicatorDispatchRate(*topicName, dispatchRateData)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle deduplication snapshot interval
+	if params.DeduplicationSnapshotInterval != nil {
+		err = p.adminClient.Topics().SetDeduplicationSnapshotInterval(*topicName, int(*params.DeduplicationSnapshotInterval))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle offload policies
+	if params.OffloadPolicies != nil {
+		err = p.adminClient.Topics().SetOffloadPolicies(*topicName, *params.OffloadPolicies)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle auto subscription creation
+	if params.AutoSubscriptionCreation != nil {
+		err = p.adminClient.Topics().SetAutoSubscriptionCreation(*topicName, *params.AutoSubscriptionCreation)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle schema compatibility strategy
+	if params.SchemaCompatibilityStrategy != nil {
+		err = p.adminClient.Topics().SetSchemaCompatibilityStrategy(*topicName, *params.SchemaCompatibilityStrategy)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle topic properties
+	if len(params.Properties) > 0 {
+		err = p.adminClient.Topics().UpdateProperties(*topicName, params.Properties)
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

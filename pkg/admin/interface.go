@@ -23,6 +23,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/auth"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
+	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	utils2 "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -98,6 +99,18 @@ type TopicParams struct {
 	DispatchRate                      *v1alpha1.DispatchRate
 	PublishRate                       *v1alpha1.PublishRate
 	InactiveTopicPolicies             *v1alpha1.InactiveTopicPolicies
+	SubscribeRate                     *v1alpha1.SubscribeRate
+	MaxMessageSize                    *int32
+	MaxConsumersPerSubscription       *int32
+	MaxSubscriptionsPerTopic          *int32
+	SchemaValidationEnforced          *bool
+	SubscriptionDispatchRate          *v1alpha1.DispatchRate
+	ReplicatorDispatchRate            *v1alpha1.DispatchRate
+	DeduplicationSnapshotInterval     *int32
+	OffloadPolicies                   *adminutils.OffloadPolicies
+	AutoSubscriptionCreation          *adminutils.AutoSubscriptionCreationOverride
+	SchemaCompatibilityStrategy       *adminutils.SchemaCompatibilityStrategy
+	Properties                        map[string]string
 }
 
 // ClusterParams indicate the parameters for creating a cluster

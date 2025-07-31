@@ -19,6 +19,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
@@ -161,6 +162,65 @@ type PulsarTopicSpec struct {
 	// This controls how inactive topics are automatically cleaned up.
 	// +optional
 	InactiveTopicPolicies *InactiveTopicPolicies `json:"inactiveTopicPolicies,omitempty"`
+
+	// SubscribeRate defines the subscription rate limiting policy for the topic.
+	// This controls the rate at which new subscriptions can be created.
+	// +optional
+	SubscribeRate *SubscribeRate `json:"subscribeRate,omitempty"`
+
+	// MaxMessageSize specifies the maximum size of messages that can be published to the topic.
+	// Messages larger than this size will be rejected.
+	// +optional
+	MaxMessageSize *int32 `json:"maxMessageSize,omitempty"`
+
+	// MaxConsumersPerSubscription sets the maximum number of consumers allowed per subscription.
+	// +optional
+	MaxConsumersPerSubscription *int32 `json:"maxConsumersPerSubscription,omitempty"`
+
+	// MaxSubscriptionsPerTopic sets the maximum number of subscriptions allowed on the topic.
+	// +optional
+	MaxSubscriptionsPerTopic *int32 `json:"maxSubscriptionsPerTopic,omitempty"`
+
+	// SchemaValidationEnforced determines whether schema validation is enforced for the topic.
+	// When enabled, only messages that conform to the topic's schema will be accepted.
+	// +optional
+	SchemaValidationEnforced *bool `json:"schemaValidationEnforced,omitempty"`
+
+	// SubscriptionDispatchRate defines the message dispatch rate limiting policy for subscriptions.
+	// This controls the rate at which messages are delivered to consumers per subscription.
+	// +optional
+	SubscriptionDispatchRate *DispatchRate `json:"subscriptionDispatchRate,omitempty"`
+
+	// ReplicatorDispatchRate defines the message dispatch rate limiting policy for replicators.
+	// This controls the rate at which messages are replicated to other clusters.
+	// +optional
+	ReplicatorDispatchRate *DispatchRate `json:"replicatorDispatchRate,omitempty"`
+
+	// DeduplicationSnapshotInterval specifies the interval for taking deduplication snapshots.
+	// This affects the deduplication performance and storage overhead.
+	// +optional
+	DeduplicationSnapshotInterval *int32 `json:"deduplicationSnapshotInterval,omitempty"`
+
+	// OffloadPolicies defines the offload policies for the topic.
+	// This controls how data is offloaded to external storage systems.
+	// +optional
+	OffloadPolicies *adminutils.OffloadPolicies `json:"offloadPolicies,omitempty"`
+
+	// AutoSubscriptionCreation defines the auto subscription creation override for the topic.
+	// This controls whether subscriptions can be created automatically.
+	// +optional
+	AutoSubscriptionCreation *adminutils.AutoSubscriptionCreationOverride `json:"autoSubscriptionCreation,omitempty"`
+
+	// SchemaCompatibilityStrategy defines the schema compatibility strategy for the topic.
+	// This controls how schema evolution is handled.
+	// +optional
+	// +kubebuilder:validation:Enum=UNDEFINED;ALWAYS_INCOMPATIBLE;ALWAYS_COMPATIBLE;BACKWARD;FORWARD;FULL;BACKWARD_TRANSITIVE;FORWARD_TRANSITIVE;FULL_TRANSITIVE
+	SchemaCompatibilityStrategy *adminutils.SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
+
+	// Properties is a map of user-defined properties associated with the topic.
+	// These can be used to store additional metadata about the topic.
+	// +optional
+	Properties map[string]string `json:"properties,omitempty"`
 }
 
 // DelayedDeliveryData defines the delayed delivery policy for a topic
