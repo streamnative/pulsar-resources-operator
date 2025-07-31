@@ -25,6 +25,7 @@ import (
 	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 
+	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rsutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
@@ -665,4 +666,87 @@ func GetEnv(key, fallback string) string {
 		value = fallback
 	}
 	return value
+}
+
+// MakePulsarTopicWithSubscribeRate will generate a PulsarTopic with subscribe rate configuration
+func MakePulsarTopicWithSubscribeRate(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			SubscribeRate: &v1alpha1.SubscribeRate{
+				SubscribeThrottlingRatePerConsumer: ptr.To[int32](10),
+				RatePeriodInSecond:                 ptr.To[int32](30),
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithOffloadPolicies will generate a PulsarTopic with offload policies configuration
+func MakePulsarTopicWithOffloadPolicies(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			OffloadPolicies: &adminutils.OffloadPolicies{
+				ManagedLedgerOffloadDriver:           "aws-s3",
+				ManagedLedgerOffloadMaxThreads:       5,
+				ManagedLedgerOffloadThresholdInBytes: 1073741824, // 1GB
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithAutoSubscriptionCreation will generate a PulsarTopic with auto subscription creation configuration
+func MakePulsarTopicWithAutoSubscriptionCreation(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			AutoSubscriptionCreation: &adminutils.AutoSubscriptionCreationOverride{
+				AllowAutoSubscriptionCreation: true,
+			},
+		},
+	}
+}
+
+// MakePulsarTopicWithSchemaCompatibilityStrategy will generate a PulsarTopic with schema compatibility strategy configuration
+func MakePulsarTopicWithSchemaCompatibilityStrategy(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	strategy := adminutils.SchemaCompatibilityStrategy("BACKWARD")
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:                        topicName,
+			LifecyclePolicy:             policy,
+			SchemaCompatibilityStrategy: &strategy,
+		},
+	}
 }

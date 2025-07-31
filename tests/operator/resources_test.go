@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
+	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
@@ -871,6 +872,300 @@ var _ = Describe("Resources", func() {
 					Eventually(func(g Gomega) {
 						t := &v1alphav1.PulsarTopic{}
 						tns := types.NamespacedName{Namespace: namespaceName, Name: inactiveTopicPoliciesTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Subscribe Rate", Ordered, func() {
+			var (
+				subscribeRateTopic     *v1alphav1.PulsarTopic
+				subscribeRateTopicName string = "test-subscribe-rate-topic"
+			)
+
+			BeforeAll(func() {
+				subscribeRateTopic = utils.MakePulsarTopicWithSubscribeRate(
+					namespaceName,
+					subscribeRateTopicName,
+					"persistent://public/default/subscribe-rate-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with subscribe rate successfully", func() {
+				err := k8sClient.Create(ctx, subscribeRateTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: subscribeRateTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct subscribe rate configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: subscribeRateTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify SubscribeRate
+				Expect(topic.Spec.SubscribeRate).ShouldNot(BeNil())
+				Expect(*topic.Spec.SubscribeRate.SubscribeThrottlingRatePerConsumer).Should(Equal(int32(10)))
+				Expect(*topic.Spec.SubscribeRate.RatePeriodInSecond).Should(Equal(int32(30)))
+			})
+
+			It("should update subscribe rate successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: subscribeRateTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update subscribe rate
+				topic.Spec.SubscribeRate.SubscribeThrottlingRatePerConsumer = pointer.Int32(20)
+				topic.Spec.SubscribeRate.RatePeriodInSecond = pointer.Int32(60)
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: subscribeRateTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if subscribeRateTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: subscribeRateTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Offload Policies", Ordered, func() {
+			var (
+				offloadPoliciesTopic     *v1alphav1.PulsarTopic
+				offloadPoliciesTopicName string = "test-offload-policies-topic"
+			)
+
+			BeforeAll(func() {
+				offloadPoliciesTopic = utils.MakePulsarTopicWithOffloadPolicies(
+					namespaceName,
+					offloadPoliciesTopicName,
+					"persistent://public/default/offload-policies-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with offload policies successfully", func() {
+				err := k8sClient.Create(ctx, offloadPoliciesTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct offload policies configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify OffloadPolicies
+				Expect(topic.Spec.OffloadPolicies).ShouldNot(BeNil())
+				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadDriver).Should(Equal("aws-s3"))
+				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads).Should(Equal(int32(5)))
+				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes).Should(Equal(int64(1073741824)))
+			})
+
+			It("should update offload policies successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update offload policies
+				topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads = 10
+				topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes = 2147483648 // 2GB
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if offloadPoliciesTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Auto Subscription Creation", Ordered, func() {
+			var (
+				autoSubscriptionTopic     *v1alphav1.PulsarTopic
+				autoSubscriptionTopicName string = "test-auto-subscription-topic"
+			)
+
+			BeforeAll(func() {
+				autoSubscriptionTopic = utils.MakePulsarTopicWithAutoSubscriptionCreation(
+					namespaceName,
+					autoSubscriptionTopicName,
+					"persistent://public/default/auto-subscription-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with auto subscription creation successfully", func() {
+				err := k8sClient.Create(ctx, autoSubscriptionTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: autoSubscriptionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct auto subscription creation configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: autoSubscriptionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify AutoSubscriptionCreation
+				Expect(topic.Spec.AutoSubscriptionCreation).ShouldNot(BeNil())
+				Expect(topic.Spec.AutoSubscriptionCreation.AllowAutoSubscriptionCreation).Should(Equal(true))
+			})
+
+			It("should update auto subscription creation successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: autoSubscriptionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update auto subscription creation
+				topic.Spec.AutoSubscriptionCreation.AllowAutoSubscriptionCreation = false
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: autoSubscriptionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if autoSubscriptionTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: autoSubscriptionTopicName}
+						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Schema Compatibility Strategy", Ordered, func() {
+			var (
+				schemaCompatibilityTopic     *v1alphav1.PulsarTopic
+				schemaCompatibilityTopicName string = "test-schema-compatibility-topic"
+			)
+
+			BeforeAll(func() {
+				schemaCompatibilityTopic = utils.MakePulsarTopicWithSchemaCompatibilityStrategy(
+					namespaceName,
+					schemaCompatibilityTopicName,
+					"persistent://public/default/schema-compatibility-test",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with schema compatibility strategy successfully", func() {
+				err := k8sClient.Create(ctx, schemaCompatibilityTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: schemaCompatibilityTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct schema compatibility strategy configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: schemaCompatibilityTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify SchemaCompatibilityStrategy
+				Expect(topic.Spec.SchemaCompatibilityStrategy).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.SchemaCompatibilityStrategy)).Should(Equal("BACKWARD"))
+			})
+
+			It("should update schema compatibility strategy successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: schemaCompatibilityTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update schema compatibility strategy
+				newStrategy := adminutils.SchemaCompatibilityStrategy("FORWARD")
+				topic.Spec.SchemaCompatibilityStrategy = &newStrategy
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: schemaCompatibilityTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if schemaCompatibilityTopic != nil {
+					Eventually(func(g Gomega) {
+						t := &v1alphav1.PulsarTopic{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: schemaCompatibilityTopicName}
 						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 					}).Should(Succeed())
