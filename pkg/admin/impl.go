@@ -316,10 +316,16 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 
 		persistenceData := utils.PersistenceData{
-			BookkeeperEnsemble:             int64(*params.PersistencePolicies.BookkeeperEnsemble),
-			BookkeeperWriteQuorum:          int64(*params.PersistencePolicies.BookkeeperWriteQuorum),
-			BookkeeperAckQuorum:            int64(*params.PersistencePolicies.BookkeeperAckQuorum),
 			ManagedLedgerMaxMarkDeleteRate: markDeleteRate,
+		}
+		if params.PersistencePolicies.BookkeeperEnsemble != nil {
+			persistenceData.BookkeeperEnsemble = int64(*params.PersistencePolicies.BookkeeperEnsemble)
+		}
+		if params.PersistencePolicies.BookkeeperWriteQuorum != nil {
+			persistenceData.BookkeeperWriteQuorum = int64(*params.PersistencePolicies.BookkeeperWriteQuorum)
+		}
+		if params.PersistencePolicies.BookkeeperAckQuorum != nil {
+			persistenceData.BookkeeperAckQuorum = int64(*params.PersistencePolicies.BookkeeperAckQuorum)
 		}
 		err = p.adminClient.Topics().SetPersistence(*topicName, persistenceData)
 		if err != nil {
@@ -344,10 +350,15 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle dispatch rate
 	if params.DispatchRate != nil {
-		dispatchRateData := utils.DispatchRateData{
-			DispatchThrottlingRateInMsg:  int64(*params.DispatchRate.DispatchThrottlingRateInMsg),
-			DispatchThrottlingRateInByte: *params.DispatchRate.DispatchThrottlingRateInByte,
-			RatePeriodInSecond:           int64(*params.DispatchRate.RatePeriodInSecond),
+		dispatchRateData := utils.DispatchRateData{}
+		if params.DispatchRate.DispatchThrottlingRateInMsg != nil {
+			dispatchRateData.DispatchThrottlingRateInMsg = int64(*params.DispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.DispatchRate.DispatchThrottlingRateInByte != nil {
+			dispatchRateData.DispatchThrottlingRateInByte = *params.DispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.DispatchRate.RatePeriodInSecond != nil {
+			dispatchRateData.RatePeriodInSecond = int64(*params.DispatchRate.RatePeriodInSecond)
 		}
 		err = p.adminClient.Topics().SetDispatchRate(*topicName, dispatchRateData)
 		if err != nil {
@@ -357,9 +368,12 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle publish rate
 	if params.PublishRate != nil {
-		publishRateData := utils.PublishRateData{
-			PublishThrottlingRateInMsg:  int64(*params.PublishRate.PublishThrottlingRateInMsg),
-			PublishThrottlingRateInByte: *params.PublishRate.PublishThrottlingRateInByte,
+		publishRateData := utils.PublishRateData{}
+		if params.PublishRate.PublishThrottlingRateInMsg != nil {
+			publishRateData.PublishThrottlingRateInMsg = int64(*params.PublishRate.PublishThrottlingRateInMsg)
+		}
+		if params.PublishRate.PublishThrottlingRateInByte != nil {
+			publishRateData.PublishThrottlingRateInByte = *params.PublishRate.PublishThrottlingRateInByte
 		}
 		err = p.adminClient.Topics().SetPublishRate(*topicName, publishRateData)
 		if err != nil {
@@ -369,11 +383,16 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle inactive topic policies
 	if params.InactiveTopicPolicies != nil {
-		deleteMode := utils.InactiveTopicDeleteMode(*params.InactiveTopicPolicies.InactiveTopicDeleteMode)
-		inactiveTopicPolicies := utils.InactiveTopicPolicies{
-			InactiveTopicDeleteMode:    &deleteMode,
-			MaxInactiveDurationSeconds: int(*params.InactiveTopicPolicies.MaxInactiveDurationInSeconds),
-			DeleteWhileInactive:        *params.InactiveTopicPolicies.DeleteWhileInactive,
+		inactiveTopicPolicies := utils.InactiveTopicPolicies{}
+		if params.InactiveTopicPolicies.InactiveTopicDeleteMode != nil {
+			deleteMode := utils.InactiveTopicDeleteMode(*params.InactiveTopicPolicies.InactiveTopicDeleteMode)
+			inactiveTopicPolicies.InactiveTopicDeleteMode = &deleteMode
+		}
+		if params.InactiveTopicPolicies.MaxInactiveDurationInSeconds != nil {
+			inactiveTopicPolicies.MaxInactiveDurationSeconds = int(*params.InactiveTopicPolicies.MaxInactiveDurationInSeconds)
+		}
+		if params.InactiveTopicPolicies.DeleteWhileInactive != nil {
+			inactiveTopicPolicies.DeleteWhileInactive = *params.InactiveTopicPolicies.DeleteWhileInactive
 		}
 		err = p.adminClient.Topics().SetInactiveTopicPolicies(*topicName, inactiveTopicPolicies)
 		if err != nil {
