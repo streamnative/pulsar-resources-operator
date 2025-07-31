@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.24.1
 
 require (
-	github.com/apache/pulsar-client-go v0.15.2-0.20250702060927-58ac256fbcb2
+	github.com/apache/pulsar-client-go v0.16.0-candidate-1.0.20250730013016-1f9e82805e54
 	github.com/go-logr/logr v1.4.2
 	github.com/lestrrat-go/jwx/v2 v2.1.4
 	github.com/onsi/ginkgo v1.16.5

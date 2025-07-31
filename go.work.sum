@@ -408,6 +408,7 @@ cloud.google.com/go/gkemulticloud v1.5.1/go.mod h1:OdmhfSPXuJ0Kn9dQ2I3Ou7XZ3QK8c
 cloud.google.com/go/grafeas v0.2.0 h1:CYjC+xzdPvbV65gi6Dr4YowKcmLo045pm18L0DhdELM=
 cloud.google.com/go/grafeas v0.3.0 h1:oyTL/KjiUeBs9eYLw/40cpSZglUC+0F7X4iu/8t7NWs=
 cloud.google.com/go/grafeas v0.3.4 h1:D4x32R/cHX3MTofKwirz015uEdVk4uAxvZkZCZkOrF4=
+cloud.google.com/go/grafeas v0.3.5 h1:Z87HxC4vnjR1kWWtzP6BuQXa6xBmndRK/kaz4iu6oMA=
 cloud.google.com/go/grafeas v0.3.6 h1:7bcA10EBgTsxeAVypJhz2Dv3fhrdlO7Ml8l7ZZA2IkE=
 cloud.google.com/go/grafeas v0.3.6/go.mod h1:to6ECAPgRO2xeqD8ISXHc70nObJuaKZThreQOjeOH3o=
 cloud.google.com/go/grafeas v0.3.11 h1:CobnwnyeY1j1Defi5vbEircI+jfrk3ci5m004ZjiFP4=
@@ -1422,6 +1423,8 @@ github.com/grpc-ecosystem/grpc-gateway/v2 v2.16.0 h1:YBftPWNWd4WwGqtY2yeZL2ef8rH
 github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1/go.mod h1:5SN9VR2LTsRFsrEC6FHgRbTWrTHu6tqPeKxEQv15giM=
 github.com/hashicorp/consul/api v1.1.0 h1:BNQPM9ytxj6jbjjdRPioQ94T6YXriSopn0i8COv6SRA=
 github.com/hashicorp/consul/sdk v0.1.1 h1:LnuDWGNsoajlhGyHJvuWW6FVqRl8JOTPqS6CPTsYjhY=
+github.com/hashicorp/errwrap v1.1.0 h1:OxrOeh75EUXMY8TBjag2fzXGZ40LB6IKw45YeGUDY2I=
+github.com/hashicorp/errwrap v1.1.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-cleanhttp v0.5.1 h1:dH3aiDG9Jvb5r5+bYHsikaOUIpcM0xvgMXVoDkXMzJM=
 github.com/hashicorp/go-cleanhttp v0.5.1/go.mod h1:JpRdi6/HCYpAwUzNwuwqhbovhLtngrth3wmdIIUrZ80=
 github.com/hashicorp/go-immutable-radix v1.0.0 h1:AKDB1HM5PWEA7i4nhcpwOrO2byshxBjXVn/J/3+z5/0=
