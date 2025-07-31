@@ -23,7 +23,6 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/auth"
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
-	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	utils2 "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -57,7 +56,7 @@ type NamespaceParams struct {
 	Deduplication                         *bool
 	BookieAffinityGroup                   *v1alpha1.BookieAffinityGroupData
 	TopicAutoCreationConfig               *v1alpha1.TopicAutoCreationConfig
-	SchemaCompatibilityStrategy           *utils2.SchemaCompatibilityStrategy
+	SchemaCompatibilityStrategy           *v1alpha1.SchemaCompatibilityStrategy
 	SchemaValidationEnforced              *bool
 	DispatchRate                          *v1alpha1.DispatchRate
 	SubscriptionDispatchRate              *v1alpha1.DispatchRate
@@ -107,9 +106,9 @@ type TopicParams struct {
 	SubscriptionDispatchRate          *v1alpha1.DispatchRate
 	ReplicatorDispatchRate            *v1alpha1.DispatchRate
 	DeduplicationSnapshotInterval     *int32
-	OffloadPolicies                   *adminutils.OffloadPolicies
-	AutoSubscriptionCreation          *adminutils.AutoSubscriptionCreationOverride
-	SchemaCompatibilityStrategy       *adminutils.SchemaCompatibilityStrategy
+	OffloadPolicies                   *v1alpha1.OffloadPolicies
+	AutoSubscriptionCreation          *v1alpha1.AutoSubscriptionCreationOverride
+	SchemaCompatibilityStrategy       *v1alpha1.SchemaCompatibilityStrategy
 	Properties                        map[string]string
 }
 

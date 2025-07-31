@@ -25,7 +25,6 @@ import (
 	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 
-	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rsutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
@@ -703,7 +702,7 @@ func MakePulsarTopicWithOffloadPolicies(namespace, name, topicName, connectionNa
 			},
 			Name:            topicName,
 			LifecyclePolicy: policy,
-			OffloadPolicies: &adminutils.OffloadPolicies{
+			OffloadPolicies: &v1alpha1.OffloadPolicies{
 				ManagedLedgerOffloadDriver:           "aws-s3",
 				ManagedLedgerOffloadMaxThreads:       5,
 				ManagedLedgerOffloadThresholdInBytes: 1073741824, // 1GB
@@ -725,7 +724,7 @@ func MakePulsarTopicWithAutoSubscriptionCreation(namespace, name, topicName, con
 			},
 			Name:            topicName,
 			LifecyclePolicy: policy,
-			AutoSubscriptionCreation: &adminutils.AutoSubscriptionCreationOverride{
+			AutoSubscriptionCreation: &v1alpha1.AutoSubscriptionCreationOverride{
 				AllowAutoSubscriptionCreation: true,
 			},
 		},
@@ -734,7 +733,7 @@ func MakePulsarTopicWithAutoSubscriptionCreation(namespace, name, topicName, con
 
 // MakePulsarTopicWithSchemaCompatibilityStrategy will generate a PulsarTopic with schema compatibility strategy configuration
 func MakePulsarTopicWithSchemaCompatibilityStrategy(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
-	strategy := adminutils.SchemaCompatibilityStrategy("BACKWARD")
+	strategy := v1alpha1.SchemaCompatibilityStrategy("BACKWARD")
 	return &v1alpha1.PulsarTopic{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,

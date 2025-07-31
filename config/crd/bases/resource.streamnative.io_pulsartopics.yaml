@@ -86,8 +86,6 @@ spec:
                 properties:
                   allowAutoSubscriptionCreation:
                     type: boolean
-                required:
-                - allowAutoSubscriptionCreation
                 type: object
               backlogQuotaLimitSize:
                 anyOf:

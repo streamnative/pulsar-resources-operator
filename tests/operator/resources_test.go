@@ -32,7 +32,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
-	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
@@ -1146,7 +1145,7 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update schema compatibility strategy
-				newStrategy := adminutils.SchemaCompatibilityStrategy("FORWARD")
+				newStrategy := v1alphav1.SchemaCompatibilityStrategy("FORWARD")
 				topic.Spec.SchemaCompatibilityStrategy = &newStrategy
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())

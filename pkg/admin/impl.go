@@ -46,6 +46,50 @@ const (
 	TopicDomainNonPersistent = "non-persistent"
 )
 
+// Type conversion functions for external library types
+
+// convertOffloadPolicies converts our local OffloadPolicies to the external library type
+func convertOffloadPolicies(local *v1alpha1.OffloadPolicies) *utils.OffloadPolicies {
+	if local == nil {
+		return nil
+	}
+	return &utils.OffloadPolicies{
+		ManagedLedgerOffloadDriver:                        local.ManagedLedgerOffloadDriver,
+		ManagedLedgerOffloadMaxThreads:                    local.ManagedLedgerOffloadMaxThreads,
+		ManagedLedgerOffloadThresholdInBytes:              local.ManagedLedgerOffloadThresholdInBytes,
+		ManagedLedgerOffloadDeletionLagInMillis:           local.ManagedLedgerOffloadDeletionLagInMillis,
+		ManagedLedgerOffloadAutoTriggerSizeThresholdBytes: local.ManagedLedgerOffloadAutoTriggerSizeThresholdBytes,
+		S3ManagedLedgerOffloadBucket:                      local.S3ManagedLedgerOffloadBucket,
+		S3ManagedLedgerOffloadRegion:                      local.S3ManagedLedgerOffloadRegion,
+		S3ManagedLedgerOffloadServiceEndpoint:             local.S3ManagedLedgerOffloadServiceEndpoint,
+		S3ManagedLedgerOffloadCredentialID:                local.S3ManagedLedgerOffloadCredentialID,
+		S3ManagedLedgerOffloadCredentialSecret:            local.S3ManagedLedgerOffloadCredentialSecret,
+		S3ManagedLedgerOffloadRole:                        local.S3ManagedLedgerOffloadRole,
+		S3ManagedLedgerOffloadRoleSessionName:             local.S3ManagedLedgerOffloadRoleSessionName,
+		OffloadersDirectory:                               local.OffloadersDirectory,
+		ManagedLedgerOffloadDriverMetadata:                local.ManagedLedgerOffloadDriverMetadata,
+	}
+}
+
+// convertAutoSubscriptionCreation converts our local AutoSubscriptionCreationOverride to the external library type
+func convertAutoSubscriptionCreation(local *v1alpha1.AutoSubscriptionCreationOverride) *utils.AutoSubscriptionCreationOverride {
+	if local == nil {
+		return nil
+	}
+	return &utils.AutoSubscriptionCreationOverride{
+		AllowAutoSubscriptionCreation: local.AllowAutoSubscriptionCreation,
+	}
+}
+
+// convertSchemaCompatibilityStrategy converts our local SchemaCompatibilityStrategy to the external library type
+func convertSchemaCompatibilityStrategy(local *v1alpha1.SchemaCompatibilityStrategy) *utils.SchemaCompatibilityStrategy {
+	if local == nil {
+		return nil
+	}
+	strategy := utils.SchemaCompatibilityStrategy(string(*local))
+	return &strategy
+}
+
 // ApplyTenant creates or updates a tenant, if AllowdClusters is not provided, it will list all clusters in pular
 // When updates a tenant,  If AdminRoles is empty, the current set of roles won't be modified
 func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error {
@@ -496,7 +540,8 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle offload policies
 	if params.OffloadPolicies != nil {
-		err = p.adminClient.Topics().SetOffloadPolicies(*topicName, *params.OffloadPolicies)
+		externalOffloadPolicies := convertOffloadPolicies(params.OffloadPolicies)
+		err = p.adminClient.Topics().SetOffloadPolicies(*topicName, *externalOffloadPolicies)
 		if err != nil {
 			return err
 		}
@@ -504,7 +549,8 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle auto subscription creation
 	if params.AutoSubscriptionCreation != nil {
-		err = p.adminClient.Topics().SetAutoSubscriptionCreation(*topicName, *params.AutoSubscriptionCreation)
+		externalAutoSubscription := convertAutoSubscriptionCreation(params.AutoSubscriptionCreation)
+		err = p.adminClient.Topics().SetAutoSubscriptionCreation(*topicName, *externalAutoSubscription)
 		if err != nil {
 			return err
 		}
@@ -512,7 +558,8 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle schema compatibility strategy
 	if params.SchemaCompatibilityStrategy != nil {
-		err = p.adminClient.Topics().SetSchemaCompatibilityStrategy(*topicName, *params.SchemaCompatibilityStrategy)
+		externalSchemaStrategy := convertSchemaCompatibilityStrategy(params.SchemaCompatibilityStrategy)
+		err = p.adminClient.Topics().SetSchemaCompatibilityStrategy(*topicName, *externalSchemaStrategy)
 		if err != nil {
 			return err
 		}
@@ -870,8 +917,8 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	}
 
 	if params.SchemaCompatibilityStrategy != nil {
-		schemaStrategy := *params.SchemaCompatibilityStrategy
-		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, schemaStrategy)
+		externalSchemaStrategy := convertSchemaCompatibilityStrategy(params.SchemaCompatibilityStrategy)
+		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, *externalSchemaStrategy)
 		if err != nil {
 			return err
 		}

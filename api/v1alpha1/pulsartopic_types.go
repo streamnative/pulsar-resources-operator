@@ -19,7 +19,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	adminutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
@@ -204,18 +203,18 @@ type PulsarTopicSpec struct {
 	// OffloadPolicies defines the offload policies for the topic.
 	// This controls how data is offloaded to external storage systems.
 	// +optional
-	OffloadPolicies *adminutils.OffloadPolicies `json:"offloadPolicies,omitempty"`
+	OffloadPolicies *OffloadPolicies `json:"offloadPolicies,omitempty"`
 
 	// AutoSubscriptionCreation defines the auto subscription creation override for the topic.
 	// This controls whether subscriptions can be created automatically.
 	// +optional
-	AutoSubscriptionCreation *adminutils.AutoSubscriptionCreationOverride `json:"autoSubscriptionCreation,omitempty"`
+	AutoSubscriptionCreation *AutoSubscriptionCreationOverride `json:"autoSubscriptionCreation,omitempty"`
 
 	// SchemaCompatibilityStrategy defines the schema compatibility strategy for the topic.
 	// This controls how schema evolution is handled.
 	// +optional
 	// +kubebuilder:validation:Enum=UNDEFINED;ALWAYS_INCOMPATIBLE;ALWAYS_COMPATIBLE;BACKWARD;FORWARD;FULL;BACKWARD_TRANSITIVE;FORWARD_TRANSITIVE;FULL_TRANSITIVE
-	SchemaCompatibilityStrategy *adminutils.SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
+	SchemaCompatibilityStrategy *SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
 
 	// Properties is a map of user-defined properties associated with the topic.
 	// These can be used to store additional metadata about the topic.
@@ -253,6 +252,38 @@ type SchemaInfo struct {
 	// These can be used to store additional metadata about the schema.
 	Properties map[string]string `json:"properties,omitempty"`
 }
+
+// OffloadPolicies defines the offload policies for a topic.
+// This is a local type definition that mirrors the external library's OffloadPolicies
+// to ensure proper Kubernetes deep copy generation.
+type OffloadPolicies struct {
+	ManagedLedgerOffloadDriver                        string            `json:"managedLedgerOffloadDriver,omitempty"`
+	ManagedLedgerOffloadMaxThreads                    int               `json:"managedLedgerOffloadMaxThreads,omitempty"`
+	ManagedLedgerOffloadThresholdInBytes              int64             `json:"managedLedgerOffloadThresholdInBytes,omitempty"`
+	ManagedLedgerOffloadDeletionLagInMillis           int64             `json:"managedLedgerOffloadDeletionLagInMillis,omitempty"`
+	ManagedLedgerOffloadAutoTriggerSizeThresholdBytes int64             `json:"managedLedgerOffloadAutoTriggerSizeThresholdBytes,omitempty"`
+	S3ManagedLedgerOffloadBucket                      string            `json:"s3ManagedLedgerOffloadBucket,omitempty"`
+	S3ManagedLedgerOffloadRegion                      string            `json:"s3ManagedLedgerOffloadRegion,omitempty"`
+	S3ManagedLedgerOffloadServiceEndpoint             string            `json:"s3ManagedLedgerOffloadServiceEndpoint,omitempty"`
+	S3ManagedLedgerOffloadCredentialID                string            `json:"s3ManagedLedgerOffloadCredentialId,omitempty"`
+	S3ManagedLedgerOffloadCredentialSecret            string            `json:"s3ManagedLedgerOffloadCredentialSecret,omitempty"`
+	S3ManagedLedgerOffloadRole                        string            `json:"s3ManagedLedgerOffloadRole,omitempty"`
+	S3ManagedLedgerOffloadRoleSessionName             string            `json:"s3ManagedLedgerOffloadRoleSessionName,omitempty"`
+	OffloadersDirectory                               string            `json:"offloadersDirectory,omitempty"`
+	ManagedLedgerOffloadDriverMetadata                map[string]string `json:"managedLedgerOffloadDriverMetadata,omitempty"`
+}
+
+// AutoSubscriptionCreationOverride defines the auto subscription creation override for a topic.
+// This is a local type definition that mirrors the external library's AutoSubscriptionCreationOverride
+// to ensure proper Kubernetes deep copy generation.
+type AutoSubscriptionCreationOverride struct {
+	AllowAutoSubscriptionCreation bool `json:"allowAutoSubscriptionCreation,omitempty"`
+}
+
+// SchemaCompatibilityStrategy defines the schema compatibility strategy for a topic.
+// This is a local type definition that mirrors the external library's SchemaCompatibilityStrategy
+// to ensure proper Kubernetes deep copy generation.
+type SchemaCompatibilityStrategy string
 
 // PulsarTopicStatus defines the observed state of PulsarTopic
 type PulsarTopicStatus struct {
