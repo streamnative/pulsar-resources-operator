@@ -990,7 +990,7 @@ var _ = Describe("Resources", func() {
 				// Verify OffloadPolicies
 				Expect(topic.Spec.OffloadPolicies).ShouldNot(BeNil())
 				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadDriver).Should(Equal("aws-s3"))
-				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads).Should(Equal(int32(5)))
+				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads).Should(Equal(5))
 				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes).Should(Equal(int64(1073741824)))
 			})
 
