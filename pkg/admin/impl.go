@@ -46,6 +46,50 @@ const (
 	TopicDomainNonPersistent = "non-persistent"
 )
 
+// Type conversion functions for external library types
+
+// convertOffloadPolicies converts our local OffloadPolicies to the external library type
+func convertOffloadPolicies(local *v1alpha1.OffloadPolicies) *utils.OffloadPolicies {
+	if local == nil {
+		return nil
+	}
+	return &utils.OffloadPolicies{
+		ManagedLedgerOffloadDriver:                        local.ManagedLedgerOffloadDriver,
+		ManagedLedgerOffloadMaxThreads:                    local.ManagedLedgerOffloadMaxThreads,
+		ManagedLedgerOffloadThresholdInBytes:              local.ManagedLedgerOffloadThresholdInBytes,
+		ManagedLedgerOffloadDeletionLagInMillis:           local.ManagedLedgerOffloadDeletionLagInMillis,
+		ManagedLedgerOffloadAutoTriggerSizeThresholdBytes: local.ManagedLedgerOffloadAutoTriggerSizeThresholdBytes,
+		S3ManagedLedgerOffloadBucket:                      local.S3ManagedLedgerOffloadBucket,
+		S3ManagedLedgerOffloadRegion:                      local.S3ManagedLedgerOffloadRegion,
+		S3ManagedLedgerOffloadServiceEndpoint:             local.S3ManagedLedgerOffloadServiceEndpoint,
+		S3ManagedLedgerOffloadCredentialID:                local.S3ManagedLedgerOffloadCredentialID,
+		S3ManagedLedgerOffloadCredentialSecret:            local.S3ManagedLedgerOffloadCredentialSecret,
+		S3ManagedLedgerOffloadRole:                        local.S3ManagedLedgerOffloadRole,
+		S3ManagedLedgerOffloadRoleSessionName:             local.S3ManagedLedgerOffloadRoleSessionName,
+		OffloadersDirectory:                               local.OffloadersDirectory,
+		ManagedLedgerOffloadDriverMetadata:                local.ManagedLedgerOffloadDriverMetadata,
+	}
+}
+
+// convertAutoSubscriptionCreation converts our local AutoSubscriptionCreationOverride to the external library type
+func convertAutoSubscriptionCreation(local *v1alpha1.AutoSubscriptionCreationOverride) *utils.AutoSubscriptionCreationOverride {
+	if local == nil {
+		return nil
+	}
+	return &utils.AutoSubscriptionCreationOverride{
+		AllowAutoSubscriptionCreation: local.AllowAutoSubscriptionCreation,
+	}
+}
+
+// convertSchemaCompatibilityStrategy converts our local SchemaCompatibilityStrategy to the external library type
+func convertSchemaCompatibilityStrategy(local *v1alpha1.SchemaCompatibilityStrategy) *utils.SchemaCompatibilityStrategy {
+	if local == nil {
+		return nil
+	}
+	strategy := utils.SchemaCompatibilityStrategy(string(*local))
+	return &strategy
+}
+
 // ApplyTenant creates or updates a tenant, if AllowdClusters is not provided, it will list all clusters in pular
 // When updates a tenant,  If AdminRoles is empty, the current set of roles won't be modified
 func (p *PulsarAdminClient) ApplyTenant(name string, params *TenantParams) error {
@@ -316,10 +360,16 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 
 		persistenceData := utils.PersistenceData{
-			BookkeeperEnsemble:             int64(*params.PersistencePolicies.BookkeeperEnsemble),
-			BookkeeperWriteQuorum:          int64(*params.PersistencePolicies.BookkeeperWriteQuorum),
-			BookkeeperAckQuorum:            int64(*params.PersistencePolicies.BookkeeperAckQuorum),
 			ManagedLedgerMaxMarkDeleteRate: markDeleteRate,
+		}
+		if params.PersistencePolicies.BookkeeperEnsemble != nil {
+			persistenceData.BookkeeperEnsemble = int64(*params.PersistencePolicies.BookkeeperEnsemble)
+		}
+		if params.PersistencePolicies.BookkeeperWriteQuorum != nil {
+			persistenceData.BookkeeperWriteQuorum = int64(*params.PersistencePolicies.BookkeeperWriteQuorum)
+		}
+		if params.PersistencePolicies.BookkeeperAckQuorum != nil {
+			persistenceData.BookkeeperAckQuorum = int64(*params.PersistencePolicies.BookkeeperAckQuorum)
 		}
 		err = p.adminClient.Topics().SetPersistence(*topicName, persistenceData)
 		if err != nil {
@@ -344,10 +394,15 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle dispatch rate
 	if params.DispatchRate != nil {
-		dispatchRateData := utils.DispatchRateData{
-			DispatchThrottlingRateInMsg:  int64(*params.DispatchRate.DispatchThrottlingRateInMsg),
-			DispatchThrottlingRateInByte: *params.DispatchRate.DispatchThrottlingRateInByte,
-			RatePeriodInSecond:           int64(*params.DispatchRate.RatePeriodInSecond),
+		dispatchRateData := utils.DispatchRateData{}
+		if params.DispatchRate.DispatchThrottlingRateInMsg != nil {
+			dispatchRateData.DispatchThrottlingRateInMsg = int64(*params.DispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.DispatchRate.DispatchThrottlingRateInByte != nil {
+			dispatchRateData.DispatchThrottlingRateInByte = *params.DispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.DispatchRate.RatePeriodInSecond != nil {
+			dispatchRateData.RatePeriodInSecond = int64(*params.DispatchRate.RatePeriodInSecond)
 		}
 		err = p.adminClient.Topics().SetDispatchRate(*topicName, dispatchRateData)
 		if err != nil {
@@ -357,9 +412,12 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle publish rate
 	if params.PublishRate != nil {
-		publishRateData := utils.PublishRateData{
-			PublishThrottlingRateInMsg:  int64(*params.PublishRate.PublishThrottlingRateInMsg),
-			PublishThrottlingRateInByte: *params.PublishRate.PublishThrottlingRateInByte,
+		publishRateData := utils.PublishRateData{}
+		if params.PublishRate.PublishThrottlingRateInMsg != nil {
+			publishRateData.PublishThrottlingRateInMsg = int64(*params.PublishRate.PublishThrottlingRateInMsg)
+		}
+		if params.PublishRate.PublishThrottlingRateInByte != nil {
+			publishRateData.PublishThrottlingRateInByte = *params.PublishRate.PublishThrottlingRateInByte
 		}
 		err = p.adminClient.Topics().SetPublishRate(*topicName, publishRateData)
 		if err != nil {
@@ -369,13 +427,147 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 
 	// Handle inactive topic policies
 	if params.InactiveTopicPolicies != nil {
-		deleteMode := utils.InactiveTopicDeleteMode(*params.InactiveTopicPolicies.InactiveTopicDeleteMode)
-		inactiveTopicPolicies := utils.InactiveTopicPolicies{
-			InactiveTopicDeleteMode:    &deleteMode,
-			MaxInactiveDurationSeconds: int(*params.InactiveTopicPolicies.MaxInactiveDurationInSeconds),
-			DeleteWhileInactive:        *params.InactiveTopicPolicies.DeleteWhileInactive,
+		inactiveTopicPolicies := utils.InactiveTopicPolicies{}
+		if params.InactiveTopicPolicies.InactiveTopicDeleteMode != nil {
+			deleteMode := utils.InactiveTopicDeleteMode(*params.InactiveTopicPolicies.InactiveTopicDeleteMode)
+			inactiveTopicPolicies.InactiveTopicDeleteMode = &deleteMode
+		}
+		if params.InactiveTopicPolicies.MaxInactiveDurationInSeconds != nil {
+			inactiveTopicPolicies.MaxInactiveDurationSeconds = int(*params.InactiveTopicPolicies.MaxInactiveDurationInSeconds)
+		}
+		if params.InactiveTopicPolicies.DeleteWhileInactive != nil {
+			inactiveTopicPolicies.DeleteWhileInactive = *params.InactiveTopicPolicies.DeleteWhileInactive
 		}
 		err = p.adminClient.Topics().SetInactiveTopicPolicies(*topicName, inactiveTopicPolicies)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscribe rate
+	if params.SubscribeRate != nil {
+		subscribeRateData := utils.SubscribeRate{
+			SubscribeThrottlingRatePerConsumer: -1, // default to unlimited
+			RatePeriodInSecond:                 30, // default period
+		}
+		if params.SubscribeRate.SubscribeThrottlingRatePerConsumer != nil {
+			subscribeRateData.SubscribeThrottlingRatePerConsumer = int(*params.SubscribeRate.SubscribeThrottlingRatePerConsumer)
+		}
+		if params.SubscribeRate.RatePeriodInSecond != nil {
+			subscribeRateData.RatePeriodInSecond = int(*params.SubscribeRate.RatePeriodInSecond)
+		}
+		err = p.adminClient.Topics().SetSubscribeRate(*topicName, subscribeRateData)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle max message size
+	if params.MaxMessageSize != nil {
+		err = p.adminClient.Topics().SetMaxMessageSize(*topicName, int(*params.MaxMessageSize))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle max consumers per subscription
+	if params.MaxConsumersPerSubscription != nil {
+		err = p.adminClient.Topics().SetMaxConsumersPerSubscription(*topicName, int(*params.MaxConsumersPerSubscription))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle max subscriptions per topic
+	if params.MaxSubscriptionsPerTopic != nil {
+		err = p.adminClient.Topics().SetMaxSubscriptionsPerTopic(*topicName, int(*params.MaxSubscriptionsPerTopic))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle schema validation enforced
+	if params.SchemaValidationEnforced != nil {
+		err = p.adminClient.Topics().SetSchemaValidationEnforced(*topicName, *params.SchemaValidationEnforced)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle subscription dispatch rate
+	if params.SubscriptionDispatchRate != nil {
+		dispatchRateData := utils.DispatchRateData{}
+		if params.SubscriptionDispatchRate.DispatchThrottlingRateInMsg != nil {
+			dispatchRateData.DispatchThrottlingRateInMsg = int64(*params.SubscriptionDispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.SubscriptionDispatchRate.DispatchThrottlingRateInByte != nil {
+			dispatchRateData.DispatchThrottlingRateInByte = *params.SubscriptionDispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.SubscriptionDispatchRate.RatePeriodInSecond != nil {
+			dispatchRateData.RatePeriodInSecond = int64(*params.SubscriptionDispatchRate.RatePeriodInSecond)
+		}
+		err = p.adminClient.Topics().SetSubscriptionDispatchRate(*topicName, dispatchRateData)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle replicator dispatch rate
+	if params.ReplicatorDispatchRate != nil {
+		dispatchRateData := utils.DispatchRateData{}
+		if params.ReplicatorDispatchRate.DispatchThrottlingRateInMsg != nil {
+			dispatchRateData.DispatchThrottlingRateInMsg = int64(*params.ReplicatorDispatchRate.DispatchThrottlingRateInMsg)
+		}
+		if params.ReplicatorDispatchRate.DispatchThrottlingRateInByte != nil {
+			dispatchRateData.DispatchThrottlingRateInByte = *params.ReplicatorDispatchRate.DispatchThrottlingRateInByte
+		}
+		if params.ReplicatorDispatchRate.RatePeriodInSecond != nil {
+			dispatchRateData.RatePeriodInSecond = int64(*params.ReplicatorDispatchRate.RatePeriodInSecond)
+		}
+		err = p.adminClient.Topics().SetReplicatorDispatchRate(*topicName, dispatchRateData)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle deduplication snapshot interval
+	if params.DeduplicationSnapshotInterval != nil {
+		err = p.adminClient.Topics().SetDeduplicationSnapshotInterval(*topicName, int(*params.DeduplicationSnapshotInterval))
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle offload policies
+	if params.OffloadPolicies != nil {
+		externalOffloadPolicies := convertOffloadPolicies(params.OffloadPolicies)
+		err = p.adminClient.Topics().SetOffloadPolicies(*topicName, *externalOffloadPolicies)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle auto subscription creation
+	if params.AutoSubscriptionCreation != nil {
+		externalAutoSubscription := convertAutoSubscriptionCreation(params.AutoSubscriptionCreation)
+		err = p.adminClient.Topics().SetAutoSubscriptionCreation(*topicName, *externalAutoSubscription)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle schema compatibility strategy
+	if params.SchemaCompatibilityStrategy != nil {
+		externalSchemaStrategy := convertSchemaCompatibilityStrategy(params.SchemaCompatibilityStrategy)
+		err = p.adminClient.Topics().SetSchemaCompatibilityStrategy(*topicName, *externalSchemaStrategy)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Handle topic properties
+	if len(params.Properties) > 0 {
+		err = p.adminClient.Topics().UpdateProperties(*topicName, params.Properties)
 		if err != nil {
 			return err
 		}
@@ -725,8 +917,8 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	}
 
 	if params.SchemaCompatibilityStrategy != nil {
-		schemaStrategy := *params.SchemaCompatibilityStrategy
-		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, schemaStrategy)
+		externalSchemaStrategy := convertSchemaCompatibilityStrategy(params.SchemaCompatibilityStrategy)
+		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, *externalSchemaStrategy)
 		if err != nil {
 			return err
 		}

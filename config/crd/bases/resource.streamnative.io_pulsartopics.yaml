@@ -79,6 +79,14 @@ spec:
               PulsarTopicSpec defines the desired state of PulsarTopic.
               It corresponds to the configuration options available in Pulsar's topic admin API.
             properties:
+              autoSubscriptionCreation:
+                description: |-
+                  AutoSubscriptionCreation defines the auto subscription creation override for the topic.
+                  This controls whether subscriptions can be created automatically.
+                properties:
+                  allowAutoSubscriptionCreation:
+                    type: boolean
+                type: object
               backlogQuotaLimitSize:
                 anyOf:
                 - type: integer
@@ -126,6 +134,12 @@ spec:
                 description: Deduplication controls whether to enable message deduplication
                   for the topic.
                 type: boolean
+              deduplicationSnapshotInterval:
+                description: |-
+                  DeduplicationSnapshotInterval specifies the interval for taking deduplication snapshots.
+                  This affects the deduplication performance and storage overhead.
+                format: int32
+                type: integer
               delayedDelivery:
                 description: |-
                   DelayedDelivery defines the delayed delivery policy for the topic.
@@ -228,9 +242,25 @@ spec:
                   on the topic.
                 format: int32
                 type: integer
+              maxConsumersPerSubscription:
+                description: MaxConsumersPerSubscription sets the maximum number of
+                  consumers allowed per subscription.
+                format: int32
+                type: integer
+              maxMessageSize:
+                description: |-
+                  MaxMessageSize specifies the maximum size of messages that can be published to the topic.
+                  Messages larger than this size will be rejected.
+                format: int32
+                type: integer
               maxProducers:
                 description: MaxProducers sets the maximum number of producers allowed
                   on the topic.
+                format: int32
+                type: integer
+              maxSubscriptionsPerTopic:
+                description: MaxSubscriptionsPerTopic sets the maximum number of subscriptions
+                  allowed on the topic.
                 format: int32
                 type: integer
               maxUnAckedMessagesPerConsumer:
@@ -253,6 +283,45 @@ spec:
               name:
                 description: Name is the topic name
                 type: string
+              offloadPolicies:
+                description: |-
+                  OffloadPolicies defines the offload policies for the topic.
+                  This controls how data is offloaded to external storage systems.
+                properties:
+                  managedLedgerOffloadAutoTriggerSizeThresholdBytes:
+                    format: int64
+                    type: integer
+                  managedLedgerOffloadDeletionLagInMillis:
+                    format: int64
+                    type: integer
+                  managedLedgerOffloadDriver:
+                    type: string
+                  managedLedgerOffloadDriverMetadata:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  managedLedgerOffloadMaxThreads:
+                    type: integer
+                  managedLedgerOffloadThresholdInBytes:
+                    format: int64
+                    type: integer
+                  offloadersDirectory:
+                    type: string
+                  s3ManagedLedgerOffloadBucket:
+                    type: string
+                  s3ManagedLedgerOffloadCredentialId:
+                    type: string
+                  s3ManagedLedgerOffloadCredentialSecret:
+                    type: string
+                  s3ManagedLedgerOffloadRegion:
+                    type: string
+                  s3ManagedLedgerOffloadRole:
+                    type: string
+                  s3ManagedLedgerOffloadRoleSessionName:
+                    type: string
+                  s3ManagedLedgerOffloadServiceEndpoint:
+                    type: string
+                type: object
               partitions:
                 default: 0
                 description: |-
@@ -299,6 +368,13 @@ spec:
                   Persistent determines if the topic is persistent (true) or non-persistent (false).
                   Defaults to true if not specified.
                 type: boolean
+              properties:
+                additionalProperties:
+                  type: string
+                description: |-
+                  Properties is a map of user-defined properties associated with the topic.
+                  These can be used to store additional metadata about the topic.
+                type: object
               publishRate:
                 description: |-
                   PublishRate defines the message publish rate limiting policy for the topic.
@@ -326,6 +402,31 @@ spec:
                 items:
                   type: string
                 type: array
+              replicatorDispatchRate:
+                description: |-
+                  ReplicatorDispatchRate defines the message dispatch rate limiting policy for replicators.
+                  This controls the rate at which messages are replicated to other clusters.
+                properties:
+                  dispatchThrottlingRateInByte:
+                    description: |-
+                      DispatchThrottlingRateInByte specifies the maximum number of bytes per second allowed
+                      -1 means unlimited
+                    format: int64
+                    type: integer
+                  dispatchThrottlingRateInMsg:
+                    description: |-
+                      DispatchThrottlingRateInMsg specifies the maximum number of messages per second allowed
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                  ratePeriodInSecond:
+                    default: 1
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
+                type: object
               retentionSize:
                 anyOf:
                 - type: integer
@@ -341,6 +442,21 @@ spec:
                   RetentionTime specifies the minimum time to retain messages on the topic.
                   Should be set in conjunction with RetentionSize for effective retention policy.
                   Retention Quota must exceed configured backlog quota for topic
+                type: string
+              schemaCompatibilityStrategy:
+                description: |-
+                  SchemaCompatibilityStrategy defines the schema compatibility strategy for the topic.
+                  This controls how schema evolution is handled.
+                enum:
+                - UNDEFINED
+                - ALWAYS_INCOMPATIBLE
+                - ALWAYS_COMPATIBLE
+                - BACKWARD
+                - FORWARD
+                - FULL
+                - BACKWARD_TRANSITIVE
+                - FORWARD_TRANSITIVE
+                - FULL_TRANSITIVE
                 type: string
               schemaInfo:
                 description: SchemaInfo defines the schema for the topic, if any.
@@ -366,6 +482,55 @@ spec:
                       For KEY_VALUE schemas, use the format "KEY_VALUE(KeyType,ValueType)" where KeyType and ValueType
                       are one of the other schema types.
                     type: string
+                type: object
+              schemaValidationEnforced:
+                description: |-
+                  SchemaValidationEnforced determines whether schema validation is enforced for the topic.
+                  When enabled, only messages that conform to the topic's schema will be accepted.
+                type: boolean
+              subscribeRate:
+                description: |-
+                  SubscribeRate defines the subscription rate limiting policy for the topic.
+                  This controls the rate at which new subscriptions can be created.
+                properties:
+                  ratePeriodInSecond:
+                    default: 30
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  subscribeThrottlingRatePerConsumer:
+                    description: |-
+                      SubscribeThrottlingRatePerConsumer specifies the maximum subscribe rate per consumer
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                type: object
+              subscriptionDispatchRate:
+                description: |-
+                  SubscriptionDispatchRate defines the message dispatch rate limiting policy for subscriptions.
+                  This controls the rate at which messages are delivered to consumers per subscription.
+                properties:
+                  dispatchThrottlingRateInByte:
+                    description: |-
+                      DispatchThrottlingRateInByte specifies the maximum number of bytes per second allowed
+                      -1 means unlimited
+                    format: int64
+                    type: integer
+                  dispatchThrottlingRateInMsg:
+                    description: |-
+                      DispatchThrottlingRateInMsg specifies the maximum number of messages per second allowed
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                  ratePeriodInSecond:
+                    default: 1
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
                 type: object
             required:
             - connectionRef

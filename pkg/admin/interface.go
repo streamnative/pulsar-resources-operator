@@ -56,7 +56,7 @@ type NamespaceParams struct {
 	Deduplication                         *bool
 	BookieAffinityGroup                   *v1alpha1.BookieAffinityGroupData
 	TopicAutoCreationConfig               *v1alpha1.TopicAutoCreationConfig
-	SchemaCompatibilityStrategy           *utils2.SchemaCompatibilityStrategy
+	SchemaCompatibilityStrategy           *v1alpha1.SchemaCompatibilityStrategy
 	SchemaValidationEnforced              *bool
 	DispatchRate                          *v1alpha1.DispatchRate
 	SubscriptionDispatchRate              *v1alpha1.DispatchRate
@@ -98,6 +98,18 @@ type TopicParams struct {
 	DispatchRate                      *v1alpha1.DispatchRate
 	PublishRate                       *v1alpha1.PublishRate
 	InactiveTopicPolicies             *v1alpha1.InactiveTopicPolicies
+	SubscribeRate                     *v1alpha1.SubscribeRate
+	MaxMessageSize                    *int32
+	MaxConsumersPerSubscription       *int32
+	MaxSubscriptionsPerTopic          *int32
+	SchemaValidationEnforced          *bool
+	SubscriptionDispatchRate          *v1alpha1.DispatchRate
+	ReplicatorDispatchRate            *v1alpha1.DispatchRate
+	DeduplicationSnapshotInterval     *int32
+	OffloadPolicies                   *v1alpha1.OffloadPolicies
+	AutoSubscriptionCreation          *v1alpha1.AutoSubscriptionCreationOverride
+	SchemaCompatibilityStrategy       *v1alpha1.SchemaCompatibilityStrategy
+	Properties                        map[string]string
 }
 
 // ClusterParams indicate the parameters for creating a cluster

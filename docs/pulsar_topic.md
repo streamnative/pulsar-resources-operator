@@ -35,6 +35,18 @@ The `PulsarTopic` resource defines a topic in a Pulsar cluster. It allows you to
 | `dispatchRate`                      | Message dispatch rate limiting policy for the topic, controlling the rate at which messages are delivered to consumers. See [dispatchRate](#dispatchRate) for more details.            | No       |
 | `publishRate`                       | Message publish rate limiting policy for the topic, controlling the rate at which producers can publish messages. See [publishRate](#publishRate) for more details.                    | No       |
 | `inactiveTopicPolicies`             | Inactive topic cleanup policy for the topic, controlling how inactive topics are automatically cleaned up. See [inactiveTopicPolicies](#inactiveTopicPolicies) for more details.       | No       |
+| `subscribeRate`                     | Subscription rate limiting policy for the topic, controlling the rate at which new subscriptions can be created. See [subscribeRate](#subscribeRate) for more details.                 | No       |
+| `maxMessageSize`                    | Maximum size of messages that can be published to the topic. Messages larger than this size will be rejected.                                                                           | No       |
+| `maxConsumersPerSubscription`       | Maximum number of consumers allowed per subscription.                                                                                                                                    | No       |
+| `maxSubscriptionsPerTopic`          | Maximum number of subscriptions allowed on the topic.                                                                                                                                   | No       |
+| `schemaValidationEnforced`          | Whether schema validation is enforced for the topic. When enabled, only messages that conform to the topic's schema will be accepted.                                                  | No       |
+| `subscriptionDispatchRate`          | Message dispatch rate limiting policy for subscriptions, controlling the rate at which messages are delivered to consumers per subscription. Uses same format as [dispatchRate](#dispatchRate). | No       |
+| `replicatorDispatchRate`            | Message dispatch rate limiting policy for replicators, controlling the rate at which messages are replicated to other clusters. Uses same format as [dispatchRate](#dispatchRate).    | No       |
+| `deduplicationSnapshotInterval`     | Interval for taking deduplication snapshots. This affects the deduplication performance and storage overhead.                                                                           | No       |
+| `offloadPolicies`                   | Offload policies for the topic, controlling how data is offloaded to external storage systems.                                                                                          | No       |
+| `autoSubscriptionCreation`          | Auto subscription creation override for the topic, controlling whether subscriptions can be created automatically.                                                                       | No       |
+| `schemaCompatibilityStrategy`       | Schema compatibility strategy for the topic, controlling how schema evolution is handled. Options: UNDEFINED, ALWAYS_INCOMPATIBLE, ALWAYS_COMPATIBLE, BACKWARD, FORWARD, FULL, BACKWARD_TRANSITIVE, FORWARD_TRANSITIVE, FULL_TRANSITIVE. | No       |
+| `properties`                        | Map of user-defined properties associated with the topic. These can be used to store additional metadata about the topic.                                                              | No       |
 
 Note: Valid time units for duration fields are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
 
@@ -265,6 +277,58 @@ spec:
     deleteWhileInactive: true
 ```
 
+### subscribeRate
+
+The `subscribeRate` field configures rate limiting for new subscription creation on the topic.
+
+| Field | Description | Type | Required |
+|-------|-------------|------|----------|
+| `subscribeThrottlingRatePerConsumer` | Maximum subscribe rate per consumer (-1 means unlimited) | int32 | No |
+| `ratePeriodInSecond` | Time window in seconds for rate calculation (default: 30) | int32 | No |
+
+**Example:**
+```yaml
+spec:
+  subscribeRate:
+    subscribeThrottlingRatePerConsumer: 10
+    ratePeriodInSecond: 30  # 30 seconds
+```
+
+### schemaCompatibilityStrategy
+
+The `schemaCompatibilityStrategy` field defines how schema evolution is handled for the topic. This controls whether and how schemas can be updated while maintaining compatibility with existing producers and consumers.
+
+**Available Strategies:**
+
+| Strategy | Description |
+|----------|-------------|
+| `UNDEFINED` | Inherit the cluster's default schema compatibility strategy |
+| `ALWAYS_INCOMPATIBLE` | New schemas are always incompatible with existing schemas |
+| `ALWAYS_COMPATIBLE` | New schemas are always compatible with existing schemas |
+| `BACKWARD` | New schema is compatible with the previous schema |
+| `FORWARD` | Previous schema is compatible with the new schema |
+| `FULL` | New schema is both backward and forward compatible |
+| `BACKWARD_TRANSITIVE` | New schema is compatible with all previous schemas |
+| `FORWARD_TRANSITIVE` | All previous schemas are compatible with the new schema |
+| `FULL_TRANSITIVE` | New schema is backward and forward compatible with all schemas |
+
+**Example:**
+```yaml
+spec:
+  schemaCompatibilityStrategy: BACKWARD
+```
+
+### autoSubscriptionCreation
+
+The `autoSubscriptionCreation` field controls whether subscriptions can be created automatically when consumers connect to the topic.
+
+**Example:**
+```yaml
+spec:
+  autoSubscriptionCreation:
+    allowAutoSubscriptionCreation: true
+```
+
 ## SchemaInfo
 
 The `schemaInfo` field in the PulsarTopic specification allows you to define the schema for the topic. For more details about Pulsar schemas, refer to the [official documentation](https://pulsar.apache.org/docs/schema-understand/).
@@ -384,6 +448,44 @@ spec:
   # Message deduplication
   deduplication: true
   
+  # Subscription rate limiting
+  subscribeRate:
+    subscribeThrottlingRatePerConsumer: 5
+    ratePeriodInSecond: 30
+  
+  # Message size limits and consumer/subscription limits
+  maxMessageSize: 1048576  # 1MB
+  maxConsumersPerSubscription: 5
+  maxSubscriptionsPerTopic: 100
+  
+  # Schema validation and compatibility
+  schemaValidationEnforced: true
+  schemaCompatibilityStrategy: BACKWARD
+  
+  # Additional dispatch rate controls
+  subscriptionDispatchRate:
+    dispatchThrottlingRateInMsg: 8000
+    dispatchThrottlingRateInByte: 8388608  # 8MB
+    ratePeriodInSecond: 1
+    
+  replicatorDispatchRate:
+    dispatchThrottlingRateInMsg: 3000
+    dispatchThrottlingRateInByte: 3145728  # 3MB
+    ratePeriodInSecond: 1
+  
+  # Deduplication configuration
+  deduplicationSnapshotInterval: 1000
+  
+  # Auto subscription creation
+  autoSubscriptionCreation:
+    allowAutoSubscriptionCreation: false
+  
+  # Custom properties
+  properties:
+    "environment": "production"
+    "team": "data-platform"
+    "cost-center": "engineering"
+  
   # Schema definition
   schemaInfo:
     type: "JSON"
@@ -397,9 +499,14 @@ spec:
 
 This example demonstrates a production-ready topic configuration with:
 - High availability persistence settings (5 bookies ensemble, 3 write quorum)
-- Rate limiting for both producers and consumers
+- Rate limiting for producers, consumers, subscriptions, and replicators
 - Delayed delivery capability for scheduled messages  
 - Automatic topic compaction at 1GB
 - Inactive topic cleanup after 24 hours
-- Message deduplication enabled
-- JSON schema enforcement
+- Message deduplication enabled with snapshot intervals
+- JSON schema enforcement with backward compatibility
+- Subscription rate limiting (5 subscriptions per consumer per 30 seconds)
+- Message size limits (1MB maximum)
+- Consumer and subscription limits per topic
+- Custom properties for metadata tracking
+- Controlled auto-subscription creation (disabled for production)

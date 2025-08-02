@@ -295,6 +295,18 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 		DispatchRate:                      topic.Spec.DispatchRate,
 		PublishRate:                       topic.Spec.PublishRate,
 		InactiveTopicPolicies:             topic.Spec.InactiveTopicPolicies,
+		SubscribeRate:                     topic.Spec.SubscribeRate,
+		MaxMessageSize:                    topic.Spec.MaxMessageSize,
+		MaxConsumersPerSubscription:       topic.Spec.MaxConsumersPerSubscription,
+		MaxSubscriptionsPerTopic:          topic.Spec.MaxSubscriptionsPerTopic,
+		SchemaValidationEnforced:          topic.Spec.SchemaValidationEnforced,
+		SubscriptionDispatchRate:          topic.Spec.SubscriptionDispatchRate,
+		ReplicatorDispatchRate:            topic.Spec.ReplicatorDispatchRate,
+		DeduplicationSnapshotInterval:     topic.Spec.DeduplicationSnapshotInterval,
+		OffloadPolicies:                   topic.Spec.OffloadPolicies,
+		AutoSubscriptionCreation:          topic.Spec.AutoSubscriptionCreation,
+		SchemaCompatibilityStrategy:       topic.Spec.SchemaCompatibilityStrategy,
+		Properties:                        topic.Spec.Properties,
 	}
 }
 

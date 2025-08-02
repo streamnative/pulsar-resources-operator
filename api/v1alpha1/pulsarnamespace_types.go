@@ -161,7 +161,7 @@ type PulsarNamespaceSpec struct {
 	// This setting controls how schema evolution is handled for topics within this namespace.
 	// +optional
 	// +kubebuilder:validation:Enum=UNDEFINED;ALWAYS_INCOMPATIBLE;ALWAYS_COMPATIBLE;BACKWARD;FORWARD;FULL;BACKWARD_TRANSITIVE;FORWARD_TRANSITIVE;FULL_TRANSITIVE
-	SchemaCompatibilityStrategy *adminutils.SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
+	SchemaCompatibilityStrategy *SchemaCompatibilityStrategy `json:"schemaCompatibilityStrategy,omitempty"`
 
 	// SchemaValidationEnforced controls whether schema validation is enforced for this namespace.
 	// When enabled, producers must provide a schema when publishing messages.
