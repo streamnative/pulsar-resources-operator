@@ -31,7 +31,7 @@ func IsInfiniteQuantity(q *resource.Quantity) bool {
 	return q.String() == InfiniteQuantityValue
 }
 
-// ToBytes returns the quantity value in bytes.
+// QuantityToBytes returns the quantity value in bytes.
 // Returns -1 for infinite quantity, or the actual bytes for finite quantity.
 func QuantityToBytes(q *resource.Quantity) int64 {
 	if IsInfiniteQuantity(q) {

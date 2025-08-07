@@ -285,7 +285,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		retentionSize := -1
 		if params.RetentionTime != nil {
 			if params.RetentionTime.IsInfinite() {
-				retentionTime = -1  // Infinite retention time
+				retentionTime = -1 // Infinite retention time
 			} else {
 				t, err := params.RetentionTime.Parse()
 				if err != nil {
@@ -296,7 +296,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 		if params.RetentionSize != nil {
 			if rutils.IsInfiniteQuantity(params.RetentionSize) {
-				retentionSize = -1  // Infinite retention size
+				retentionSize = -1 // Infinite retention size
 			} else {
 				retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
 			}
@@ -655,7 +655,7 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		retentionSize := -1
 		if params.RetentionTime != nil {
 			if params.RetentionTime.IsInfinite() {
-				retentionTime = -1  // Infinite retention time
+				retentionTime = -1 // Infinite retention time
 			} else {
 				t, err := params.RetentionTime.Parse()
 				if err != nil {
@@ -666,7 +666,7 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 		if params.RetentionSize != nil {
 			if rutils.IsInfiniteQuantity(params.RetentionSize) {
-				retentionSize = -1  // Infinite retention size
+				retentionSize = -1 // Infinite retention size
 			} else {
 				retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
 			}
