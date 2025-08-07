@@ -85,13 +85,17 @@ type PulsarTopicSpec struct {
 
 	// RetentionTime specifies the minimum time to retain messages on the topic.
 	// Should be set in conjunction with RetentionSize for effective retention policy.
-	// Retention Quota must exceed configured backlog quota for topic
+	// Retention Quota must exceed configured backlog quota for topic.
+	// Use "-1" for infinite retention time.
+	// Valid formats: "1h", "30m", "5s", "-1"
 	// +optional
 	RetentionTime *utils.Duration `json:"retentionTime,omitempty"`
 
 	// RetentionSize specifies the maximum size of backlog retained on the topic.
 	// Should be set in conjunction with RetentionTime for effective retention policy.
-	// Retention Quota must exceed configured backlog quota for topic
+	// Retention Quota must exceed configured backlog quota for topic.
+	// Use "-1" for infinite retention size.
+	// Valid formats: "1Gi", "500Mi", "100M", "-1"
 	// +optional
 	RetentionSize *resource.Quantity `json:"retentionSize,omitempty"`
 
