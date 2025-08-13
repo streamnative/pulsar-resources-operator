@@ -19,8 +19,8 @@ The `PulsarTopic` resource defines a topic in a Pulsar cluster. It allows you to
 | `messageTTL`                        | Time to Live (TTL) for messages in the topic. Messages older than this TTL will be automatically marked as consumed.                                                                    | No       |
 | `maxUnAckedMessagesPerConsumer`     | Maximum number of unacknowledged messages allowed per consumer.                                                                                                                         | No       |
 | `maxUnAckedMessagesPerSubscription` | Maximum number of unacknowledged messages allowed per subscription.                                                                                                                     | No       |
-| `retentionTime`                     | Minimum time to retain messages in the topic. Should be set in conjunction with retentionSize for effective retention policy.                                                           | No       |
-| `retentionSize`                     | Maximum size of backlog retained in the topic. Should be set in conjunction with retentionTime for effective retention policy.                                                          | No       |
+| `retentionTime`                     | Minimum time to retain messages in the topic. Should be set in conjunction with retentionSize for effective retention policy. Use "-1" for infinite retention time.                     | No       |
+| `retentionSize`                     | Maximum size of backlog retained in the topic. Should be set in conjunction with retentionTime for effective retention policy. Use "-1" for infinite retention size.                    | No       |
 | `backlogQuotaLimitTime`             | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy.                                                            | No       |
 | `backlogQuotaLimitSize`             | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy.                                                 | No       |
 | `backlogQuotaRetentionPolicy`       | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".                                   | No       |
@@ -68,6 +68,45 @@ The `replicationClusters` and `geoReplicationRefs` fields serve different purpos
 
 Choose `replicationClusters` for simpler, intra-instance replication, and `geoReplicationRefs` for more complex, inter-instance geo-replication scenarios. These fields are mutually exclusive; use only one depending on your replication requirements.
 
+## Infinite Retention Configuration
+
+The `retentionTime` and `retentionSize` fields support infinite retention by using the special value `"-1"`. This is equivalent to passing -1 to Pulsar admin APIs and provides unlimited retention capabilities.
+
+### Infinite Retention Time
+
+To set infinite retention time, use the value `"-1"` for the `retentionTime` field:
+
+```yaml
+spec:
+  retentionTime: "-1"  # Messages will be retained indefinitely regardless of age
+  retentionSize: "10Gi"  # Still limited by size
+```
+
+### Infinite Retention Size
+
+To set infinite retention size, use the value `"-1"` for the `retentionSize` field:
+
+```yaml
+spec:
+  retentionTime: "7d"  # Still limited by time
+  retentionSize: "-1"  # No size limit for message retention
+```
+
+### Complete Infinite Retention
+
+For completely unlimited retention (both time and size), set both fields to `"-1"`:
+
+```yaml
+spec:
+  retentionTime: "-1"  # Infinite time retention
+  retentionSize: "-1"  # Infinite size retention
+```
+
+**Important Notes:**
+- The `"-1"` value is case-sensitive and must be quoted in YAML
+- Infinite retention should be used carefully as it can lead to unlimited storage consumption
+- Retention quota must exceed configured backlog quota for the topic
+- Consider the storage and cost implications before enabling infinite retention
 
 ## Create A Pulsar Topic
 
@@ -89,8 +128,8 @@ spec:
 # messageTTL:
 # maxUnAckedMessagesPerConsumer:
 # maxUnAckedMessagesPerSubscription:
-# retentionTime: 20h
-# retentionSize: 2Gi
+# retentionTime: 20h    # or "-1" for infinite retention time
+# retentionSize: 2Gi    # or "-1" for infinite retention size
 # backlogQuotaLimitTime: 24h
 # backlogQuotaLimitSize: 1Gi
 # backlogQuotaRetentionPolicy: producer_request_hold

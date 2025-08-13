@@ -749,3 +749,87 @@ func MakePulsarTopicWithSchemaCompatibilityStrategy(namespace, name, topicName, 
 		},
 	}
 }
+
+// MakePulsarTopicWithInfiniteRetention creates a PulsarTopic with infinite retention policies (both time and size)
+func MakePulsarTopicWithInfiniteRetention(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	infiniteTime := rsutils.Duration("-1")
+	infiniteSize := resource.MustParse("-1")
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			RetentionTime:   &infiniteTime,
+			RetentionSize:   &infiniteSize,
+		},
+	}
+}
+
+// MakePulsarTopicWithInfiniteRetentionTime creates a PulsarTopic with infinite retention time only
+func MakePulsarTopicWithInfiniteRetentionTime(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	infiniteTime := rsutils.Duration("-1")
+	finiteSize := resource.MustParse("10Gi")
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			RetentionTime:   &infiniteTime,
+			RetentionSize:   &finiteSize,
+		},
+	}
+}
+
+// MakePulsarTopicWithInfiniteRetentionSize creates a PulsarTopic with infinite retention size only
+func MakePulsarTopicWithInfiniteRetentionSize(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	finiteTime := rsutils.Duration("7d")
+	infiniteSize := resource.MustParse("-1")
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			RetentionTime:   &finiteTime,
+			RetentionSize:   &infiniteSize,
+		},
+	}
+}
+
+// MakePulsarTopicWithFiniteRetention creates a PulsarTopic with finite retention policies for comparison
+func MakePulsarTopicWithFiniteRetention(namespace, name, topicName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarTopic {
+	finiteTime := rsutils.Duration("24h")
+	finiteSize := resource.MustParse("5Gi")
+	return &v1alpha1.PulsarTopic{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Spec: v1alpha1.PulsarTopicSpec{
+			ConnectionRef: corev1.LocalObjectReference{
+				Name: connectionName,
+			},
+			Name:            topicName,
+			LifecyclePolicy: policy,
+			RetentionTime:   &finiteTime,
+			RetentionSize:   &finiteSize,
+		},
+	}
+}

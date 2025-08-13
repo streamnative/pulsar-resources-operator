@@ -16,8 +16,8 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `maxConsumersPerTopic`        | Maximum number of consumers allowed on a single topic in the namespace.                                                                                                                                           | No       |
 | `maxConsumersPerSubscription` | Maximum number of consumers allowed on a single subscription in the namespace.                                                                                                                                    | No       |
 | `messageTTL`                  | Time to Live (TTL) for messages in the namespace. Messages older than this TTL will be automatically marked as consumed.                                                                                          | No       |
-| `retentionTime`               | Minimum time to retain messages in the namespace. Should be set in conjunction with RetentionSize for effective retention policy.                                                                                 | No       |
-| `retentionSize`               | Maximum size of backlog retained in the namespace. Should be set in conjunction with RetentionTime for effective retention policy.                                                                                | No       |
+| `retentionTime`               | Minimum time to retain messages in the namespace. Should be set in conjunction with RetentionSize for effective retention policy. Use "-1" for infinite retention time.                                          | No       |
+| `retentionSize`               | Maximum size of backlog retained in the namespace. Should be set in conjunction with RetentionTime for effective retention policy. Use "-1" for infinite retention size.                                         | No       |
 | `backlogQuotaLimitTime`       | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy.                                                                                      | No       |
 | `backlogQuotaLimitSize`       | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy.                                                                           | No       |
 | `backlogQuotaRetentionPolicy` | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".                                                             | No       |
@@ -393,6 +393,48 @@ The `replicationClusters` and `geoReplicationRefs` fields serve different purpos
 
 Choose `replicationClusters` for simpler, intra-instance replication, and `geoReplicationRefs` for more complex, inter-instance geo-replication scenarios. These fields are mutually exclusive; use only one depending on your replication requirements.
 
+## Infinite Retention Configuration
+
+The `retentionTime` and `retentionSize` fields support infinite retention by using the special value `"-1"`. This is equivalent to passing -1 to Pulsar admin APIs and provides unlimited retention capabilities for all topics within the namespace.
+
+### Infinite Retention Time
+
+To set infinite retention time for the namespace, use the value `"-1"` for the `retentionTime` field:
+
+```yaml
+spec:
+  retentionTime: "-1"  # Messages will be retained indefinitely regardless of age
+  retentionSize: "100Gi"  # Still limited by size
+```
+
+### Infinite Retention Size
+
+To set infinite retention size for the namespace, use the value `"-1"` for the `retentionSize` field:
+
+```yaml
+spec:
+  retentionTime: "30d"  # Still limited by time
+  retentionSize: "-1"  # No size limit for message retention
+```
+
+### Complete Infinite Retention
+
+For completely unlimited retention (both time and size), set both fields to `"-1"`:
+
+```yaml
+spec:
+  retentionTime: "-1"  # Infinite time retention
+  retentionSize: "-1"  # Infinite size retention
+```
+
+**Important Notes:**
+- The `"-1"` value is case-sensitive and must be quoted in YAML
+- Infinite retention should be used carefully as it can lead to unlimited storage consumption
+- Retention quota must exceed configured backlog quota for the namespace
+- These settings apply to all topics within the namespace by default
+- Individual topics can override namespace-level retention settings
+- Consider the storage and cost implications before enabling infinite retention
+
 ## Create A Pulsar Namespace
 
 1. Define a namespace named `test-tenant/testns` by using the YAML file and save the YAML file `namespace.yaml`.
@@ -466,8 +508,8 @@ spec:
   # maxProducersPerTopic: 2
   # maxConsumersPerTopic: 2
   # maxConsumersPerSubscription: 2
-  # retentionTime: 20h
-  # retentionSize: 2Gi
+  # retentionTime: 20h    # or "-1" for infinite retention time
+  # retentionSize: 2Gi    # or "-1" for infinite retention size
   # lifecyclePolicy: CleanUpAfterDeletion
   # topicAutoCreationConfig:
   #   allow: true

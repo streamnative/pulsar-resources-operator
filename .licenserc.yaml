@@ -39,5 +39,6 @@ header:
     - '**/*.json'
     - '**/.helmignore'
     - 'testbin/**'
+    - '.envrc'
 
   comment: on-failure

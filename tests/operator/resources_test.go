@@ -28,11 +28,13 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/utils/pointer"
 
 	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
+	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
 
@@ -1168,6 +1170,289 @@ var _ = Describe("Resources", func() {
 						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
 					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarTopic Infinite Retention Policies", Ordered, func() {
+			var (
+				infiniteRetentionTopic         *v1alphav1.PulsarTopic
+				infiniteRetentionTopicName     string = "test-infinite-retention-topic"
+				infiniteRetentionFullTopicName string = "persistent://cloud/stage/infinite-retention-test"
+
+				infiniteTimeTopic         *v1alphav1.PulsarTopic
+				infiniteTimeTopicName     string = "test-infinite-time-topic"
+				infiniteTimeFullTopicName string = "persistent://cloud/stage/infinite-time-test"
+
+				infiniteSizeTopic         *v1alphav1.PulsarTopic
+				infiniteSizeTopicName     string = "test-infinite-size-topic"
+				infiniteSizeFullTopicName string = "persistent://cloud/stage/infinite-size-test"
+
+				finiteRetentionTopic         *v1alphav1.PulsarTopic
+				finiteRetentionTopicName     string = "test-finite-retention-topic"
+				finiteRetentionFullTopicName string = "persistent://cloud/stage/finite-retention-test"
+			)
+
+			BeforeAll(func() {
+				// Create topic with both infinite retention time and size
+				infiniteRetentionTopic = utils.MakePulsarTopicWithInfiniteRetention(
+					namespaceName,
+					infiniteRetentionTopicName,
+					infiniteRetentionFullTopicName,
+					pconnName,
+					lifecyclePolicy,
+				)
+
+				// Create topic with infinite retention time only
+				infiniteTimeTopic = utils.MakePulsarTopicWithInfiniteRetentionTime(
+					namespaceName,
+					infiniteTimeTopicName,
+					infiniteTimeFullTopicName,
+					pconnName,
+					lifecyclePolicy,
+				)
+
+				// Create topic with infinite retention size only
+				infiniteSizeTopic = utils.MakePulsarTopicWithInfiniteRetentionSize(
+					namespaceName,
+					infiniteSizeTopicName,
+					infiniteSizeFullTopicName,
+					pconnName,
+					lifecyclePolicy,
+				)
+
+				// Create topic with finite retention for comparison
+				finiteRetentionTopic = utils.MakePulsarTopicWithFiniteRetention(
+					namespaceName,
+					finiteRetentionTopicName,
+					finiteRetentionFullTopicName,
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create topic with infinite retention (both time and size) successfully", func() {
+				err := k8sClient.Create(ctx, infiniteRetentionTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: infiniteRetentionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct infinite retention configuration (both time and size)", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: infiniteRetentionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify infinite retention time
+				Expect(topic.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.RetentionTime)).Should(Equal("-1"))
+				Expect(topic.Spec.RetentionTime.IsInfinite()).Should(BeTrue())
+
+				// Verify infinite retention size
+				Expect(topic.Spec.RetentionSize).ShouldNot(BeNil())
+				Expect(topic.Spec.RetentionSize.String()).Should(Equal("-1"))
+				Expect(rutils.IsInfiniteQuantity(topic.Spec.RetentionSize)).Should(BeTrue())
+			})
+
+			It("should create topic with infinite retention time only successfully", func() {
+				err := k8sClient.Create(ctx, infiniteTimeTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: infiniteTimeTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct infinite retention time and finite size configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: infiniteTimeTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify infinite retention time
+				Expect(topic.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.RetentionTime)).Should(Equal("-1"))
+				Expect(topic.Spec.RetentionTime.IsInfinite()).Should(BeTrue())
+
+				// Verify finite retention size
+				Expect(topic.Spec.RetentionSize).ShouldNot(BeNil())
+				Expect(topic.Spec.RetentionSize.String()).Should(Equal("10Gi"))
+				Expect(rutils.IsInfiniteQuantity(topic.Spec.RetentionSize)).Should(BeFalse())
+			})
+
+			It("should create topic with infinite retention size only successfully", func() {
+				err := k8sClient.Create(ctx, infiniteSizeTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: infiniteSizeTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct finite retention time and infinite size configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: infiniteSizeTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify finite retention time
+				Expect(topic.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.RetentionTime)).Should(Equal("7d"))
+				Expect(topic.Spec.RetentionTime.IsInfinite()).Should(BeFalse())
+
+				// Verify infinite retention size
+				Expect(topic.Spec.RetentionSize).ShouldNot(BeNil())
+				Expect(topic.Spec.RetentionSize.String()).Should(Equal("-1"))
+				Expect(rutils.IsInfiniteQuantity(topic.Spec.RetentionSize)).Should(BeTrue())
+			})
+
+			It("should create topic with finite retention for comparison successfully", func() {
+				err := k8sClient.Create(ctx, finiteRetentionTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct finite retention configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify finite retention time
+				Expect(topic.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.RetentionTime)).Should(Equal("24h"))
+				Expect(topic.Spec.RetentionTime.IsInfinite()).Should(BeFalse())
+
+				// Verify finite retention size
+				Expect(topic.Spec.RetentionSize).ShouldNot(BeNil())
+				Expect(topic.Spec.RetentionSize.String()).Should(Equal("5Gi"))
+				Expect(rutils.IsInfiniteQuantity(topic.Spec.RetentionSize)).Should(BeFalse())
+			})
+
+			It("should update finite retention to infinite retention successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update to infinite retention
+				infiniteTime := rutils.Duration("-1")
+				infiniteSize := resource.MustParse("-1")
+				topic.Spec.RetentionTime = &infiniteTime
+				topic.Spec.RetentionSize = &infiniteSize
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update to infinite retention", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated infinite retention configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify updated infinite retention time
+				Expect(topic.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.RetentionTime)).Should(Equal("-1"))
+				Expect(topic.Spec.RetentionTime.IsInfinite()).Should(BeTrue())
+
+				// Verify updated infinite retention size
+				Expect(topic.Spec.RetentionSize).ShouldNot(BeNil())
+				Expect(topic.Spec.RetentionSize.String()).Should(Equal("-1"))
+				Expect(rutils.IsInfiniteQuantity(topic.Spec.RetentionSize)).Should(BeTrue())
+			})
+
+			It("should update infinite retention back to finite retention successfully", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Update back to finite retention
+				finiteTime := rutils.Duration("12h")
+				finiteSize := resource.MustParse("2Gi")
+				topic.Spec.RetentionTime = &finiteTime
+				topic.Spec.RetentionSize = &finiteSize
+				err := k8sClient.Update(ctx, topic)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update back to finite retention", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have updated finite retention configuration", func() {
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: finiteRetentionTopicName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+
+				// Verify updated finite retention time
+				Expect(topic.Spec.RetentionTime).ShouldNot(BeNil())
+				Expect(string(*topic.Spec.RetentionTime)).Should(Equal("12h"))
+				Expect(topic.Spec.RetentionTime.IsInfinite()).Should(BeFalse())
+
+				// Verify updated finite retention size
+				Expect(topic.Spec.RetentionSize).ShouldNot(BeNil())
+				Expect(topic.Spec.RetentionSize.String()).Should(Equal("2Gi"))
+				Expect(rutils.IsInfiniteQuantity(topic.Spec.RetentionSize)).Should(BeFalse())
+			})
+
+			AfterAll(func() {
+				// Clean up all test topics
+				topics := []*v1alphav1.PulsarTopic{
+					infiniteRetentionTopic,
+					infiniteTimeTopic,
+					infiniteSizeTopic,
+					finiteRetentionTopic,
+				}
+				topicNames := []string{
+					infiniteRetentionTopicName,
+					infiniteTimeTopicName,
+					infiniteSizeTopicName,
+					finiteRetentionTopicName,
+				}
+
+				for i, topic := range topics {
+					if topic != nil {
+						Eventually(func(g Gomega) {
+							t := &v1alphav1.PulsarTopic{}
+							tns := types.NamespacedName{Namespace: namespaceName, Name: topicNames[i]}
+							g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+							g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+						}).Should(Succeed())
+					}
 				}
 			})
 		})
