@@ -46,6 +46,14 @@ const (
 	TopicDomainNonPersistent = "non-persistent"
 )
 
+// ptrBoolToBool converts a pointer to bool to bool with default value false
+func ptrBoolToBool(b *bool) bool {
+	if b == nil {
+		return false
+	}
+	return *b
+}
+
 // Type conversion functions for external library types
 
 // convertOffloadPolicies converts our local OffloadPolicies to the external library type
@@ -1452,10 +1460,10 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		TopicsPattern: param.TopicsPattern,
 		TimeoutMs:     param.TimeoutMs,
 
-		CleanupSubscription: param.CleanupSubscription,
-		RetainOrdering:      param.RetainOrdering,
-		RetainKeyOrdering:   param.RetainKeyOrdering,
-		AutoAck:             param.AutoAck,
+		CleanupSubscription: ptrBoolToBool(param.CleanupSubscription),
+		RetainOrdering:      ptrBoolToBool(param.RetainOrdering),
+		RetainKeyOrdering:   ptrBoolToBool(param.RetainKeyOrdering),
+		AutoAck:             ptrBoolToBool(param.AutoAck),
 		Parallelism:         param.Parallelism,
 
 		SinkType: param.SinkType,

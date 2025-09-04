@@ -20,7 +20,9 @@ metadata:
 spec:
   autoAck: true
   className: org.apache.pulsar.io.datagenerator.DataGeneratorPrintSink
-  cleanupSubscription: false
+  # Note: cleanupSubscription defaults to false when omitted
+  # Only set explicitly when you need a non-default value
+  # cleanupSubscription: false
   connectionRef:
     name: "test-pulsar-connection"
   customRuntimeOptions: {}

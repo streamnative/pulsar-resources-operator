@@ -2488,6 +2488,26 @@ func (in *PulsarSinkSpec) DeepCopyInto(out *PulsarSinkSpec) {
 		*out = new(int64)
 		**out = **in
 	}
+	if in.CleanupSubscription != nil {
+		in, out := &in.CleanupSubscription, &out.CleanupSubscription
+		*out = new(bool)
+		**out = **in
+	}
+	if in.RetainOrdering != nil {
+		in, out := &in.RetainOrdering, &out.RetainOrdering
+		*out = new(bool)
+		**out = **in
+	}
+	if in.RetainKeyOrdering != nil {
+		in, out := &in.RetainKeyOrdering, &out.RetainKeyOrdering
+		*out = new(bool)
+		**out = **in
+	}
+	if in.AutoAck != nil {
+		in, out := &in.AutoAck, &out.AutoAck
+		*out = new(bool)
+		**out = **in
+	}
 	if in.Archive != nil {
 		in, out := &in.Archive, &out.Archive
 		*out = new(PackageContentRef)

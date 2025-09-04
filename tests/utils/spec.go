@@ -555,9 +555,9 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 			Inputs:                     []string{"sink-input"},
 			Parallelism:                1,
 			ProcessingGuarantees:       "EFFECTIVELY_ONCE",
-			CleanupSubscription:        false,
+			CleanupSubscription:        ptr.To(false),
 			SourceSubscriptionPosition: "Latest",
-			AutoAck:                    true,
+			AutoAck:                    ptr.To(true),
 			ClassName:                  "org.apache.pulsar.io.datagenerator.DataGeneratorPrintSink",
 			Resources: &v1alpha1.Resources{
 				CPU:  "1",

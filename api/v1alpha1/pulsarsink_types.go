@@ -42,19 +42,19 @@ type PulsarSinkSpec struct {
 
 	// CleanupSubscription is the flag to enable or disable the cleanup of subscription
 	// +optional
-	CleanupSubscription bool `json:"cleanupSubscription,omitempty"`
+	CleanupSubscription *bool `json:"cleanupSubscription,omitempty"`
 
 	// RetainOrdering is the flag to enable or disable the retain ordering
 	// +optional
-	RetainOrdering bool `json:"retainOrdering,omitempty"`
+	RetainOrdering *bool `json:"retainOrdering,omitempty"`
 
 	// RetainKeyOrdering is the flag to enable or disable the retain key ordering
 	// +optional
-	RetainKeyOrdering bool `json:"retainKeyOrdering,omitempty"`
+	RetainKeyOrdering *bool `json:"retainKeyOrdering,omitempty"`
 
 	// AutoAck is the flag to enable or disable the auto ack
 	// +optional
-	AutoAck bool `json:"autoAck,omitempty"`
+	AutoAck *bool `json:"autoAck,omitempty"`
 
 	// Parallelism is the parallelism of the PulsarSink
 	// +optional
