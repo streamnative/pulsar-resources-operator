@@ -224,15 +224,18 @@ spec:
                   ClusterName specifies the name of the local Pulsar cluster.
                   When setting up Geo-Replication between Pulsar instances, this should be enabled to identify the cluster.
                 type: string
+              tlsAllowInsecureConnection:
+                description: TLSAllowInsecureConnection indicates whether to allow
+                  insecure connection to the broker.
+                type: boolean
               tlsEnableHostnameVerification:
-                description: TLSEnableHostnameVerification indicates whether to verify the hostname of the broker.
+                description: |-
+                  TLSEnableHostnameVerification indicates whether to verify the hostname of the broker.
                   Only used when using secure urls.
                 type: boolean
-              tlsAllowInsecureConnection:
-                description: TLSAllowInsecureConnection indicates whether to allow insecure connection to the broker.
-                type: boolean
               tlsTrustCertsFilePath:
-                description: TLSTrustCertsFilePath Path for the TLS certificate used to validate the broker endpoint when using TLS.
+                description: TLSTrustCertsFilePath Path for the TLS certificate used
+                  to validate the broker endpoint when using TLS.
                 type: string
             type: object
           status:
