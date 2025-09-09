@@ -41,7 +41,7 @@ This table lists specifications available for the `PulsarSink` resource.
 | `topicsPattern`                | The topic pattern.                                                                                                                                    | Optional        |
 | `resources`                    | The resources of the sink.                                                                                                                            | Optional        |
 | `timeoutMs`                    | The timeout in milliseconds.                                                                                                                          | Optional        |
-| `cleanupSubscription`          | The cleanup subscription (defaults to false when omitted).                                                                                            | Optional        |
+| `cleanupSubscription`          | The cleanup subscription.                                                                                            | Optional        |
 | `retainOrdering`               | The retain ordering.                                                                                                                                  | Optional        |
 | `retainKeyOrdering`            | The retain key ordering.                                                                                                                              | Optional        |
 | `autoAck`                      | The auto ack.                                                                                                                                         | Optional        |
