@@ -1,551 +1,207 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "http://streamnative.io/pulsar-resources-operator-schema.json",
     "type": "object",
-    "title": "The root schema",
-    "description": "The root schema comprises the entire JSON document.",
-    "required": [
-        "replicaCount",
-        "image",
-        "imagePullSecrets",
-        "resources"
-    ],
     "properties": {
-        "namespace": {
-            "$id": "#/properties/namespace",
-            "type": "string",
-            "title": "The namespace schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                ""
-            ]
-        },
-        "replicaCount": {
-            "$id": "#/properties/replicaCount",
-            "type": "integer",
-            "title": "The replicaCount schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                1
-            ]
-        },
-        "image": {
-            "$id": "#/properties/image",
-            "type": "object",
-            "title": "The image schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {
-                    "pullPolicy": "IfNotPresent"
-                }
-            ],
-            "properties": {
-                "pullPolicy": {
-                    "$id": "#/properties/image/properties/pullPolicy",
-                    "type": "string",
-                    "title": "The pullPolicy schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        "IfNotPresent"
-                    ]
-                },
-                "manager": {
-                    "$id": "#/properties/image/properties/manager",
-                    "type": "object",
-                    "title": "The operator image schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        {
-                            "registry": "dockerio",
-                            "repository": "streamnative/pulsar-resources-operator",
-                            "tag": ""
-                        }
-                    ],
-                    "required": [
-                        "registry",
-                        "repository"
-                    ],
-                    "properties": {
-                        "registry": {
-                            "$id": "#/properties/image/properties/manager/properties/registry",
-                            "type": "string",
-                            "title": "The registry schema",
-                            "description": "An explanation about the purpose of this instance.",
-                            "examples": [
-                                "docker.io"
-                            ]
-                        },
-                        "repository": {
-                            "$id": "#/properties/image/properties/manager/properties/repository",
-                            "type": "string",
-                            "title": "The repository schema",
-                            "description": "An explanation about the purpose of this instance.",
-                            "examples": [
-                                "streamnative/pulsar-resources-operator"
-                            ]
-                        },
-                        "tag": {
-                            "$id": "#/properties/image/properties/manager/properties/tag",
-                            "type": "string",
-                            "title": "The tag schema",
-                            "description": "An explanation about the purpose of this instance.",
-                            "examples": [
-                                ""
-                            ]
-                        }
-                    }
-                },
-                "kubeRbacProxy": {
-                    "type": "object",
-                    "default": {},
-                    "title": "The kubeRbacProxy Schema",
-                    "required": [
-                        "registry",
-                        "repository",
-                        "tag"
-                    ],
-                    "properties": {
-                        "registry": {
-                            "type": "string",
-                            "default": "",
-                            "title": "The registry Schema",
-                            "examples": [
-                                "gcr.io"
-                            ]
-                        },
-                        "repository": {
-                            "type": "string",
-                            "default": "",
-                            "title": "The repository Schema",
-                            "examples": [
-                                "kubebuilder/kube-rbac-proxy"
-                            ]
-                        },
-                        "tag": {
-                            "type": "string",
-                            "default": "",
-                            "title": "The tag Schema",
-                            "examples": [
-                                "v0.14.4"
-                            ]
-                        }
-                    },
-                    "examples": [
-                        {
-                            "registry": "gcr.io",
-                            "repository": "kubebuilder/kube-rbac-proxy",
-                            "tag": "v0.14.4"
-                        }
-                    ]
-                }
-            },
-            "additionalProperties": true
-        },
-        "imagePullSecrets": {
-            "$id": "#/properties/imagePullSecrets",
-            "type": "array",
-            "title": "The imagePullSecrets schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                []
-            ],
-            "additionalItems": true,
-            "items": {
-                "$id": "#/properties/imagePullSecrets/items",
-                "anyOf": [
-                    {
-                        "$id": "#/properties/imagePullSecrets/items/anyOf/0",
-                        "type": "object",
-                        "title": "The first anyOf schema",
-                        "description": "An explanation about the purpose of this instance.",
-                        "examples": [
-                            {
-                                "name": "test"
-                            }
-                        ],
-                        "required": [
-                            "name"
-                        ],
-                        "properties": {
-                            "name": {
-                                "$id": "#/properties/imagePullSecrets/items/anyOf/0/properties/name",
-                                "type": "string",
-                                "title": "The name schema",
-                                "description": "An explanation about the purpose of this instance.",
-                                "examples": [
-                                    "test"
-                                ]
-                            }
-                        },
-                        "additionalProperties": true
-                    }
-                ]
-            }
-        },
-        "nameOverride": {
-            "$id": "#/properties/nameOverride",
-            "type": "string",
-            "title": "The nameOverride schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                ""
-            ]
-        },
-        "fullnameOverride": {
-            "$id": "#/properties/fullnameOverride",
-            "type": "string",
-            "title": "The fullnameOverride schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                ""
-            ]
-        },
-        "serviceAccount": {
-            "$id": "#/properties/serviceAccount",
-            "type": "object",
-            "title": "The serviceAccount schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {
-                    "create": true,
-                    "annotations": {},
-                    "name": ""
-                }
-            ],
-            "required": [
-                "create",
-                "annotations",
-                "name"
-            ],
-            "properties": {
-                "create": {
-                    "$id": "#/properties/serviceAccount/properties/create",
-                    "type": "boolean",
-                    "title": "The create schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        true
-                    ]
-                },
-                "annotations": {
-                    "$id": "#/properties/serviceAccount/properties/annotations",
-                    "type": "object",
-                    "title": "The annotations schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        {}
-                    ],
-                    "required": [],
-                    "additionalProperties": true
-                },
-                "name": {
-                    "$id": "#/properties/serviceAccount/properties/name",
-                    "type": "string",
-                    "title": "The name schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        ""
-                    ]
-                }
-            },
-            "additionalProperties": true
-        },
-        "labels": {
-            "$id": "#/properties/labels",
-            "type": "object",
-            "title": "The labels schema",
-            "description": "customized labels for deployment",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "podAnnotations": {
-            "$id": "#/properties/podAnnotations",
-            "type": "object",
-            "title": "The podAnnotations schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "podLabels": {
-            "$id": "#/properties/podLabels",
-            "type": "object",
-            "title": "The labels schema",
-            "description": "customized labels for pod",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "podSecurityContext": {
-            "$id": "#/properties/podSecurityContext",
-            "type": "object",
-            "title": "The podSecurityContext schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "securityContext": {
-            "$id": "#/properties/securityContext",
-            "type": "object",
-            "title": "The securityContext schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "resources": {
-            "$id": "#/properties/resources",
-            "type": "object",
-            "title": "The resources schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "properties": {
-                "requests": {
-                    "$id": "#/properties/resources/properties/requests",
-                    "type": "object",
-                    "title": "The requests schema",
-                    "description": "An explanation about the purpose of this instance.",
-                    "examples": [
-                        {
-                            "cpu": "100m",
-                            "memory": "128Mi"
-                        }
-                    ],
-                    "required": [
-                        "cpu",
-                        "memory"
-                    ],
-                    "properties": {
-                        "cpu": {
-                            "$id": "#/properties/resources/properties/requests/properties/cpu",
-                            "type": "string",
-                            "title": "The cpu schema",
-                            "description": "An explanation about the purpose of this instance.",
-                            "examples": [
-                                "100m"
-                            ]
-                        },
-                        "memory": {
-                            "$id": "#/properties/resources/properties/requests/properties/memory",
-                            "type": "string",
-                            "title": "The memory schema",
-                            "description": "An explanation about the purpose of this instance.",
-                            "examples": [
-                                "128Mi"
-                            ]
-                        }
-                    },
-                    "additionalProperties": true
-                }
-            },
-            "additionalProperties": true
-        },
-        "nodeSelector": {
-            "$id": "#/properties/nodeSelector",
-            "type": "object",
-            "title": "The nodeSelector schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "tolerations": {
-            "$id": "#/properties/tolerations",
-            "type": "array",
-            "title": "The tolerations schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                []
-            ],
-            "additionalItems": true,
-            "items": {
-                "$id": "#/properties/tolerations/items"
-            }
-        },
         "affinity": {
-            "$id": "#/properties/affinity",
-            "type": "object",
-            "title": "The affinity schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                {}
-            ],
-            "required": [],
-            "additionalProperties": true
-        },
-        "terminationGracePeriodSeconds": {
-            "$id": "#/properties/terminationGracePeriodSeconds",
-            "type": "integer",
-            "title": "The terminationGracePeriodSeconds schema",
-            "description": "An explanation about the purpose of this instance.",
-            "examples": [
-                10
-            ]
+            "type": "object"
         },
         "cloudStorage": {
             "type": "object",
-            "description": "Cloud storage providers configuration",
             "properties": {
-                "s3": {
+                "azure": {
                     "type": "object",
-                    "description": "AWS S3 configuration",
                     "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "Enable AWS S3 support"
-                        },
-                        "region": {
-                            "type": "string",
-                            "description": "AWS region"
+                        "accountName": {
+                            "type": "string"
                         },
                         "credentials": {
                             "type": "object",
-                            "description": "AWS credentials secret configuration",
                             "properties": {
+                                "accountKey": {
+                                    "type": "string"
+                                },
                                 "create": {
-                                    "type": "boolean",
-                                    "description": "Create a new secret for AWS credentials"
+                                    "type": "boolean"
+                                },
+                                "sasToken": {
+                                    "type": "string"
                                 },
                                 "secretName": {
-                                    "type": "string",
-                                    "description": "Existing secret name"
+                                    "type": "string"
                                 },
-                                "accessKeyId": {
-                                    "type": "string",
-                                    "description": "AWS access key ID (only used if create is true)"
-                                },
-                                "secretAccessKey": {
-                                    "type": "string",
-                                    "description": "AWS secret access key (only used if create is true)"
+                                "useAccountKey": {
+                                    "type": "boolean"
                                 }
-                            },
-                            "required": [
-                                "secretName"
-                            ]
+                            }
+                        },
+                        "enabled": {
+                            "type": "boolean"
                         }
-                    },
-                    "required": [
-                        "enabled"
-                    ]
+                    }
                 },
                 "gcs": {
                     "type": "object",
-                    "description": "Google Cloud Storage configuration",
                     "properties": {
                         "enabled": {
-                            "type": "boolean",
-                            "description": "Enable Google Cloud Storage support"
+                            "type": "boolean"
                         },
                         "serviceAccount": {
                             "type": "object",
-                            "description": "Service account configuration",
                             "properties": {
-                                "useWorkloadIdentity": {
-                                    "type": "boolean",
-                                    "description": "Use workload identity"
-                                },
-                                "name": {
-                                    "type": "string",
-                                    "description": "Name of the Kubernetes service account for workload identity"
-                                },
                                 "key": {
                                     "type": "object",
-                                    "description": "Service account key configuration",
                                     "properties": {
                                         "create": {
-                                            "type": "boolean",
-                                            "description": "Create a new secret for service account key"
-                                        },
-                                        "secretName": {
-                                            "type": "string",
-                                            "description": "Existing secret name"
+                                            "type": "boolean"
                                         },
                                         "json": {
-                                            "type": "string",
-                                            "description": "Service account key JSON content (only used if create is true)"
+                                            "type": "string"
                                         },
                                         "mountPath": {
-                                            "type": "string",
-                                            "description": "Mount path of the service account key file"
+                                            "type": "string"
+                                        },
+                                        "secretName": {
+                                            "type": "string"
                                         }
-                                    },
-                                    "required": [
-                                        "secretName",
-                                        "mountPath"
-                                    ]
+                                    }
+                                },
+                                "name": {
+                                    "type": "string"
+                                },
+                                "useWorkloadIdentity": {
+                                    "type": "boolean"
                                 }
                             }
                         }
-                    },
-                    "required": [
-                        "enabled"
-                    ]
+                    }
                 },
-                "azure": {
+                "s3": {
                     "type": "object",
-                    "description": "Azure Blob Storage configuration",
                     "properties": {
-                        "enabled": {
-                            "type": "boolean",
-                            "description": "Enable Azure Blob Storage support"
-                        },
-                        "accountName": {
-                            "type": "string",
-                            "description": "Azure storage account name"
-                        },
                         "credentials": {
                             "type": "object",
-                            "description": "Azure credentials configuration",
                             "properties": {
+                                "accessKeyId": {
+                                    "type": "string"
+                                },
                                 "create": {
-                                    "type": "boolean",
-                                    "description": "Create a new secret for Azure credentials"
+                                    "type": "boolean"
+                                },
+                                "secretAccessKey": {
+                                    "type": "string"
                                 },
                                 "secretName": {
-                                    "type": "string",
-                                    "description": "Existing secret name"
-                                },
-                                "accountKey": {
-                                    "type": "string",
-                                    "description": "Storage account key (only used if create is true)"
-                                },
-                                "sasToken": {
-                                    "type": "string",
-                                    "description": "SAS token (only used if create is true)"
-                                },
-                                "useAccountKey": {
-                                    "type": "boolean",
-                                    "description": "Use account key for authentication (if false, will use SAS token)"
+                                    "type": "string"
                                 }
-                            },
-                            "required": [
-                                "secretName"
-                            ]
+                            }
+                        },
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "region": {
+                            "type": "string"
                         }
-                    },
-                    "required": [
-                        "enabled"
-                    ]
+                    }
                 }
             }
+        },
+        "extraVolumeMounts": {
+            "type": "array"
+        },
+        "extraVolumes": {
+            "type": "array"
+        },
+        "features": {
+            "type": "object",
+            "properties": {
+                "alwaysUpdatePulsarResource": {
+                    "type": "boolean"
+                },
+                "resyncPeriod": {
+                    "type": "integer"
+                },
+                "retryCount": {
+                    "type": "integer"
+                }
+            }
+        },
+        "fullnameOverride": {
+            "type": "string"
+        },
+        "image": {
+            "type": "object",
+            "properties": {
+                "manager": {
+                    "type": "object",
+                    "properties": {
+                        "registry": {
+                            "type": "string"
+                        },
+                        "repository": {
+                            "type": "string"
+                        },
+                        "tag": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "pullPolicy": {
+                    "type": "string"
+                }
+            }
+        },
+        "imagePullSecrets": {
+            "type": "array"
+        },
+        "labels": {
+            "type": "object"
+        },
+        "nameOverride": {
+            "type": "string"
+        },
+        "namespace": {
+            "type": "string"
+        },
+        "nodeSelector": {
+            "type": "object"
+        },
+        "podAnnotations": {
+            "type": "object"
+        },
+        "podLabels": {
+            "type": "object"
+        },
+        "podSecurityContext": {
+            "type": "object"
+        },
+        "replicaCount": {
+            "type": "integer"
+        },
+        "resources": {
+            "type": "object"
+        },
+        "securityContext": {
+            "type": "object"
+        },
+        "serviceAccount": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "create": {
+                    "type": "boolean"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "terminationGracePeriodSeconds": {
+            "type": "integer"
+        },
+        "tolerations": {
+            "type": "array"
         }
-    },
-    "additionalProperties": true
+    }
 }
