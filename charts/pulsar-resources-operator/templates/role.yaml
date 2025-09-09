@@ -430,3 +430,107 @@ rules:
   - get
   - patch
   - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - apikeys
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - apikeys/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - apikeys/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - serviceaccounts
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - serviceaccounts/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - serviceaccounts/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - serviceaccountbindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - serviceaccountbindings/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - serviceaccountbindings/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - rolebindings
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - rolebindings/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - resource.streamnative.io
+  resources:
+  - rolebindings/status
+  verbs:
+  - get
+  - patch
+  - update
