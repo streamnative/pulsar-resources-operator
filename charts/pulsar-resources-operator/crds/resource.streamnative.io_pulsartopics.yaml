@@ -79,6 +79,14 @@ spec:
               PulsarTopicSpec defines the desired state of PulsarTopic.
               It corresponds to the configuration options available in Pulsar's topic admin API.
             properties:
+              autoSubscriptionCreation:
+                description: |-
+                  AutoSubscriptionCreation defines the auto subscription creation override for the topic.
+                  This controls whether subscriptions can be created automatically.
+                properties:
+                  allowAutoSubscriptionCreation:
+                    type: boolean
+                type: object
               backlogQuotaLimitSize:
                 anyOf:
                 - type: integer
@@ -98,6 +106,12 @@ spec:
                   BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
                   Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
                 type: string
+              compactionThreshold:
+                description: |-
+                  CompactionThreshold specifies the size threshold in bytes for automatic topic compaction.
+                  When the topic reaches this size, compaction will be triggered automatically.
+                format: int64
+                type: integer
               connectionRef:
                 description: |-
                   ConnectionRef is the reference to the PulsarConnection resource
@@ -120,6 +134,52 @@ spec:
                 description: Deduplication controls whether to enable message deduplication
                   for the topic.
                 type: boolean
+              deduplicationSnapshotInterval:
+                description: |-
+                  DeduplicationSnapshotInterval specifies the interval for taking deduplication snapshots.
+                  This affects the deduplication performance and storage overhead.
+                format: int32
+                type: integer
+              delayedDelivery:
+                description: |-
+                  DelayedDelivery defines the delayed delivery policy for the topic.
+                  This allows messages to be delivered with a delay.
+                properties:
+                  active:
+                    description: Active determines whether delayed delivery is enabled
+                      for the topic
+                    type: boolean
+                  tickTimeMillis:
+                    description: TickTimeMillis specifies the tick time for delayed
+                      message delivery in milliseconds
+                    format: int64
+                    type: integer
+                type: object
+              dispatchRate:
+                description: |-
+                  DispatchRate defines the message dispatch rate limiting policy for the topic.
+                  This controls the rate at which messages are delivered to consumers.
+                properties:
+                  dispatchThrottlingRateInByte:
+                    description: |-
+                      DispatchThrottlingRateInByte specifies the maximum number of bytes per second allowed
+                      -1 means unlimited
+                    format: int64
+                    type: integer
+                  dispatchThrottlingRateInMsg:
+                    description: |-
+                      DispatchThrottlingRateInMsg specifies the maximum number of messages per second allowed
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                  ratePeriodInSecond:
+                    default: 1
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
+                type: object
               geoReplicationRefs:
                 description: |-
                   GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
@@ -145,6 +205,30 @@ spec:
                   type: object
                   x-kubernetes-map-type: atomic
                 type: array
+              inactiveTopicPolicies:
+                description: |-
+                  InactiveTopicPolicies defines the inactive topic cleanup policy for the topic.
+                  This controls how inactive topics are automatically cleaned up.
+                properties:
+                  deleteWhileInactive:
+                    description: DeleteWhileInactive specifies whether to delete topics
+                      while they are inactive
+                    type: boolean
+                  inactiveTopicDeleteMode:
+                    description: |-
+                      InactiveTopicDeleteMode specifies how inactive topics should be handled
+                      Valid values: "delete_when_no_subscriptions", "delete_when_subscriptions_caught_up"
+                    enum:
+                    - delete_when_no_subscriptions
+                    - delete_when_subscriptions_caught_up
+                    type: string
+                  maxInactiveDurationInSeconds:
+                    description: MaxInactiveDurationInSeconds specifies how long a
+                      topic can remain inactive before being deleted
+                    format: int32
+                    minimum: 1
+                    type: integer
+                type: object
               lifecyclePolicy:
                 description: |-
                   LifecyclePolicy determines whether to keep or delete the Pulsar topic
@@ -158,9 +242,25 @@ spec:
                   on the topic.
                 format: int32
                 type: integer
+              maxConsumersPerSubscription:
+                description: MaxConsumersPerSubscription sets the maximum number of
+                  consumers allowed per subscription.
+                format: int32
+                type: integer
+              maxMessageSize:
+                description: |-
+                  MaxMessageSize specifies the maximum size of messages that can be published to the topic.
+                  Messages larger than this size will be rejected.
+                format: int32
+                type: integer
               maxProducers:
                 description: MaxProducers sets the maximum number of producers allowed
                   on the topic.
+                format: int32
+                type: integer
+              maxSubscriptionsPerTopic:
+                description: MaxSubscriptionsPerTopic sets the maximum number of subscriptions
+                  allowed on the topic.
                 format: int32
                 type: integer
               maxUnAckedMessagesPerConsumer:
@@ -183,6 +283,45 @@ spec:
               name:
                 description: Name is the topic name
                 type: string
+              offloadPolicies:
+                description: |-
+                  OffloadPolicies defines the offload policies for the topic.
+                  This controls how data is offloaded to external storage systems.
+                properties:
+                  managedLedgerOffloadAutoTriggerSizeThresholdBytes:
+                    format: int64
+                    type: integer
+                  managedLedgerOffloadDeletionLagInMillis:
+                    format: int64
+                    type: integer
+                  managedLedgerOffloadDriver:
+                    type: string
+                  managedLedgerOffloadDriverMetadata:
+                    additionalProperties:
+                      type: string
+                    type: object
+                  managedLedgerOffloadMaxThreads:
+                    type: integer
+                  managedLedgerOffloadThresholdInBytes:
+                    format: int64
+                    type: integer
+                  offloadersDirectory:
+                    type: string
+                  s3ManagedLedgerOffloadBucket:
+                    type: string
+                  s3ManagedLedgerOffloadCredentialId:
+                    type: string
+                  s3ManagedLedgerOffloadCredentialSecret:
+                    type: string
+                  s3ManagedLedgerOffloadRegion:
+                    type: string
+                  s3ManagedLedgerOffloadRole:
+                    type: string
+                  s3ManagedLedgerOffloadRoleSessionName:
+                    type: string
+                  s3ManagedLedgerOffloadServiceEndpoint:
+                    type: string
+                type: object
               partitions:
                 default: 0
                 description: |-
@@ -190,12 +329,70 @@ spec:
                   Set to 0 for a non-partitioned topic.
                 format: int32
                 type: integer
+              persistencePolicies:
+                description: |-
+                  PersistencePolicies defines the persistence configuration for the topic.
+                  This controls how data is stored and replicated in BookKeeper.
+                properties:
+                  bookkeeperAckQuorum:
+                    description: |-
+                      BookkeeperAckQuorum specifies the number of replicas to wait for acknowledgment
+                      Must be <= BookkeeperWriteQuorum
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  bookkeeperEnsemble:
+                    description: |-
+                      BookkeeperEnsemble specifies the number of bookies to use for a ledger
+                      This determines the replication factor for storing data
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  bookkeeperWriteQuorum:
+                    description: |-
+                      BookkeeperWriteQuorum specifies the number of replicas to write for each entry
+                      Must be <= BookkeeperEnsemble
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  managedLedgerMaxMarkDeleteRate:
+                    description: |-
+                      ManagedLedgerMaxMarkDeleteRate specifies the maximum rate at which mark-delete operations can be performed
+                      This helps control the rate of acknowledgment processing
+                      Value should be a decimal number as string (e.g., "1.5", "2.0")
+                    type: string
+                type: object
               persistent:
                 default: true
                 description: |-
                   Persistent determines if the topic is persistent (true) or non-persistent (false).
                   Defaults to true if not specified.
                 type: boolean
+              properties:
+                additionalProperties:
+                  type: string
+                description: |-
+                  Properties is a map of user-defined properties associated with the topic.
+                  These can be used to store additional metadata about the topic.
+                type: object
+              publishRate:
+                description: |-
+                  PublishRate defines the message publish rate limiting policy for the topic.
+                  This controls the rate at which producers can publish messages.
+                properties:
+                  publishThrottlingRateInByte:
+                    description: |-
+                      PublishThrottlingRateInByte specifies the maximum number of bytes per second that producers can publish
+                      -1 means unlimited
+                    format: int64
+                    type: integer
+                  publishThrottlingRateInMsg:
+                    description: |-
+                      PublishThrottlingRateInMsg specifies the maximum number of messages per second that producers can publish
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                type: object
               replicationClusters:
                 description: |-
                   ReplicationClusters is the list of clusters to which the topic is replicated
@@ -205,6 +402,31 @@ spec:
                 items:
                   type: string
                 type: array
+              replicatorDispatchRate:
+                description: |-
+                  ReplicatorDispatchRate defines the message dispatch rate limiting policy for replicators.
+                  This controls the rate at which messages are replicated to other clusters.
+                properties:
+                  dispatchThrottlingRateInByte:
+                    description: |-
+                      DispatchThrottlingRateInByte specifies the maximum number of bytes per second allowed
+                      -1 means unlimited
+                    format: int64
+                    type: integer
+                  dispatchThrottlingRateInMsg:
+                    description: |-
+                      DispatchThrottlingRateInMsg specifies the maximum number of messages per second allowed
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                  ratePeriodInSecond:
+                    default: 1
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
+                type: object
               retentionSize:
                 anyOf:
                 - type: integer
@@ -212,14 +434,33 @@ spec:
                 description: |-
                   RetentionSize specifies the maximum size of backlog retained on the topic.
                   Should be set in conjunction with RetentionTime for effective retention policy.
-                  Retention Quota must exceed configured backlog quota for topic
+                  Retention Quota must exceed configured backlog quota for topic.
+                  Use "-1" for infinite retention size.
+                  Valid formats: "1Gi", "500Mi", "100M", "-1"
                 pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                 x-kubernetes-int-or-string: true
               retentionTime:
                 description: |-
                   RetentionTime specifies the minimum time to retain messages on the topic.
                   Should be set in conjunction with RetentionSize for effective retention policy.
-                  Retention Quota must exceed configured backlog quota for topic
+                  Retention Quota must exceed configured backlog quota for topic.
+                  Use "-1" for infinite retention time.
+                  Valid formats: "1h", "30m", "5s", "-1"
+                type: string
+              schemaCompatibilityStrategy:
+                description: |-
+                  SchemaCompatibilityStrategy defines the schema compatibility strategy for the topic.
+                  This controls how schema evolution is handled.
+                enum:
+                - UNDEFINED
+                - ALWAYS_INCOMPATIBLE
+                - ALWAYS_COMPATIBLE
+                - BACKWARD
+                - FORWARD
+                - FULL
+                - BACKWARD_TRANSITIVE
+                - FORWARD_TRANSITIVE
+                - FULL_TRANSITIVE
                 type: string
               schemaInfo:
                 description: SchemaInfo defines the schema for the topic, if any.
@@ -245,6 +486,55 @@ spec:
                       For KEY_VALUE schemas, use the format "KEY_VALUE(KeyType,ValueType)" where KeyType and ValueType
                       are one of the other schema types.
                     type: string
+                type: object
+              schemaValidationEnforced:
+                description: |-
+                  SchemaValidationEnforced determines whether schema validation is enforced for the topic.
+                  When enabled, only messages that conform to the topic's schema will be accepted.
+                type: boolean
+              subscribeRate:
+                description: |-
+                  SubscribeRate defines the subscription rate limiting policy for the topic.
+                  This controls the rate at which new subscriptions can be created.
+                properties:
+                  ratePeriodInSecond:
+                    default: 30
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
+                  subscribeThrottlingRatePerConsumer:
+                    description: |-
+                      SubscribeThrottlingRatePerConsumer specifies the maximum subscribe rate per consumer
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                type: object
+              subscriptionDispatchRate:
+                description: |-
+                  SubscriptionDispatchRate defines the message dispatch rate limiting policy for subscriptions.
+                  This controls the rate at which messages are delivered to consumers per subscription.
+                properties:
+                  dispatchThrottlingRateInByte:
+                    description: |-
+                      DispatchThrottlingRateInByte specifies the maximum number of bytes per second allowed
+                      -1 means unlimited
+                    format: int64
+                    type: integer
+                  dispatchThrottlingRateInMsg:
+                    description: |-
+                      DispatchThrottlingRateInMsg specifies the maximum number of messages per second allowed
+                      -1 means unlimited
+                    format: int32
+                    type: integer
+                  ratePeriodInSecond:
+                    default: 1
+                    description: RatePeriodInSecond specifies the time window in seconds
+                      for rate calculation
+                    format: int32
+                    minimum: 1
+                    type: integer
                 type: object
             required:
             - connectionRef
