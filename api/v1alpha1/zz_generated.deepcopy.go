@@ -1568,9 +1568,34 @@ func (in *PulsarFunctionSpec) DeepCopyInto(out *PulsarFunctionSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.CleanupSubscription != nil {
+		in, out := &in.CleanupSubscription, &out.CleanupSubscription
+		*out = new(bool)
+		**out = **in
+	}
+	if in.RetainOrdering != nil {
+		in, out := &in.RetainOrdering, &out.RetainOrdering
+		*out = new(bool)
+		**out = **in
+	}
+	if in.RetainKeyOrdering != nil {
+		in, out := &in.RetainKeyOrdering, &out.RetainKeyOrdering
+		*out = new(bool)
+		**out = **in
+	}
 	if in.BatchBuilder != nil {
 		in, out := &in.BatchBuilder, &out.BatchBuilder
 		*out = new(string)
+		**out = **in
+	}
+	if in.ForwardSourceMessageProperty != nil {
+		in, out := &in.ForwardSourceMessageProperty, &out.ForwardSourceMessageProperty
+		*out = new(bool)
+		**out = **in
+	}
+	if in.AutoAck != nil {
+		in, out := &in.AutoAck, &out.AutoAck
+		*out = new(bool)
 		**out = **in
 	}
 	if in.MaxMessageRetries != nil {
@@ -1657,6 +1682,16 @@ func (in *PulsarFunctionSpec) DeepCopyInto(out *PulsarFunctionSpec) {
 		for key, val := range *in {
 			(*out)[key] = val
 		}
+	}
+	if in.ExposePulsarAdminClientEnabled != nil {
+		in, out := &in.ExposePulsarAdminClientEnabled, &out.ExposePulsarAdminClientEnabled
+		*out = new(bool)
+		**out = **in
+	}
+	if in.SkipToLatest != nil {
+		in, out := &in.SkipToLatest, &out.SkipToLatest
+		*out = new(bool)
+		**out = **in
 	}
 	out.ConnectionRef = in.ConnectionRef
 }
