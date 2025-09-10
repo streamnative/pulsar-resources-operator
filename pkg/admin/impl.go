@@ -46,14 +46,6 @@ const (
 	TopicDomainNonPersistent = "non-persistent"
 )
 
-// ptrBoolToBool converts a pointer to bool to bool with default value false
-func ptrBoolToBool(b *bool) bool {
-	if b == nil {
-		return false
-	}
-	return *b
-}
-
 // Type conversion functions for external library types
 
 // convertOffloadPolicies converts our local OffloadPolicies to the external library type
@@ -1281,37 +1273,58 @@ func (p *PulsarAdminClient) DeletePulsarFunction(tenant, namespace, name string)
 // ApplyPulsarFunction creates or updates a pulsar function
 func (p *PulsarAdminClient) ApplyPulsarFunction(tenant, namespace, name, packageURL string, param *v1alpha1.PulsarFunctionSpec, changed bool) error {
 	functionConfig := utils.FunctionConfig{
-		Tenant:                         tenant,
-		Namespace:                      namespace,
-		Name:                           name,
-		ClassName:                      param.ClassName,
-		Inputs:                         param.Inputs,
-		Parallelism:                    param.Parallelism,
-		TimeoutMs:                      param.TimeoutMs,
-		TopicsPattern:                  param.TopicsPattern,
-		CleanupSubscription:            param.CleanupSubscription,
-		RetainOrdering:                 param.RetainOrdering,
-		RetainKeyOrdering:              param.RetainKeyOrdering,
-		ForwardSourceMessageProperty:   param.ForwardSourceMessageProperty,
-		AutoAck:                        param.AutoAck,
-		MaxMessageRetries:              param.MaxMessageRetries,
-		CustomSerdeInputs:              param.CustomSerdeInputs,
-		CustomSchemaInputs:             param.CustomSchemaInputs,
-		InputTypeClassName:             param.InputTypeClassName,
-		Output:                         param.Output,
-		OutputSerdeClassName:           param.OutputSerdeClassName,
-		OutputSchemaType:               param.OutputSchemaType,
-		OutputTypeClassName:            param.OutputTypeClassName,
-		CustomSchemaOutputs:            param.CustomSchemaOutputs,
-		LogTopic:                       param.LogTopic,
-		ProcessingGuarantees:           param.ProcessingGuarantees,
-		DeadLetterTopic:                param.DeadLetterTopic,
-		SubName:                        param.SubName,
-		RuntimeFlags:                   param.RuntimeFlags,
-		MaxPendingAsyncRequests:        param.MaxPendingAsyncRequests,
-		ExposePulsarAdminClientEnabled: param.ExposePulsarAdminClientEnabled,
-		SkipToLatest:                   param.SkipToLatest,
-		SubscriptionPosition:           param.SubscriptionPosition,
+		Tenant:                  tenant,
+		Namespace:               namespace,
+		Name:                    name,
+		ClassName:               param.ClassName,
+		Inputs:                  param.Inputs,
+		Parallelism:             param.Parallelism,
+		TimeoutMs:               param.TimeoutMs,
+		TopicsPattern:           param.TopicsPattern,
+		MaxMessageRetries:       param.MaxMessageRetries,
+		CustomSerdeInputs:       param.CustomSerdeInputs,
+		CustomSchemaInputs:      param.CustomSchemaInputs,
+		InputTypeClassName:      param.InputTypeClassName,
+		Output:                  param.Output,
+		OutputSerdeClassName:    param.OutputSerdeClassName,
+		OutputSchemaType:        param.OutputSchemaType,
+		OutputTypeClassName:     param.OutputTypeClassName,
+		CustomSchemaOutputs:     param.CustomSchemaOutputs,
+		LogTopic:                param.LogTopic,
+		ProcessingGuarantees:    param.ProcessingGuarantees,
+		DeadLetterTopic:         param.DeadLetterTopic,
+		SubName:                 param.SubName,
+		RuntimeFlags:            param.RuntimeFlags,
+		MaxPendingAsyncRequests: param.MaxPendingAsyncRequests,
+		SubscriptionPosition:    param.SubscriptionPosition,
+	}
+
+	if param.CleanupSubscription != nil {
+		functionConfig.CleanupSubscription = *param.CleanupSubscription
+	}
+
+	if param.RetainOrdering != nil {
+		functionConfig.RetainOrdering = *param.RetainOrdering
+	}
+
+	if param.RetainKeyOrdering != nil {
+		functionConfig.RetainKeyOrdering = *param.RetainKeyOrdering
+	}
+
+	if param.ForwardSourceMessageProperty != nil {
+		functionConfig.ForwardSourceMessageProperty = *param.ForwardSourceMessageProperty
+	}
+
+	if param.AutoAck != nil {
+		functionConfig.AutoAck = *param.AutoAck
+	}
+
+	if param.ExposePulsarAdminClientEnabled != nil {
+		functionConfig.ExposePulsarAdminClientEnabled = *param.ExposePulsarAdminClientEnabled
+	}
+
+	if param.SkipToLatest != nil {
+		functionConfig.SkipToLatest = *param.SkipToLatest
 	}
 
 	if param.BatchBuilder != nil {
@@ -1460,11 +1473,7 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		TopicsPattern: param.TopicsPattern,
 		TimeoutMs:     param.TimeoutMs,
 
-		CleanupSubscription: ptrBoolToBool(param.CleanupSubscription),
-		RetainOrdering:      ptrBoolToBool(param.RetainOrdering),
-		RetainKeyOrdering:   ptrBoolToBool(param.RetainKeyOrdering),
-		AutoAck:             ptrBoolToBool(param.AutoAck),
-		Parallelism:         param.Parallelism,
+		Parallelism: param.Parallelism,
 
 		SinkType: param.SinkType,
 		Archive:  packageURL,
@@ -1485,6 +1494,22 @@ func (p *PulsarAdminClient) ApplyPulsarSink(tenant, namespace, name, packageURL 
 		TransformFunction:            param.TransformFunction,
 		TransformFunctionClassName:   param.TransformFunctionClassName,
 		TransformFunctionConfig:      param.TransformFunctionConfig,
+	}
+
+	if param.CleanupSubscription != nil {
+		sinkConfig.CleanupSubscription = *param.CleanupSubscription
+	}
+
+	if param.RetainOrdering != nil {
+		sinkConfig.RetainOrdering = *param.RetainOrdering
+	}
+
+	if param.RetainKeyOrdering != nil {
+		sinkConfig.RetainKeyOrdering = *param.RetainKeyOrdering
+	}
+
+	if param.AutoAck != nil {
+		sinkConfig.AutoAck = *param.AutoAck
 	}
 
 	if param.Resources != nil {

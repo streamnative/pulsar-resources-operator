@@ -22,7 +22,6 @@ import (
 	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/utils/pointer"
 	"k8s.io/utils/ptr"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -513,15 +512,15 @@ func MakePulsarFunction(namespace, name, functionPackageUrl, connectionName stri
 			ClassName:                    "org.apache.pulsar.functions.api.examples.ExclamationFunction",
 			SubName:                      "test-sub",
 			SubscriptionPosition:         "Latest",
-			CleanupSubscription:          true,
-			SkipToLatest:                 true,
-			ForwardSourceMessageProperty: true,
-			RetainKeyOrdering:            true,
-			AutoAck:                      true,
-			MaxMessageRetries:            pointer.Int(101),
+			CleanupSubscription:          ptr.To(true),
+			SkipToLatest:                 ptr.To(true),
+			ForwardSourceMessageProperty: ptr.To(true),
+			RetainKeyOrdering:            ptr.To(true),
+			AutoAck:                      ptr.To(true),
+			MaxMessageRetries:            ptr.To(101),
 			DeadLetterTopic:              "dl-topic",
 			LogTopic:                     "func-log",
-			TimeoutMs:                    pointer.Int64(6666),
+			TimeoutMs:                    ptr.To[int64](6666),
 			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
 					"sectest", "hello",

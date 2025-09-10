@@ -38,15 +38,15 @@ type PulsarFunctionSpec struct {
 
 	// CleanupSubscription is the flag to indicate whether the subscription should be cleaned up when the function is deleted
 	// +optional
-	CleanupSubscription bool `json:"cleanupSubscription"`
+	CleanupSubscription *bool `json:"cleanupSubscription,omitempty"`
 
 	// RetainOrdering is the flag to indicate whether the function should retain ordering
 	// +optional
-	RetainOrdering bool `json:"retainOrdering"`
+	RetainOrdering *bool `json:"retainOrdering,omitempty"`
 
 	// RetainKeyOrdering is the flag to indicate whether the function should retain key ordering
 	// +optional
-	RetainKeyOrdering bool `json:"retainKeyOrdering"`
+	RetainKeyOrdering *bool `json:"retainKeyOrdering,omitempty"`
 
 	// BatchBuilder is the batch builder that the function uses
 	// +optional
@@ -54,11 +54,11 @@ type PulsarFunctionSpec struct {
 
 	// ForwardSourceMessageProperty is the flag to indicate whether the function should forward source message properties
 	// +optional
-	ForwardSourceMessageProperty bool `json:"forwardSourceMessageProperty"`
+	ForwardSourceMessageProperty *bool `json:"forwardSourceMessageProperty,omitempty"`
 
 	// AutoAck is the flag to indicate whether the function should auto ack
 	// +optional
-	AutoAck bool `json:"autoAck"`
+	AutoAck *bool `json:"autoAck,omitempty"`
 
 	// Parallelism is the parallelism of the function
 	// +optional
@@ -186,11 +186,11 @@ type PulsarFunctionSpec struct {
 
 	// ExposePulsarAdminClientEnabled is the flag to indicate whether the function should expose pulsar admin client
 	// +optional
-	ExposePulsarAdminClientEnabled bool `json:"exposePulsarAdminClientEnabled"`
+	ExposePulsarAdminClientEnabled *bool `json:"exposePulsarAdminClientEnabled,omitempty"`
 
 	// SkipToLatest is the flag to indicate whether the function should skip to latest
 	// +optional
-	SkipToLatest bool `json:"skipToLatest"`
+	SkipToLatest *bool `json:"skipToLatest,omitempty"`
 
 	// SubscriptionPosition is the subscription position of the function
 	// +optional
