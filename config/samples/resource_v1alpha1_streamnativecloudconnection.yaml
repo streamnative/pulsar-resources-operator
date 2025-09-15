@@ -23,19 +23,3 @@ spec:
     credentialsRef:
       name: test-credentials
   organization: org
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: test-credentials
-  namespace: default
-type: Opaque
-data:
-  credentials.json: |
-    {
-      "type": "sn_service_account",
-      "client_secret": "client_secret",
-      "client_email": "client-email",
-      "issuer_url": "issuer_url",
-      "client_id": "client-id"
-    }

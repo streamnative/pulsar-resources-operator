@@ -48,7 +48,7 @@ metadata:
   name: test-credentials
   namespace: default
 type: Opaque
-data:
+stringData:
   credentials.json: |
     {
       "type": "sn_service_account",
