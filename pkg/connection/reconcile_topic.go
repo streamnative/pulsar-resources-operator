@@ -287,13 +287,13 @@ func schemasEqual(desired, current *resourcev1alpha1.SchemaInfo) bool {
 	if desired.Type != current.Type {
 		return false
 	}
-	if canonicalizeSchemaString(desired.Type, desired.Schema) != canonicalizeSchemaString(current.Type, current.Schema) {
+	if canonicalizeSchemaString(desired.Schema) != canonicalizeSchemaString(current.Schema) {
 		return false
 	}
 	return maps.Equal(desired.Properties, current.Properties)
 }
 
-func canonicalizeSchemaString(schemaType, schema string) string {
+func canonicalizeSchemaString(schema string) string {
 	trimmed := strings.TrimSpace(schema)
 	if trimmed == "" {
 		return ""
