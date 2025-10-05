@@ -15,13 +15,10 @@
 package connection
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
-	"maps"
+	"reflect"
 	"slices"
-	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/go-logr/logr"
@@ -257,7 +254,7 @@ func applySchema(pulsarAdmin admin.PulsarAdmin, topic *resourcev1alpha1.PulsarTo
 	}
 	if topic.Spec.SchemaInfo != nil {
 		// Only upload the schema when schema doesn't exist or the schema has been updated
-		if admin.IsNotFound(serr) || !schemasEqual(topic.Spec.SchemaInfo, schema) {
+		if admin.IsNotFound(serr) || !reflect.DeepEqual(topic.Spec.SchemaInfo, schema) {
 			info := topic.Spec.SchemaInfo
 			param := &admin.SchemaParams{
 				Type:       info.Type,
@@ -275,62 +272,6 @@ func applySchema(pulsarAdmin admin.PulsarAdmin, topic *resourcev1alpha1.PulsarTo
 	// which is the expected behavior for most users. If schema deletion is needed,
 	// users should explicitly manage it through the Pulsar admin APIs.
 	return nil
-}
-
-func schemasEqual(desired, current *resourcev1alpha1.SchemaInfo) bool {
-	if desired == nil && current == nil {
-		return true
-	}
-	if desired == nil || current == nil {
-		return false
-	}
-	if desired.Type != current.Type {
-		return false
-	}
-	if canonicalizeSchemaString(desired.Schema) != canonicalizeSchemaString(current.Schema) {
-		return false
-	}
-	return maps.Equal(desired.Properties, current.Properties)
-}
-
-func canonicalizeSchemaString(schema string) string {
-	trimmed := strings.TrimSpace(schema)
-	if trimmed == "" {
-		return ""
-	}
-	if looksLikeJSON(trimmed) {
-		if normalized, err := normalizeJSON(trimmed); err == nil {
-			return normalized
-		}
-	}
-	return trimmed
-}
-
-func looksLikeJSON(schema string) bool {
-	if schema == "" {
-		return false
-	}
-	first := schema[0]
-	return first == '{' || first == '['
-}
-
-func normalizeJSON(schema string) (string, error) {
-	decoder := json.NewDecoder(strings.NewReader(schema))
-	decoder.UseNumber()
-	var data any
-	if err := decoder.Decode(&data); err != nil {
-		return "", err
-	}
-	if decoder.More() {
-		return "", fmt.Errorf("unexpected trailing data in schema JSON")
-	}
-	buf := bytes.NewBuffer(nil)
-	encoder := json.NewEncoder(buf)
-	encoder.SetEscapeHTML(false)
-	if err := encoder.Encode(data); err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(buf.String()), nil
 }
 
 func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
