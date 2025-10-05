@@ -15,6 +15,7 @@
 package connection
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/go-logr/logr"
@@ -186,8 +187,8 @@ func TestSchemasEqual(t *testing.T) {
 		tc := cases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			if got := schemasEqual(tc.desired, tc.current); got != tc.expected {
-				t.Fatalf("schemasEqual() = %v, want %v", got, tc.expected)
+			if got := reflect.DeepEqual(tc.desired, tc.current); got != tc.expected {
+				t.Fatalf("reflect.DeepEqual() = %v, want %v", got, tc.expected)
 			}
 		})
 	}
