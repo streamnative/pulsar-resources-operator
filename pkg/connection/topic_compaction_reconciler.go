@@ -102,6 +102,9 @@ func (r *topicCompactionStateReconciler) ApplyOperations(ctx context.Context, to
 		if !ok {
 			return fmt.Errorf("unexpected compaction threshold type %T in add operation", item)
 		}
+		r.log.V(1).Info("Setting topic compaction threshold",
+			"topicSpecName", topic.Spec.Name,
+			"threshold", value)
 		if err := r.admin.SetTopicCompactionThreshold(topic.Spec.Name, topic.Spec.Persistent, value); err != nil {
 			return err
 		}
@@ -112,12 +115,24 @@ func (r *topicCompactionStateReconciler) ApplyOperations(ctx context.Context, to
 		if !ok {
 			return fmt.Errorf("unexpected compaction threshold type %T in update operation", item)
 		}
+		r.log.V(1).Info("Updating topic compaction threshold",
+			"topicSpecName", topic.Spec.Name,
+			"threshold", value)
 		if err := r.admin.SetTopicCompactionThreshold(topic.Spec.Name, topic.Spec.Persistent, value); err != nil {
 			return err
 		}
 	}
 
 	if len(ops.ItemsToRemove) > 0 {
+		var previous interface{}
+		if len(ops.ItemsToRemove) == 1 {
+			previous = ops.ItemsToRemove[0]
+		} else {
+			previous = ops.ItemsToRemove
+		}
+		r.log.V(1).Info("Removing topic compaction threshold",
+			"topicSpecName", topic.Spec.Name,
+			"previous", previous)
 		if err := r.admin.RemoveTopicCompactionThreshold(topic.Spec.Name, topic.Spec.Persistent); err != nil {
 			return err
 		}
