@@ -239,6 +239,11 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		return creationErr
 	}
 
+	if err := r.reconcileTopicCompactionState(ctx, topic); err != nil {
+		log.Error(err, "Failed to reconcile topic compaction state")
+		policyErrs = append(policyErrs, err)
+	}
+
 	if err := applySchema(pulsarAdmin, topic, log); err != nil {
 		policyErrs = append(policyErrs, err)
 	}
@@ -308,6 +313,23 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 		SchemaCompatibilityStrategy:       topic.Spec.SchemaCompatibilityStrategy,
 		Properties:                        topic.Spec.Properties,
 	}
+}
+
+func (r *PulsarTopicReconciler) reconcileTopicCompactionState(ctx context.Context, topic *resourcev1alpha1.PulsarTopic) error {
+	original := topic.DeepCopy()
+	reconciler := newTopicCompactionStateReconciler(r.log, r.conn.pulsarAdmin)
+	changed, err := reconciler.reconcile(ctx, topic)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return nil
+	}
+
+	if err := r.conn.client.Patch(ctx, topic, client.MergeFrom(original)); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {

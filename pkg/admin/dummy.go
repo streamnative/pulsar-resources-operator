@@ -96,6 +96,16 @@ func (d *DummyPulsarAdmin) SetTopicClusters(string, *bool, []string) error {
 	return nil
 }
 
+// SetTopicCompactionThreshold is a fake implementation of SetTopicCompactionThreshold
+func (d *DummyPulsarAdmin) SetTopicCompactionThreshold(string, *bool, int64) error {
+	return nil
+}
+
+// RemoveTopicCompactionThreshold is a fake implementation of RemoveTopicCompactionThreshold
+func (d *DummyPulsarAdmin) RemoveTopicCompactionThreshold(string, *bool) error {
+	return nil
+}
+
 // Close is a fake implements of Close
 func (d *DummyPulsarAdmin) Close() error {
 	return nil

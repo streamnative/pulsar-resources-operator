@@ -163,6 +163,12 @@ type PulsarAdmin interface {
 	// SetTopicClusters resets the assigned clusters of the topic to the local default cluster
 	SetTopicClusters(name string, persistent *bool, clusters []string) error
 
+	// SetTopicCompactionThreshold sets the compaction threshold for a topic
+	SetTopicCompactionThreshold(name string, persistent *bool, value int64) error
+
+	// RemoveTopicCompactionThreshold removes the compaction threshold from a topic
+	RemoveTopicCompactionThreshold(name string, persistent *bool) error
+
 	// GrantPermissions grants permissions to multiple role with multiple actions
 	// on a namespace or topic, each role will be granted the same actions
 	GrantPermissions(p Permissioner) error

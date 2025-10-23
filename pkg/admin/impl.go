@@ -348,13 +348,6 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 	}
 
-	if params.CompactionThreshold != nil {
-		err = p.adminClient.Topics().SetCompactionThreshold(*topicName, *params.CompactionThreshold)
-		if err != nil {
-			return err
-		}
-	}
-
 	// Handle persistence policies
 	if params.PersistencePolicies != nil {
 		// Parse ManagedLedgerMaxMarkDeleteRate from string to float64
@@ -607,6 +600,32 @@ func (p *PulsarAdminClient) SetTopicClusters(name string, persistent *bool, clus
 	}
 	err = p.adminClient.Topics().SetReplicationClusters(*topicName, clusters)
 	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// SetTopicCompactionThreshold sets the compaction threshold for a topic.
+func (p *PulsarAdminClient) SetTopicCompactionThreshold(name string, persistent *bool, value int64) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	return p.adminClient.Topics().SetCompactionThreshold(*topicName, value)
+}
+
+// RemoveTopicCompactionThreshold removes the compaction threshold from a topic.
+func (p *PulsarAdminClient) RemoveTopicCompactionThreshold(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveCompactionThreshold(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 	return nil
