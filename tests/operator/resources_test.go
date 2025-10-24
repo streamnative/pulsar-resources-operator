@@ -504,7 +504,7 @@ var _ = Describe("Resources", func() {
 						return true
 					}
 
-					rawState, exists := annotations[connection.PulsarTopicCompactionStateAnnotation]
+					rawState, exists := annotations[connection.PulsarTopicPolicyStateAnnotation]
 					if !exists {
 						return true
 					}

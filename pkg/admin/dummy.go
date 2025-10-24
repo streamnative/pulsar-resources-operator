@@ -106,6 +106,106 @@ func (d *DummyPulsarAdmin) RemoveTopicCompactionThreshold(string, *bool) error {
 	return nil
 }
 
+func (d *DummyPulsarAdmin) RemoveTopicMessageTTL(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxProducers(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxConsumers(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxUnackedMessagesPerConsumer(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxUnackedMessagesPerSubscription(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicRetention(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicBacklogQuota(string, *bool, string) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicDeduplicationStatus(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicPersistence(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicDelayedDelivery(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicDispatchRate(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicPublishRate(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicInactiveTopicPolicies(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicSubscribeRate(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxMessageSize(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxConsumersPerSubscription(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicMaxSubscriptionsPerTopic(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicSchemaValidationEnforced(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicSubscriptionDispatchRate(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicReplicatorDispatchRate(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicDeduplicationSnapshotInterval(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicOffloadPolicies(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicAutoSubscriptionCreation(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicSchemaCompatibilityStrategy(string, *bool) error {
+	return nil
+}
+
+func (d *DummyPulsarAdmin) RemoveTopicProperty(string, *bool, string) error {
+	return nil
+}
+
 // Close is a fake implements of Close
 func (d *DummyPulsarAdmin) Close() error {
 	return nil

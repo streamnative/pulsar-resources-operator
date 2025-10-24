@@ -273,8 +273,8 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		return creationErr
 	}
 
-	if err := r.reconcileTopicCompactionState(ctx, topic); err != nil {
-		log.Error(err, "Failed to reconcile topic compaction state")
+	if err := r.reconcileTopicPolicyState(ctx, topic); err != nil {
+		log.Error(err, "Failed to reconcile topic policy state")
 		policyErrs = append(policyErrs, err)
 	}
 
@@ -420,9 +420,9 @@ func pointerValue[T any](value *T) interface{} {
 	return *value
 }
 
-func (r *PulsarTopicReconciler) reconcileTopicCompactionState(ctx context.Context, topic *resourcev1alpha1.PulsarTopic) error {
+func (r *PulsarTopicReconciler) reconcileTopicPolicyState(ctx context.Context, topic *resourcev1alpha1.PulsarTopic) error {
 	original := topic.DeepCopy()
-	reconciler := newTopicCompactionStateReconciler(r.log, r.conn.pulsarAdmin)
+	reconciler := newTopicPolicyStateReconciler(r.log, r.conn.pulsarAdmin)
 	changed, err := reconciler.reconcile(ctx, topic)
 	if err != nil {
 		return err
@@ -434,7 +434,7 @@ func (r *PulsarTopicReconciler) reconcileTopicCompactionState(ctx context.Contex
 	if err := r.conn.client.Patch(ctx, topic, client.MergeFrom(original)); err != nil {
 		return err
 	}
-	r.log.V(1).Info("Persisted compaction state annotation", "topic", topic.Name)
+	r.log.V(1).Info("Persisted topic policy state annotation", "topic", topic.Name)
 	return nil
 }
 

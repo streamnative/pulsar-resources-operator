@@ -631,6 +631,384 @@ func (p *PulsarAdminClient) RemoveTopicCompactionThreshold(name string, persiste
 	return nil
 }
 
+func (p *PulsarAdminClient) RemoveTopicMessageTTL(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMessageTTL(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxProducers(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxProducers(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxConsumers(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxConsumers(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxUnackedMessagesPerConsumer(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxUnackMessagesPerConsumer(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxUnackedMessagesPerSubscription(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxUnackMessagesPerSubscription(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicRetention(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveRetention(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicBacklogQuota(name string, persistent *bool, quotaType string) error {
+	if quotaType == "" {
+		return nil
+	}
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveBacklogQuota(*topicName, utils.BacklogQuotaType(quotaType)); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicDeduplicationStatus(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveDeduplicationStatus(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicPersistence(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemovePersistence(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicDelayedDelivery(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveDelayedDelivery(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicDispatchRate(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveDispatchRate(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicPublishRate(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemovePublishRate(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicInactiveTopicPolicies(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveInactiveTopicPolicies(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicSubscribeRate(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveSubscribeRate(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxMessageSize(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxMessageSize(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxConsumersPerSubscription(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxConsumersPerSubscription(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicMaxSubscriptionsPerTopic(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveMaxSubscriptionsPerTopic(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicSchemaValidationEnforced(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveSchemaValidationEnforced(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicSubscriptionDispatchRate(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveSubscriptionDispatchRate(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicReplicatorDispatchRate(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveReplicatorDispatchRate(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicDeduplicationSnapshotInterval(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveDeduplicationSnapshotInterval(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicOffloadPolicies(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveOffloadPolicies(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicAutoSubscriptionCreation(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveAutoSubscriptionCreation(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicSchemaCompatibilityStrategy(name string, persistent *bool) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveSchemaCompatibilityStrategy(*topicName); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (p *PulsarAdminClient) RemoveTopicProperty(name string, persistent *bool, key string) error {
+	completeTopicName := MakeCompleteTopicName(name, persistent)
+	topicName, err := utils.GetTopicName(completeTopicName)
+	if err != nil {
+		return err
+	}
+	if err := p.adminClient.Topics().RemoveProperty(*topicName, key); err != nil {
+		if IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
 func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params *NamespaceParams) error {
 	naName, err := utils.GetNamespaceName(completeNSName)
 	if err != nil {
