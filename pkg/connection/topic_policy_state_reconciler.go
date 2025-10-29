@@ -340,9 +340,15 @@ func (r *topicPolicyStateReconciler) ApplyOperations(ctx context.Context, topic 
 			if err != nil {
 				return err
 			}
-			r.log.V(1).Info("Setting topic compaction threshold",
-				"topicSpecName", topic.Spec.Name,
-				"threshold", value)
+			if value <= 0 {
+				r.log.Info("WARN: topic compaction disabled; remove __compaction subscription to avoid backlog accumulation",
+					"topicSpecName", topic.Spec.Name,
+					"requestedThreshold", value)
+			} else {
+				r.log.V(1).Info("Setting topic compaction threshold",
+					"topicSpecName", topic.Spec.Name,
+					"threshold", value)
+			}
 			if err := r.admin.SetTopicCompactionThreshold(topic.Spec.Name, topic.Spec.Persistent, value); err != nil {
 				return err
 			}
@@ -358,6 +364,8 @@ func (r *topicPolicyStateReconciler) ApplyOperations(ctx context.Context, topic 
 		}
 		switch op.Kind {
 		case policyOpRemoveCompactionThreshold:
+			r.log.Info("WARN: topic compaction disabled; remove __compaction subscription to avoid backlog accumulation",
+				"topicSpecName", topic.Spec.Name)
 			r.log.V(1).Info("Removing topic compaction threshold", "topicSpecName", topic.Spec.Name)
 			if err := r.admin.RemoveTopicCompactionThreshold(topic.Spec.Name, topic.Spec.Persistent); err != nil {
 				return err
