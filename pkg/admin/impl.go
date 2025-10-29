@@ -280,6 +280,7 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		}
 	}
 
+	var retentionPolicy *utils.RetentionPolicies
 	if params.RetentionTime != nil || params.RetentionSize != nil {
 		retentionTime := -1
 		retentionSize := -1
@@ -301,18 +302,16 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 				retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
 			}
 		}
-		retentionPolicy := utils.NewRetentionPolicies(retentionTime, retentionSize)
-		err = p.adminClient.Topics().SetRetention(*topicName, retentionPolicy)
-		if err != nil {
-			return err
-		}
+		policy := utils.NewRetentionPolicies(retentionTime, retentionSize)
+		retentionPolicy = &policy
 	}
 
+	var backlogQuotaPolicy *utils.BacklogQuota
+	var backlogQuotaType utils.BacklogQuotaType
 	if (params.BacklogQuotaLimitTime != nil || params.BacklogQuotaLimitSize != nil) &&
 		params.BacklogQuotaRetentionPolicy != nil {
 		backlogTime := int64(-1)
 		backlogSize := int64(-1)
-		var backlogQuotaType utils.BacklogQuotaType
 		if params.BacklogQuotaLimitTime != nil {
 			t, err := params.BacklogQuotaLimitTime.Parse()
 			if err != nil {
@@ -325,13 +324,24 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 			backlogSize = params.BacklogQuotaLimitSize.Value()
 			backlogQuotaType = utils.DestinationStorage
 		}
-		backlogQuotaPolicy := utils.BacklogQuota{
+		backlogQuotaPolicy = &utils.BacklogQuota{
 			LimitTime: backlogTime,
 			LimitSize: backlogSize,
 			Policy:    utils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
 		}
-		err = p.adminClient.Topics().SetBacklogQuota(*topicName, backlogQuotaPolicy, backlogQuotaType)
-		if err != nil {
+	}
+
+	switch {
+	case retentionPolicy != nil && backlogQuotaPolicy != nil:
+		if err := p.applyRetentionAndBacklogPolicies(topicName, retentionPolicy, backlogQuotaPolicy, backlogQuotaType); err != nil {
+			return err
+		}
+	case retentionPolicy != nil:
+		if err := p.adminClient.Topics().SetRetention(*topicName, *retentionPolicy); err != nil {
+			return err
+		}
+	case backlogQuotaPolicy != nil:
+		if err := p.adminClient.Topics().SetBacklogQuota(*topicName, *backlogQuotaPolicy, backlogQuotaType); err != nil {
 			return err
 		}
 	}
@@ -575,6 +585,38 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 	}
 
 	return nil
+}
+
+func (p *PulsarAdminClient) applyRetentionAndBacklogPolicies(topicName *utils.TopicName, retention *utils.RetentionPolicies,
+	backlog *utils.BacklogQuota, backlogType utils.BacklogQuotaType) error {
+	if err := p.adminClient.Topics().SetRetention(*topicName, *retention); err != nil {
+		if !isRetentionBacklogOrderingError(err) {
+			return err
+		}
+
+		if err := p.adminClient.Topics().SetBacklogQuota(*topicName, *backlog, backlogType); err != nil {
+			return err
+		}
+
+		if err := p.adminClient.Topics().SetRetention(*topicName, *retention); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := p.adminClient.Topics().SetBacklogQuota(*topicName, *backlog, backlogType); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isRetentionBacklogOrderingError(err error) bool {
+	if ErrorReason(err) != ReasonInvalidParameter {
+		return false
+	}
+	return strings.Contains(err.Error(), "Retention Quota must exceed configured backlog quota")
 }
 
 // GetTopicClusters get the assigned clusters of the topic to the local default cluster
