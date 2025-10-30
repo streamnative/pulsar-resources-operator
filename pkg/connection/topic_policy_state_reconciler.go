@@ -30,8 +30,7 @@ import (
 
 const (
 	// PulsarTopicPolicyStateAnnotation stores the last applied topic policy state.
-	// We keep the historic key to remain backward compatible with existing annotations.
-	PulsarTopicPolicyStateAnnotation = "pulsartopics.resource.streamnative.io/compaction-state"
+	PulsarTopicPolicyStateAnnotation = "pulsartopics.resource.streamnative.io/managed-state"
 )
 
 type topicPolicyState struct {
