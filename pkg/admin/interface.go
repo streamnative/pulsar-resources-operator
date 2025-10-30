@@ -163,6 +163,87 @@ type PulsarAdmin interface {
 	// SetTopicClusters resets the assigned clusters of the topic to the local default cluster
 	SetTopicClusters(name string, persistent *bool, clusters []string) error
 
+	// SetTopicCompactionThreshold sets the compaction threshold for a topic
+	SetTopicCompactionThreshold(name string, persistent *bool, value int64) error
+
+	// RemoveTopicCompactionThreshold removes the compaction threshold from a topic
+	RemoveTopicCompactionThreshold(name string, persistent *bool) error
+
+	// RemoveTopicMessageTTL removes the message TTL policy for a topic
+	RemoveTopicMessageTTL(name string, persistent *bool) error
+
+	// RemoveTopicMaxProducers removes the max producers limit for a topic
+	RemoveTopicMaxProducers(name string, persistent *bool) error
+
+	// RemoveTopicMaxConsumers removes the max consumers limit for a topic
+	RemoveTopicMaxConsumers(name string, persistent *bool) error
+
+	// RemoveTopicMaxUnackedMessagesPerConsumer removes the max unacked messages per consumer limit
+	RemoveTopicMaxUnackedMessagesPerConsumer(name string, persistent *bool) error
+
+	// RemoveTopicMaxUnackedMessagesPerSubscription removes the max unacked messages per subscription limit
+	RemoveTopicMaxUnackedMessagesPerSubscription(name string, persistent *bool) error
+
+	// RemoveTopicRetention removes the retention policy for a topic
+	RemoveTopicRetention(name string, persistent *bool) error
+
+	// RemoveTopicBacklogQuota removes a backlog quota policy from a topic
+	RemoveTopicBacklogQuota(name string, persistent *bool, quotaType string) error
+
+	// RemoveTopicDeduplicationStatus removes the deduplication status policy from a topic
+	RemoveTopicDeduplicationStatus(name string, persistent *bool) error
+
+	// RemoveTopicPersistence removes persistence policies from a topic
+	RemoveTopicPersistence(name string, persistent *bool) error
+
+	// RemoveTopicDelayedDelivery removes delayed delivery policy from a topic
+	RemoveTopicDelayedDelivery(name string, persistent *bool) error
+
+	// RemoveTopicDispatchRate removes dispatch rate policy from a topic
+	RemoveTopicDispatchRate(name string, persistent *bool) error
+
+	// RemoveTopicPublishRate removes publish rate policy from a topic
+	RemoveTopicPublishRate(name string, persistent *bool) error
+
+	// RemoveTopicInactiveTopicPolicies removes inactive topic policies from a topic
+	RemoveTopicInactiveTopicPolicies(name string, persistent *bool) error
+
+	// RemoveTopicSubscribeRate removes subscribe rate policy from a topic
+	RemoveTopicSubscribeRate(name string, persistent *bool) error
+
+	// RemoveTopicMaxMessageSize removes max message size policy from a topic
+	RemoveTopicMaxMessageSize(name string, persistent *bool) error
+
+	// RemoveTopicMaxConsumersPerSubscription removes max consumers per subscription policy from a topic
+	RemoveTopicMaxConsumersPerSubscription(name string, persistent *bool) error
+
+	// RemoveTopicMaxSubscriptionsPerTopic removes max subscriptions per topic policy
+	RemoveTopicMaxSubscriptionsPerTopic(name string, persistent *bool) error
+
+	// RemoveTopicSchemaValidationEnforced removes schema validation enforced override
+	RemoveTopicSchemaValidationEnforced(name string, persistent *bool) error
+
+	// RemoveTopicSubscriptionDispatchRate removes subscription dispatch rate policy from a topic
+	RemoveTopicSubscriptionDispatchRate(name string, persistent *bool) error
+
+	// RemoveTopicReplicatorDispatchRate removes replicator dispatch rate policy from a topic
+	RemoveTopicReplicatorDispatchRate(name string, persistent *bool) error
+
+	// RemoveTopicDeduplicationSnapshotInterval removes deduplication snapshot interval policy from a topic
+	RemoveTopicDeduplicationSnapshotInterval(name string, persistent *bool) error
+
+	// RemoveTopicOffloadPolicies removes offload policies from a topic
+	RemoveTopicOffloadPolicies(name string, persistent *bool) error
+
+	// RemoveTopicAutoSubscriptionCreation removes auto subscription creation override for a topic
+	RemoveTopicAutoSubscriptionCreation(name string, persistent *bool) error
+
+	// RemoveTopicSchemaCompatibilityStrategy removes schema compatibility override for a topic
+	RemoveTopicSchemaCompatibilityStrategy(name string, persistent *bool) error
+
+	// RemoveTopicProperty removes a topic property
+	RemoveTopicProperty(name string, persistent *bool, key string) error
+
 	// GrantPermissions grants permissions to multiple role with multiple actions
 	// on a namespace or topic, each role will be granted the same actions
 	GrantPermissions(p Permissioner) error

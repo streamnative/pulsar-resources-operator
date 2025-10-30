@@ -493,6 +493,29 @@ var _ = Describe("Resources", func() {
 				}, "20s", "100ms").Should(BeTrue())
 			})
 
+			It("should reset compaction state annotation after removing threshold", func() {
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: compactionTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+
+					annotations := t.GetAnnotations()
+					if annotations == nil {
+						return true
+					}
+
+					rawState, exists := annotations[connection.PulsarTopicPolicyStateAnnotation]
+					if !exists {
+						return true
+					}
+
+					var state map[string]interface{}
+					Expect(json.Unmarshal([]byte(rawState), &state)).Should(Succeed())
+					value, ok := state["compactionThreshold"]
+					return !ok || value == nil
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
 			AfterAll(func() {
 				// Clean up the compaction test topic after all tests complete
 				if compactionTopic != nil {

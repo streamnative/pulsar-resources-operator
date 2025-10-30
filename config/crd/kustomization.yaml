@@ -16,24 +16,25 @@
 # since it depends on service name and namespace that are out of this kustomize package.
 # It should be run by config/default
 resources:
-- bases/resource.streamnative.io_pulsarconnections.yaml
-- bases/resource.streamnative.io_pulsarnamespaces.yaml
-- bases/resource.streamnative.io_pulsartenants.yaml
-- bases/resource.streamnative.io_pulsartopics.yaml
-- bases/resource.streamnative.io_pulsarpermissions.yaml
-- bases/resource.streamnative.io_pulsargeoreplications.yaml
-- bases/resource.streamnative.io_pulsarfunctions.yaml
-- bases/resource.streamnative.io_pulsarpackages.yaml
-- bases/resource.streamnative.io_pulsarsinks.yaml
-- bases/resource.streamnative.io_pulsarsources.yaml
-- bases/resource.streamnative.io_pulsarnsisolationpolicies.yaml
-- bases/resource.streamnative.io_streamnativecloudconnections.yaml
-- bases/resource.streamnative.io_computeworkspaces.yaml
-- bases/resource.streamnative.io_computeflinkdeployments.yaml
-- bases/resource.streamnative.io_secrets.yaml
-- bases/resource.streamnative.io_serviceaccounts.yaml
-- bases/resource.streamnative.io_serviceaccountbindings.yaml
-- bases/resource.streamnative.io_apikeys.yaml
+  - bases/resource.streamnative.io_pulsarconnections.yaml
+  - bases/resource.streamnative.io_pulsarnamespaces.yaml
+  - bases/resource.streamnative.io_pulsartenants.yaml
+  - bases/resource.streamnative.io_pulsartopics.yaml
+  - bases/resource.streamnative.io_pulsarpermissions.yaml
+  - bases/resource.streamnative.io_pulsargeoreplications.yaml
+  - bases/resource.streamnative.io_pulsarfunctions.yaml
+  - bases/resource.streamnative.io_pulsarpackages.yaml
+  - bases/resource.streamnative.io_pulsarsinks.yaml
+  - bases/resource.streamnative.io_pulsarsources.yaml
+  - bases/resource.streamnative.io_pulsarnsisolationpolicies.yaml
+  - bases/resource.streamnative.io_streamnativecloudconnections.yaml
+  - bases/resource.streamnative.io_computeworkspaces.yaml
+  - bases/resource.streamnative.io_computeflinkdeployments.yaml
+  - bases/resource.streamnative.io_secrets.yaml
+  - bases/resource.streamnative.io_serviceaccounts.yaml
+  - bases/resource.streamnative.io_serviceaccountbindings.yaml
+  - bases/resource.streamnative.io_apikeys.yaml
+  - bases/resource.streamnative.io_rolebindings.yaml
 #+kubebuilder:scaffold:crdkustomizeresource
 
 patchesStrategicMerge:
@@ -59,4 +60,4 @@ patchesStrategicMerge:
 
 # the following config is for teaching kustomize how to do kustomization for CRDs.
 configurations:
-- kustomizeconfig.yaml
+  - kustomizeconfig.yaml

@@ -94,6 +94,12 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 
 	if !topic.DeletionTimestamp.IsZero() {
 		log.Info("Deleting topic", "LifecyclePolicy", topic.Spec.LifecyclePolicy)
+		log.V(1).Info("Deleting topic in Pulsar admin",
+			"topicSpecName", topic.Spec.Name,
+			"persistent", pointerValue(topic.Spec.Persistent),
+			"partitions", pointerValue(topic.Spec.Partitions),
+			"generation", topic.Generation,
+			"observedGeneration", topic.Status.ObservedGeneration)
 
 		if topic.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 			// TODO when geoReplicationRef is not nil, it should reset the replication clusters to
@@ -119,9 +125,15 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 				}
 			}
 
-			if err := pulsarAdmin.DeleteTopic(topic.Spec.Name); err != nil && !admin.IsNotFound(err) {
-				log.Error(err, "Failed to delete topic")
-				return err
+			if err := pulsarAdmin.DeleteTopic(topic.Spec.Name); err != nil {
+				if admin.IsNotFound(err) {
+					log.V(1).Info("Topic already removed from Pulsar admin", "topicSpecName", topic.Spec.Name)
+				} else {
+					log.Error(err, "Failed to delete topic")
+					return err
+				}
+			} else {
+				log.V(1).Info("Deleted topic from Pulsar admin", "topicSpecName", topic.Spec.Name)
 			}
 		}
 
@@ -180,6 +192,7 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 	params := createTopicParams(topic)
 
 	r.applyDefault(params)
+	action := determineTopicAdminAction(topic)
 
 	if refs := topic.Spec.GeoReplicationRefs; len(refs) != 0 || len(topic.Spec.ReplicationClusters) > 0 {
 		if len(refs) > 0 && len(topic.Spec.ReplicationClusters) > 0 {
@@ -230,13 +243,39 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		topic.Status.GeoReplicationEnabled = false
 	}
 
+	desiredConfig := summarizeTopicParamsForLogging(params)
+	log.V(1).Info("Reconciling Pulsar topic in admin",
+		"action", action,
+		"topicSpecName", topic.Spec.Name,
+		"generation", topic.Generation,
+		"observedGeneration", topic.Status.ObservedGeneration,
+		"desiredConfig", desiredConfig)
+
 	creationErr, policyErr := pulsarAdmin.ApplyTopic(topic.Spec.Name, params)
 	log.Info("Apply topic", "creationErr", creationErr, "policyErr", policyErr)
+	if creationErr != nil || policyErr != nil {
+		log.V(1).Info("Pulsar topic apply completed with errors",
+			"action", action,
+			"topicSpecName", topic.Spec.Name,
+			"creationErr", creationErr,
+			"policyErr", policyErr,
+			"desiredConfig", desiredConfig)
+	} else {
+		log.V(1).Info("Pulsar topic apply completed successfully",
+			"action", action,
+			"topicSpecName", topic.Spec.Name,
+			"desiredConfig", desiredConfig)
+	}
 	if policyErr != nil {
 		policyErrs = append(policyErrs, policyErr)
 	}
 	if creationErr != nil {
 		return creationErr
+	}
+
+	if err := r.reconcileTopicPolicyState(ctx, topic); err != nil {
+		log.Error(err, "Failed to reconcile topic policy state")
+		policyErrs = append(policyErrs, err)
 	}
 
 	if err := applySchema(pulsarAdmin, topic, log); err != nil {
@@ -308,6 +347,95 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 		SchemaCompatibilityStrategy:       topic.Spec.SchemaCompatibilityStrategy,
 		Properties:                        topic.Spec.Properties,
 	}
+}
+
+func determineTopicAdminAction(topic *resourcev1alpha1.PulsarTopic) string {
+	if topic.Status.ObservedGeneration == 0 {
+		return "create"
+	}
+	return "update"
+}
+
+func summarizeTopicParamsForLogging(params *admin.TopicParams) map[string]interface{} {
+	if params == nil {
+		return nil
+	}
+
+	summary := make(map[string]interface{})
+	addIfNotNil(summary, "persistent", params.Persistent)
+	addIfNotNil(summary, "partitions", params.Partitions)
+	addIfNotNil(summary, "maxProducers", params.MaxProducers)
+	addIfNotNil(summary, "maxConsumers", params.MaxConsumers)
+	addIfNotNil(summary, "messageTTL", params.MessageTTL)
+	addIfNotNil(summary, "maxUnAckedMessagesPerConsumer", params.MaxUnAckedMessagesPerConsumer)
+	addIfNotNil(summary, "maxUnAckedMessagesPerSubscription", params.MaxUnAckedMessagesPerSubscription)
+	addIfNotNil(summary, "retentionTime", params.RetentionTime)
+	addIfNotNil(summary, "retentionSize", params.RetentionSize)
+	addIfNotNil(summary, "backlogQuotaLimitTime", params.BacklogQuotaLimitTime)
+	addIfNotNil(summary, "backlogQuotaLimitSize", params.BacklogQuotaLimitSize)
+	addIfNotNil(summary, "backlogQuotaRetentionPolicy", params.BacklogQuotaRetentionPolicy)
+	addIfNotNil(summary, "deduplication", params.Deduplication)
+	addIfNotNil(summary, "compactionThreshold", params.CompactionThreshold)
+	addIfNotNil(summary, "persistencePolicies", params.PersistencePolicies)
+	addIfNotNil(summary, "delayedDelivery", params.DelayedDelivery)
+	addIfNotNil(summary, "dispatchRate", params.DispatchRate)
+	addIfNotNil(summary, "publishRate", params.PublishRate)
+	addIfNotNil(summary, "inactiveTopicPolicies", params.InactiveTopicPolicies)
+	addIfNotNil(summary, "subscribeRate", params.SubscribeRate)
+	addIfNotNil(summary, "maxMessageSize", params.MaxMessageSize)
+	addIfNotNil(summary, "maxConsumersPerSubscription", params.MaxConsumersPerSubscription)
+	addIfNotNil(summary, "maxSubscriptionsPerTopic", params.MaxSubscriptionsPerTopic)
+	addIfNotNil(summary, "schemaValidationEnforced", params.SchemaValidationEnforced)
+	addIfNotNil(summary, "subscriptionDispatchRate", params.SubscriptionDispatchRate)
+	addIfNotNil(summary, "replicatorDispatchRate", params.ReplicatorDispatchRate)
+	addIfNotNil(summary, "deduplicationSnapshotInterval", params.DeduplicationSnapshotInterval)
+	addIfNotNil(summary, "offloadPolicies", params.OffloadPolicies)
+	addIfNotNil(summary, "autoSubscriptionCreation", params.AutoSubscriptionCreation)
+	addIfNotNil(summary, "schemaCompatibilityStrategy", params.SchemaCompatibilityStrategy)
+
+	if len(params.ReplicationClusters) > 0 {
+		summary["replicationClusters"] = params.ReplicationClusters
+	}
+	if len(params.Properties) > 0 {
+		summary["properties"] = params.Properties
+	}
+
+	if len(summary) == 0 {
+		return nil
+	}
+	return summary
+}
+
+func addIfNotNil[T any](summary map[string]interface{}, key string, value *T) {
+	if value == nil {
+		return
+	}
+	summary[key] = *value
+}
+
+func pointerValue[T any](value *T) interface{} {
+	if value == nil {
+		return nil
+	}
+	return *value
+}
+
+func (r *PulsarTopicReconciler) reconcileTopicPolicyState(ctx context.Context, topic *resourcev1alpha1.PulsarTopic) error {
+	original := topic.DeepCopy()
+	reconciler := newTopicPolicyStateReconciler(r.log, r.conn.pulsarAdmin)
+	changed, err := reconciler.reconcile(ctx, topic)
+	if err != nil {
+		return err
+	}
+	if !changed {
+		return nil
+	}
+
+	if err := r.conn.client.Patch(ctx, topic, client.MergeFrom(original)); err != nil {
+		return err
+	}
+	r.log.V(1).Info("Persisted topic policy state annotation", "topic", topic.Name)
+	return nil
 }
 
 func (r *PulsarTopicReconciler) applyDefault(params *admin.TopicParams) {
