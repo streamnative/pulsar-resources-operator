@@ -297,6 +297,7 @@ func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
 }
 
 func valueFromFile(filePath string) (*string, error) {
+	// #nosec G304 - file path is user supplied for intentional local file usage
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return nil, err
@@ -377,11 +378,9 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			}
 			if value != nil {
 				cfg.Key = *value
-				hasAuth = true
 			}
 			if filePath != nil {
 				cfg.KeyFilePath = *filePath
-				hasAuth = true
 			}
 		}
 		if tls := authn.TLS; tls != nil {
