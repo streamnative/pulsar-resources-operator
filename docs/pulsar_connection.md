@@ -35,6 +35,8 @@ The `authentication` field supports two methods: JWT Token and OAuth2. Each meth
 |-------|-------------|------|----------|
 | `value` | Direct string value | `*string` | No |
 | `secretRef` | Reference to a Kubernetes Secret | `*SecretKeyRef` | No |
+| `file` | Local file path whose contents are used as the value | `*string` | No |
+| `file` | Local file path whose contents are used as the value | `*string` | No |
 
 #### SecretKeyRef
 
@@ -57,7 +59,7 @@ Note: Only one authentication method (either `token` or `oauth2`) should be spec
 
 ### JWT Token Authentication
 
-JWT Token authentication can be configured using either a direct value or a Kubernetes Secret reference.
+JWT Token authentication can be configured using a direct value, a local file path, or a Kubernetes Secret reference.
 
 #### Using a direct value
 
@@ -95,7 +97,7 @@ authentication:
 
 ### OAuth2 Authentication
 
-OAuth2 authentication can be configured using either a direct value or a Kubernetes Secret reference.
+OAuth2 authentication can be configured using a direct value, a local file path, or a Kubernetes Secret reference.
 
 #### Using a direct value
 
@@ -234,7 +236,7 @@ Note: Only one authentication method (either `token` or `oauth2`) should be spec
 
 ### JWT Token Authentication
 
-JWT Token authentication can be configured using either a direct value or a Kubernetes Secret reference.
+JWT Token authentication can be configured using a direct value, a local file path, or a Kubernetes Secret reference.
 
 #### Using a direct value
 
@@ -272,7 +274,7 @@ authentication:
 
 ### OAuth2 Authentication
 
-OAuth2 authentication can be configured using either a direct value or a Kubernetes Secret reference.
+OAuth2 authentication can be configured using a direct value, a local file path, or a Kubernetes Secret reference.
 
 #### Using a direct value
 

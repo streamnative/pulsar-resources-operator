@@ -31,13 +31,18 @@ type SecretKeyRef struct {
 	Key  string `json:"key"`
 }
 
-// ValueOrSecretRef is a string or a secret reference of the authentication
+// ValueOrSecretRef is a string value, a secret reference, or a local file path for the authentication config.
 type ValueOrSecretRef struct {
 	// +optional
 	Value *string `json:"value,omitempty"`
 
 	// +optional
 	SecretRef *SecretKeyRef `json:"secretRef,omitempty"`
+
+	// File points to a local file path whose contents will be used as the value.
+	// This is useful when running the operator locally without creating Kubernetes secrets.
+	// +optional
+	File *string `json:"file,omitempty"`
 }
 
 // PulsarAuthentication defines the authentication configuration for Pulsar resources.
