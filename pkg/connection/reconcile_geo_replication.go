@@ -319,9 +319,15 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 		hasAuth := false
 		if auth := destConnection.Spec.Authentication; auth != nil {
 			if auth.Token != nil {
-				value, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
+				value, filePath, err := GetValue(ctx, client, destConnection.Namespace, auth.Token)
 				if err != nil {
 					return nil, err
+				}
+				if value == nil && filePath != nil {
+					value, err = valueFromFile(*filePath)
+					if err != nil {
+						return nil, err
+					}
 				}
 				if value != nil {
 					clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginToken
@@ -337,9 +343,18 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 					ClientID:  oauth2.ClientID,
 				}
 				if oauth2.Key != nil {
-					value, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
+					value, filePath, err := GetValue(ctx, client, destConnection.Namespace, oauth2.Key)
 					if err != nil {
 						return nil, err
+					}
+					if value == nil && filePath != nil {
+						value, err = valueFromFile(*filePath)
+						if err != nil {
+							return nil, err
+						}
+					}
+					if value == nil && filePath == nil {
+						return nil, fmt.Errorf("OAuth2 key is empty")
 					}
 					if value != nil {
 						paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
