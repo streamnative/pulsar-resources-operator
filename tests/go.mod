@@ -7,7 +7,7 @@ toolchain go1.24.1
 require (
 	// pulsar-client-go latest version is v0.9.0,
 	// it removed the go.mod from oauth2, this will cause the issue of ambiguous import
-	github.com/apache/pulsar-client-go v0.15.2-0.20250702060927-58ac256fbcb2
+	github.com/apache/pulsar-client-go v0.16.0-candidate-1.0.20250730013016-1f9e82805e54
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
 	github.com/sirupsen/logrus v1.9.3
@@ -75,7 +75,7 @@ require (
 	github.com/cncf/xds/go v0.0.0-20250121191232-2f005788dc42 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
-	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
+	github.com/dvsekhvalnov/jose2go v1.7.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
