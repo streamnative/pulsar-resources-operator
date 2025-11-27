@@ -30,17 +30,17 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: v0.14.0
+version: v0.16.0-rc.1
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
 # follow Semantic Versioning. They should reflect the version the application is using.
 # It is recommended to use it with quotes.
-appVersion: "v0.14.0"
+appVersion: "v0.16.0-rc.1"
 
 # This is a semver range of compatible Kubernetes versions. Helm will validate the version
 # constraints when installing the chart and fail if the cluster runs an unsupported Kubernetes version
 kubeVersion: ">= 1.18.0-0"
 icon: https://raw.githubusercontent.com/streamnative/charts/master/static/logo.svg
 sources:
-- https://github.com/streamnative/pulsar-resources-operator
+  - https://github.com/streamnative/pulsar-resources-operator
