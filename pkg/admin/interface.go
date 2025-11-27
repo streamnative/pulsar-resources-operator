@@ -353,13 +353,17 @@ type PulsarAdminConfig struct {
 	// Either Token or OAuth2 configuration must be provided
 	// The Token used for authentication.
 	Token string
+	// TokenFilePath points to a local file that contains the token.
+	TokenFilePath string
 
 	// OAuth2 related configuration used for authentication.
 	IssuerEndpoint string
 	ClientID       string
 	Audience       string
 	Key            string
-	Scope          string
+	// KeyFilePath points to a local file that contains the OAuth2 credentials JSON.
+	KeyFilePath string
+	Scope       string
 
 	// TLS Authentication related configuration
 	ClientCertificatePath    string
@@ -375,7 +379,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	var err error
 	var adminClient admin.Client
 
-	config := &config.Config{
+	cfg := &config.Config{
 		WebServiceURL:                 conf.WebServiceURL,
 		TLSAllowInsecureConnection:    conf.TLSAllowInsecureConnection,
 		TLSEnableHostnameVerification: conf.TLSEnableHostnameVerification,
@@ -385,10 +389,11 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 	}
 
 	if conf.PulsarAPIVersion != nil {
-		config.PulsarAPIVersion = *conf.PulsarAPIVersion
+		cfg.PulsarAPIVersion = *conf.PulsarAPIVersion
 	}
 
-	if conf.Key != "" {
+	keyFilePath = conf.KeyFilePath
+	if keyFilePath == "" && conf.Key != "" {
 		keyFile, err = os.CreateTemp("", "oauth2-key-")
 		if err != nil {
 			return nil, err
@@ -398,12 +403,14 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
 
-		config.IssuerEndpoint = conf.IssuerEndpoint
-		config.ClientID = conf.ClientID
-		config.Audience = conf.Audience
-		config.KeyFile = keyFilePath
-		config.Scope = conf.Scope
+	if keyFilePath != "" {
+		cfg.IssuerEndpoint = conf.IssuerEndpoint
+		cfg.ClientID = conf.ClientID
+		cfg.Audience = conf.Audience
+		cfg.KeyFile = keyFilePath
+		cfg.Scope = conf.Scope
 
 		oauthProvider, err := auth.NewAuthenticationOAuth2WithFlow(oauth2.Issuer{
 			IssuerEndpoint: conf.IssuerEndpoint,
@@ -417,27 +424,34 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		if err != nil {
 			return nil, err
 		}
-		adminClient, err = admin.NewPulsarClientWithAuthProvider(config, oauthProvider)
+		adminClient, err = admin.NewPulsarClientWithAuthProvider(cfg, oauthProvider)
+		if err != nil {
+			return nil, err
+		}
+	} else if conf.TokenFilePath != "" {
+		cfg.TokenFile = conf.TokenFilePath
+
+		adminClient, err = admin.New(cfg)
 		if err != nil {
 			return nil, err
 		}
 	} else if conf.Token != "" {
-		config.Token = conf.Token
+		cfg.Token = conf.Token
 
-		adminClient, err = admin.New(config)
+		adminClient, err = admin.New(cfg)
 		if err != nil {
 			return nil, err
 		}
 	} else if conf.ClientCertificatePath != "" {
-		config.AuthPlugin = auth.TLSPluginName
-		config.AuthParams = fmt.Sprintf("{\"tlsCertFile\": %q, \"tlsKeyFile\": %q}", conf.ClientCertificatePath, conf.ClientCertificateKeyPath)
+		cfg.AuthPlugin = auth.TLSPluginName
+		cfg.AuthParams = fmt.Sprintf("{\"tlsCertFile\": %q, \"tlsKeyFile\": %q}", conf.ClientCertificatePath, conf.ClientCertificateKeyPath)
 
-		adminClient, err = admin.New(config)
+		adminClient, err = admin.New(cfg)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		adminClient, err = admin.New(config)
+		adminClient, err = admin.New(cfg)
 		if err != nil {
 			return nil, err
 		}

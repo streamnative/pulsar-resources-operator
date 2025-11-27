@@ -17,6 +17,7 @@ package connection
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
 
@@ -270,21 +271,39 @@ func NewErrorCondition(generation int64, msg string) *metav1.Condition {
 	}
 }
 
-// GetValue get the authentication token value or secret
+// GetValue resolves the authentication value from direct input, secret, or file reference.
+// It returns either the resolved string value or a file path when provided.
 func GetValue(ctx context.Context, k8sClient client.Client, namespace string,
-	vRef *resourcev1alpha1.ValueOrSecretRef) (*string, error) {
+	vRef *resourcev1alpha1.ValueOrSecretRef) (*string, *string, error) {
+	if vRef == nil {
+		return nil, nil, nil
+	}
 	if value := vRef.Value; value != nil {
-		return value, nil
-	} else if ref := vRef.SecretRef; ref != nil {
+		return value, nil, nil
+	}
+	if filePath := vRef.File; filePath != nil {
+		return nil, filePath, nil
+	}
+	if ref := vRef.SecretRef; ref != nil {
 		secret := &corev1.Secret{}
 		if err := k8sClient.Get(ctx, types.NamespacedName{Namespace: namespace, Name: ref.Name}, secret); err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if value, exists := secret.Data[ref.Key]; exists {
-			return ptr.To(string(value)), nil
+			return ptr.To(string(value)), nil, nil
 		}
 	}
-	return nil, nil
+	return nil, nil, nil
+}
+
+func valueFromFile(filePath string) (*string, error) {
+	// #nosec G304 - file path is user supplied for intentional local file usage
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		return nil, err
+	}
+	value := string(content)
+	return &value, nil
 }
 
 // MakePulsarAdminConfig create pulsar admin configuration
@@ -329,9 +348,13 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 	hasAuth := false
 	if authn := connection.Spec.Authentication; authn != nil {
 		if token := authn.Token; token != nil {
-			value, err := GetValue(ctx, k8sClient, connection.Namespace, token)
+			value, filePath, err := GetValue(ctx, k8sClient, connection.Namespace, token)
 			if err != nil {
 				return nil, err
+			}
+			if filePath != nil {
+				cfg.TokenFilePath = *filePath
+				hasAuth = true
 			}
 			if value != nil {
 				cfg.Token = *value
@@ -346,12 +369,18 @@ func MakePulsarAdminConfig(ctx context.Context, connection *resourcev1alpha1.Pul
 			if oauth2.Key == nil {
 				return nil, fmt.Errorf("oauth2 key must not be empty")
 			}
-			value, err := GetValue(ctx, k8sClient, connection.Namespace, oauth2.Key)
+			value, filePath, err := GetValue(ctx, k8sClient, connection.Namespace, oauth2.Key)
 			if err != nil {
 				return nil, err
 			}
+			if value == nil && filePath == nil {
+				return nil, fmt.Errorf("oauth2 key must not be empty")
+			}
 			if value != nil {
 				cfg.Key = *value
+			}
+			if filePath != nil {
+				cfg.KeyFilePath = *filePath
 			}
 		}
 		if tls := authn.TLS; tls != nil {

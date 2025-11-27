@@ -143,6 +143,11 @@ spec:
                           For confidential clients, this would be the client secret.
                           For public clients using JWT authentication, this would be the path to the JSON credentials file.
                         properties:
+                          file:
+                            description: |-
+                              File points to a local file path whose contents will be used as the value.
+                              This is useful when running the operator locally without creating Kubernetes secrets.
+                            type: string
                           secretRef:
                             description: SecretKeyRef indicates a secret name and
                               key
@@ -187,6 +192,11 @@ spec:
                       This can be either a direct token value or a reference to a secret containing the token.
                       If using a secret, the token should be stored under the specified key in the secret.
                     properties:
+                      file:
+                        description: |-
+                          File points to a local file path whose contents will be used as the value.
+                          This is useful when running the operator locally without creating Kubernetes secrets.
+                        type: string
                       secretRef:
                         description: SecretKeyRef indicates a secret name and key
                         properties:
