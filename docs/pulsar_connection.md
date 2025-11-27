@@ -154,9 +154,9 @@ spec:
   clusterName: pulsar-cluster
   authentication:
     oauth2:
-      issuerEndpoint: https://auth.streamnative.cloud
-      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
-      audience: urn:sn:pulsar:sndev:us-west
+      issuerEndpoint: <issuer-endpoint>
+      clientID: <client-id>
+      audience: <audience>
       key:
         secretRef:
           name: oauth2-key-file
@@ -178,17 +178,17 @@ spec:
   clusterName: pulsar-cluster
   authentication:
     oauth2:
-      issuerEndpoint: https://auth.streamnative.cloud
-      clientID: pvqx76oGvWQMIGGP2ozMfOus2s4tDQAJ
-      audience: urn:sn:pulsar:sndev:us-west
+      issuerEndpoint: <issuer-endpoint>
+      clientID: <client-id>
+      audience: <audience>
       key:
         value: |
           {
             "type":"sn_service_account",
-            "client_id":"zvex72oGvFQMBQGZ2ozMxOus2s4tQASJ",
+            "client_id":"<client-id>",
             "client_secret":"<client-secret>",
-            "client_email":"contoso@sndev.auth.streamnative.cloud",
-            "issuer_url":"https://auth.streamnative.cloud"
+            "client_email":"<client-email>",
+            "issuer_url":"<issuer-endpoint>"
           }
       scope: <scope>
 ```
