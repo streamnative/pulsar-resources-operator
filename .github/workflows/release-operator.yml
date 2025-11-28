@@ -17,7 +17,7 @@ name: Release operator
 on:
   push:
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+-?*'
+      - "v[0-9]+.[0-9]+.[0-9]+-?*"
 
 env:
   GOPRIVATE: github.com/streamnative
@@ -41,7 +41,7 @@ jobs:
       - name: Set up Go 1.23
         uses: actions/setup-go@v3
         with:
-          go-version: '1.23'
+          go-version: "1.23"
         id: go
 
       - name: Set up Git token
@@ -64,14 +64,14 @@ jobs:
           registry: quay.io
           username: ${{ secrets.QUAY_DOCKER_USERNAME }}
           password: ${{ secrets.QUAY_DOCKER_PASSWORD }}
-      
+
       - name: Login to DockerHub
         uses: docker/login-action@v2
         with:
           registry: docker.io
           username: ${{ secrets.DOCKER_USER }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-      
+
       - name: Build image and Publish to DockerHub
         id: dockerhub
         run: |
@@ -93,7 +93,7 @@ jobs:
           export IMG=$IMAGE_TAG_BASE_QUAY:v$VERSION
           export IMG_LATEST=$IMAGE_TAG_BASE_QUAY:latest
           make docker-build-redhat
-          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.14.0/preflight-linux-amd64 -O preflight
+          wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.14.1/preflight-linux-amd64 -O preflight
           chmod +x preflight
           mv preflight /usr/local/bin
           preflight -v
@@ -103,12 +103,12 @@ jobs:
           preflight_output=$(make report-preflight-check-result 2>&1)
           exit_code=$?
           set -e
-          
+
           echo "$preflight_output"
-          
+
           if [[ $exit_code -ne 0 ]]; then
             echo "::warning::Preflight submission failed (exit code: $exit_code)"
-            
+
             # Check if the failure is due to already published image
             if echo "$preflight_output" | grep -i "published image can't be updated\|already published\|already certified\|cannot update published image"; then
               echo "::notice::Image appears to be already certified/published - this is expected for existing releases"
