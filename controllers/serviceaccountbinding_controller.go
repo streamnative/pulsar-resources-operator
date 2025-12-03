@@ -223,7 +223,7 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 					errMsg := fmt.Sprintf("Failed to create remote ServiceAccountBinding for PoolMemberRef %d (%s): %v", i, remoteName, err)
 					r.updateServiceAccountBindingStatus(ctx, binding, err, "CreateFailed", errMsg)
 					allBindingsReady = false
-					lastError = errors.Wrapf(err, errMsg)
+					lastError = errors.Wrapf(err, "Failed to create remote ServiceAccountBinding for PoolMemberRef %d (%s)", i, remoteName)
 					continue
 				}
 				logger.Info("Successfully created remote ServiceAccountBinding", "bindingName", remoteName, "poolMemberRef", poolMemberRef)
@@ -232,7 +232,7 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 				errMsg := fmt.Sprintf("Failed to get remote ServiceAccountBinding for PoolMemberRef %d (%s): %v", i, remoteName, err)
 				r.updateServiceAccountBindingStatus(ctx, binding, err, "GetFailed", errMsg)
 				allBindingsReady = false
-				lastError = errors.Wrapf(err, errMsg)
+				lastError = errors.Wrapf(err, "Failed to get remote ServiceAccountBinding for PoolMemberRef %d (%s)", i, remoteName)
 				continue
 			}
 		} else {
