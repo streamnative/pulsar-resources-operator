@@ -61,6 +61,7 @@ KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
 
 REDHAT_SCAN_REGITRY ?= "quay.io"
 PROJECT_ID_PULSAR_RESOURCES_OPERATOR ?= "62f2585dfcd25442e1f1ee46"
+VET_EXCLUDES ?= pulsar-charts
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -118,7 +119,8 @@ fmt: ## Run go fmt against code.
 
 .PHONY: vet
 vet: ## Run go vet against code.
-	go vet ./...
+	@packages=$$(go list ./... | { if [ -n "$(VET_EXCLUDES)" ]; then grep -v -E "$(VET_EXCLUDES)"; else cat; fi; }); \
+	if [ -z "$$packages" ]; then echo "No packages to vet"; else go vet $$packages; fi
 
 .PHONY: test
 test: manifests generate generate-internal fmt vet envtest ## Run tests.

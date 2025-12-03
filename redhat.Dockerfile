@@ -27,7 +27,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.23-alpine3.21 as builder
+FROM golang:1.24-alpine3.21 as builder
 
 ARG ACCESS_TOKEN="none"
 
@@ -53,7 +53,7 @@ COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 
-# Use ubi image as the base image which is required by the red hat certification. 
+# Use ubi image as the base image which is required by the red hat certification.
 # Base on the image size, the order is ubi > ubi-minimal > ubi-micro.
 # https://access.redhat.com/documentation/en-us/red_hat_software_certification/8.45/html/red_hat_openshift_software_certification_policy_guide/assembly-requirements-for-container-images_openshift-sw-cert-policy-introduction#con-image-metadata-requirements_openshift-sw-cert-policy-container-images
 FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
@@ -61,12 +61,12 @@ FROM registry.access.redhat.com/ubi8/ubi-minimal:latest
 ARG VERSION
 
 LABEL name="pulsar-resources-operator" \
-      vendor="StreamNative, Inc." \
-      maintainer="StreamNative, Inc." \
-      version="${VERSION}" \
-      release="${VERSION}" \
-      summary="The Pulsar Resources Operator provides a declarative way to manage the pulsar resources on a Kubernetes cluster." \
-	  description="The Pulsar Resources Operator provides full lifecycle management for the following Pulsar resources, including creation, update, and deletion."
+    vendor="StreamNative, Inc." \
+    maintainer="StreamNative, Inc." \
+    version="${VERSION}" \
+    release="${VERSION}" \
+    summary="The Pulsar Resources Operator provides a declarative way to manage the pulsar resources on a Kubernetes cluster." \
+    description="The Pulsar Resources Operator provides full lifecycle management for the following Pulsar resources, including creation, update, and deletion."
 WORKDIR /
 COPY --from=builder /workspace/manager .
 COPY LICENSE /licenses/LICENSE

@@ -1,8 +1,6 @@
 module github.com/streamnative/pulsar-resources-operator
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.24.11
 
 require (
 	github.com/apache/pulsar-client-go v0.16.0-candidate-1.0.20250730013016-1f9e82805e54
