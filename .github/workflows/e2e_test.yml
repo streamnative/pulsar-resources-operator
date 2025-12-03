@@ -89,6 +89,15 @@ jobs:
           kind load docker-image --name pulsar-dev docker.cloudsmith.io/streamnative/operators/kubebuilder/kube-rbac-proxy:v0.8.0
           df -h
 
+      - name: Build and Setup Pulsar Resources Operator
+        run: |
+          make docker-build
+          kind load docker-image --name pulsar-dev controller:latest
+          make deploy
+          kubectl get crds
+          kubectl wait --for condition=available --timeout=360s deployment/pulsar-resources-operator-controller-manager -npulsar-resources-operator-system
+          df -h
+
       - name: Install Pulsar Operators and sn-platform
         run: |
           helm repo add streamnative https://charts.streamnative.io
@@ -104,15 +113,6 @@ jobs:
           helm repo update
           helm dependency update charts/pulsar
           helm install test --set initialize=true --values ../.ci/clusters/values.yaml charts/pulsar
-          df -h
-
-      - name: Build and Setup Pulsar Resources Operator
-        run: |
-          make docker-build
-          kind load docker-image --name pulsar-dev controller:latest
-          make deploy
-          kubectl get crds
-          kubectl wait --for condition=available --timeout=360s deployment/pulsar-resources-operator-controller-manager -npulsar-resources-operator-system
           df -h
 
       - name: Run Operator Test
