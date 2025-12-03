@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Build the manager binary
-FROM golang:1.23-alpine3.21 as builder
+FROM golang:1.24-alpine3.21 as builder
 
 ARG ACCESS_TOKEN="none"
 
