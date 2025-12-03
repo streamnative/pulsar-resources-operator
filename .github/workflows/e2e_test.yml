@@ -17,10 +17,10 @@ name: Operator E2e tests
 on:
   pull_request:
     branches:
-      - '*'
+      - "*"
     paths:
-      - '**.go'
-      - '.github/workflows/e2e_test.yml'
+      - "**.go"
+      - ".github/workflows/e2e_test.yml"
 env:
   GOPRIVATE: github.com/streamnative
 jobs:
@@ -28,7 +28,7 @@ jobs:
     name: E2e tests for Operators
     strategy:
       matrix:
-        alwaysUpdatePulsar: [ "true", "false" ]
+        alwaysUpdatePulsar: ["true", "false"]
     runs-on: ubuntu-latest
     env:
       ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
@@ -55,10 +55,10 @@ jobs:
       - name: Cleanup disk
         run: sudo rm -rf /usr/local/.ghcup
 
-      - name: Set up Go 1.23
+      - name: Set up Go 1.24
         uses: actions/setup-go@v3
         with:
-          go-version: '1.23'
+          go-version: "1.24"
         id: go
 
       - name: Set up Git token
