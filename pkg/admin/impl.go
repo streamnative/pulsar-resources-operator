@@ -604,7 +604,7 @@ func isRetentionBacklogOrderingError(err error) bool {
 	return strings.Contains(err.Error(), "Retention Quota must exceed configured backlog quota")
 }
 
-func buildBacklogQuota(limitTime *utils.Duration, limitSize *resource.Quantity, retentionPolicyStr *string,
+func buildBacklogQuota(limitTime *rutils.Duration, limitSize *resource.Quantity, retentionPolicyStr *string,
 	backlogQuotaTypeStr *string) (*utils.BacklogQuota, utils.BacklogQuotaType, error) {
 	if limitTime == nil && limitSize == nil && retentionPolicyStr == nil && backlogQuotaTypeStr == nil {
 		return nil, "", nil
