@@ -1710,6 +1710,59 @@ var _ = Describe("Resources", func() {
 				Expect(string(*ns.Spec.SubscriptionExpirationTime)).Should(Equal("7d"))
 			})
 
+			It("should reflect subscription expiration time in broker", func() {
+				podName := fmt.Sprintf("%s-broker-0", brokerName)
+				containerName := fmt.Sprintf("%s-broker", brokerName)
+				Eventually(func(g Gomega) {
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin namespaces get-subscription-expiration-time "+storagePoliciesPulsarNSName)
+					g.Expect(err).Should(Succeed())
+					// 7d -> 10080 minutes
+					g.Expect(stdout).Should(ContainSubstring("10080"))
+				}, "30s", "200ms").Should(Succeed())
+			})
+
+			It("should update subscription expiration time to infinite", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				var infiniteExp rutils.Duration = "-1"
+				ns.Spec.SubscriptionExpirationTime = &infiniteExp
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after subscription expiration update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should reflect updated subscription expiration time", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				Expect(ns.Spec.SubscriptionExpirationTime).ShouldNot(BeNil())
+				Expect(string(*ns.Spec.SubscriptionExpirationTime)).Should(Equal("-1"))
+			})
+
+			It("should reflect updated subscription expiration time in broker", func() {
+				podName := fmt.Sprintf("%s-broker-0", brokerName)
+				containerName := fmt.Sprintf("%s-broker", brokerName)
+				Eventually(func(g Gomega) {
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin namespaces get-subscription-expiration-time "+storagePoliciesPulsarNSName)
+					g.Expect(err).Should(Succeed())
+					g.Expect(stdout).Should(ContainSubstring("-1"))
+				}, "30s", "200ms").Should(Succeed())
+			})
+
 			It("should have correct custom properties", func() {
 				ns := &v1alphav1.PulsarNamespace{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
@@ -1719,6 +1772,56 @@ var _ = Describe("Resources", func() {
 				Expect(ns.Spec.Properties).ShouldNot(BeNil())
 				Expect(ns.Spec.Properties["environment"]).Should(Equal("test"))
 				Expect(ns.Spec.Properties["team"]).Should(Equal("qa"))
+			})
+
+			It("should reconcile when backlog quota retention policy is unset", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				ns.Spec.BacklogQuotaRetentionPolicy = nil
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after removing backlog quota retention policy", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should allow clearing inactive topic policies and properties", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				ns.Spec.InactiveTopicPolicies = nil
+				ns.Spec.Properties = nil
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after clearing inactive topic policies and properties", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should reflect cleared inactive topic policies and properties", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				Expect(ns.Spec.InactiveTopicPolicies).Should(BeNil())
+				Expect(ns.Spec.Properties).Should(BeNil())
 			})
 
 			It("should update persistence policies successfully", func() {
