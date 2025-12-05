@@ -99,6 +99,10 @@ spec:
                 description: |-
                   BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
                   Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
+                enum:
+                - producer_request_hold
+                - producer_exception
+                - consumer_backlog_eviction
                 type: string
               backlogQuotaType:
                 description: |-

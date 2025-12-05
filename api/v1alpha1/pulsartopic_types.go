@@ -111,8 +111,15 @@ type PulsarTopicSpec struct {
 
 	// BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
 	// Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
+	// +kubebuilder:validation:Enum=producer_request_hold;producer_exception;consumer_backlog_eviction
 	// +optional
 	BacklogQuotaRetentionPolicy *string `json:"backlogQuotaRetentionPolicy,omitempty"`
+
+	// BacklogQuotaType controls how the backlog quota is enforced.
+	// "destination_storage" limits backlog by size (in bytes), while "message_age" limits by time.
+	// +kubebuilder:validation:Enum=destination_storage;message_age
+	// +optional
+	BacklogQuotaType *string `json:"backlogQuotaType,omitempty"`
 
 	// SchemaInfo defines the schema for the topic, if any.
 	// +optional

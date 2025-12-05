@@ -90,6 +90,7 @@ type TopicParams struct {
 	BacklogQuotaLimitTime             *utils.Duration
 	BacklogQuotaLimitSize             *resource.Quantity
 	BacklogQuotaRetentionPolicy       *string
+	BacklogQuotaType                  *string
 	ReplicationClusters               []string
 	Deduplication                     *bool
 	CompactionThreshold               *int64

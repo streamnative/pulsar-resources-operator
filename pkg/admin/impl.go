@@ -306,29 +306,14 @@ func (p *PulsarAdminClient) applyTopicPolicies(topicName *utils.TopicName, param
 		retentionPolicy = &policy
 	}
 
-	var backlogQuotaPolicy *utils.BacklogQuota
-	var backlogQuotaType utils.BacklogQuotaType
-	if (params.BacklogQuotaLimitTime != nil || params.BacklogQuotaLimitSize != nil) &&
-		params.BacklogQuotaRetentionPolicy != nil {
-		backlogTime := int64(-1)
-		backlogSize := int64(-1)
-		if params.BacklogQuotaLimitTime != nil {
-			t, err := params.BacklogQuotaLimitTime.Parse()
-			if err != nil {
-				return err
-			}
-			backlogTime = int64(t.Seconds())
-			backlogQuotaType = utils.MessageAge
-		}
-		if params.BacklogQuotaLimitSize != nil {
-			backlogSize = params.BacklogQuotaLimitSize.Value()
-			backlogQuotaType = utils.DestinationStorage
-		}
-		backlogQuotaPolicy = &utils.BacklogQuota{
-			LimitTime: backlogTime,
-			LimitSize: backlogSize,
-			Policy:    utils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
-		}
+	backlogQuotaPolicy, backlogQuotaType, err := buildBacklogQuota(
+		params.BacklogQuotaLimitTime,
+		params.BacklogQuotaLimitSize,
+		params.BacklogQuotaRetentionPolicy,
+		params.BacklogQuotaType,
+	)
+	if err != nil {
+		return err
 	}
 
 	switch {
@@ -617,6 +602,56 @@ func isRetentionBacklogOrderingError(err error) bool {
 		return false
 	}
 	return strings.Contains(err.Error(), "Retention Quota must exceed configured backlog quota")
+}
+
+func buildBacklogQuota(limitTime *utils.Duration, limitSize *resource.Quantity, retentionPolicyStr *string,
+	backlogQuotaTypeStr *string) (*utils.BacklogQuota, utils.BacklogQuotaType, error) {
+	if limitTime == nil && limitSize == nil && retentionPolicyStr == nil && backlogQuotaTypeStr == nil {
+		return nil, "", nil
+	}
+
+	if retentionPolicyStr == nil {
+		return nil, "", fmt.Errorf("backlogQuotaRetentionPolicy is required when configuring backlog quota")
+	}
+	retentionPolicy, err := utils.ParseRetentionPolicy(*retentionPolicyStr)
+	if err != nil {
+		return nil, "", err
+	}
+
+	backlogQuotaType := utils.DestinationStorage
+	if backlogQuotaTypeStr != nil {
+		backlogQuotaType, err = utils.ParseBacklogQuotaType(*backlogQuotaTypeStr)
+		if err != nil {
+			return nil, "", err
+		}
+	}
+
+	backlogQuota := utils.BacklogQuota{
+		LimitTime: -1,
+		LimitSize: -1,
+		Policy:    retentionPolicy,
+	}
+
+	switch backlogQuotaType {
+	case utils.DestinationStorage:
+		if limitSize == nil {
+			return nil, "", fmt.Errorf("backlogQuotaLimitSize is required when backlogQuotaType is %s", utils.DestinationStorage)
+		}
+		backlogQuota.LimitSize = limitSize.Value()
+	case utils.MessageAge:
+		if limitTime == nil {
+			return nil, "", fmt.Errorf("backlogQuotaLimitTime is required when backlogQuotaType is %s", utils.MessageAge)
+		}
+		t, err := limitTime.Parse()
+		if err != nil {
+			return nil, "", err
+		}
+		backlogQuota.LimitTime = int64(t.Seconds())
+	default:
+		return nil, "", fmt.Errorf("unsupported backlog quota type %s", backlogQuotaType)
+	}
+
+	return &backlogQuota, backlogQuotaType, nil
 }
 
 // GetTopicClusters get the assigned clusters of the topic to the local default cluster
@@ -1117,35 +1152,17 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
-	if (params.BacklogQuotaLimitTime != nil || params.BacklogQuotaLimitSize != nil) &&
-		params.BacklogQuotaRetentionPolicy != nil {
-		backlogTime := int64(-1)
-		backlogSize := int64(-1)
-		if params.BacklogQuotaLimitTime != nil {
-			t, err := params.BacklogQuotaLimitTime.Parse()
-			if err != nil {
-				return err
-			}
-			backlogTime = int64(t.Seconds())
-		}
-		if params.BacklogQuotaLimitSize != nil {
-			backlogSize = params.BacklogQuotaLimitSize.Value()
-		}
-		backlogQuotaPolicy := utils.BacklogQuota{
-			LimitTime: backlogTime,
-			LimitSize: backlogSize,
-			Policy:    utils.RetentionPolicy(*params.BacklogQuotaRetentionPolicy),
-		}
-
-		var backlogQuotaType utils.BacklogQuotaType
-		if params.BacklogQuotaType != nil {
-			backlogQuotaType, err = utils.ParseBacklogQuotaType(*params.BacklogQuotaType)
-			if err != nil {
-				return err
-			}
-		}
-		err = p.adminClient.Namespaces().SetBacklogQuota(completeNSName, backlogQuotaPolicy, backlogQuotaType)
-		if err != nil {
+	backlogQuotaPolicy, backlogQuotaType, err := buildBacklogQuota(
+		params.BacklogQuotaLimitTime,
+		params.BacklogQuotaLimitSize,
+		params.BacklogQuotaRetentionPolicy,
+		params.BacklogQuotaType,
+	)
+	if err != nil {
+		return err
+	}
+	if backlogQuotaPolicy != nil {
+		if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlogQuotaPolicy, backlogQuotaType); err != nil {
 			return err
 		}
 	}
@@ -1184,6 +1201,35 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 
 	if params.Deduplication != nil {
 		err = p.adminClient.Namespaces().SetDeduplicationStatus(completeNSName, *params.Deduplication)
+		if err != nil {
+			return err
+		}
+	}
+	// Handle persistence policies
+	if params.PersistencePolicies != nil {
+		var markDeleteRate float64
+		if params.PersistencePolicies.ManagedLedgerMaxMarkDeleteRate != nil {
+			var err error
+			markDeleteRate, err = strconv.ParseFloat(*params.PersistencePolicies.ManagedLedgerMaxMarkDeleteRate, 64)
+			if err != nil {
+				return err
+			}
+		}
+
+		persistenceData := utils.PersistencePolicies{
+			ManagedLedgerMaxMarkDeleteRate: markDeleteRate,
+		}
+		if params.PersistencePolicies.BookkeeperEnsemble != nil {
+			persistenceData.BookkeeperEnsemble = int(*params.PersistencePolicies.BookkeeperEnsemble)
+		}
+		if params.PersistencePolicies.BookkeeperWriteQuorum != nil {
+			persistenceData.BookkeeperWriteQuorum = int(*params.PersistencePolicies.BookkeeperWriteQuorum)
+		}
+		if params.PersistencePolicies.BookkeeperAckQuorum != nil {
+			persistenceData.BookkeeperAckQuorum = int(*params.PersistencePolicies.BookkeeperAckQuorum)
+		}
+
+		err = p.adminClient.Namespaces().SetPersistence(completeNSName, persistenceData)
 		if err != nil {
 			return err
 		}
@@ -1239,6 +1285,30 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	if params.SchemaValidationEnforced != nil {
 		err = p.adminClient.Namespaces().SetSchemaValidationEnforced(*naName, *params.SchemaValidationEnforced)
 		if err != nil {
+			return err
+		}
+	}
+
+	// Handle inactive topic policies
+	if params.InactiveTopicPolicies != nil {
+		inactiveTopicPolicies := utils.InactiveTopicPolicies{}
+		if params.InactiveTopicPolicies.InactiveTopicDeleteMode != nil {
+			deleteMode := utils.InactiveTopicDeleteMode(*params.InactiveTopicPolicies.InactiveTopicDeleteMode)
+			inactiveTopicPolicies.InactiveTopicDeleteMode = &deleteMode
+		}
+		if params.InactiveTopicPolicies.MaxInactiveDurationInSeconds != nil {
+			inactiveTopicPolicies.MaxInactiveDurationSeconds = int(*params.InactiveTopicPolicies.MaxInactiveDurationInSeconds)
+		}
+		if params.InactiveTopicPolicies.DeleteWhileInactive != nil {
+			inactiveTopicPolicies.DeleteWhileInactive = *params.InactiveTopicPolicies.DeleteWhileInactive
+		}
+		err = p.adminClient.Namespaces().SetInactiveTopicPolicies(*naName, inactiveTopicPolicies)
+		if err != nil {
+			return err
+		}
+	} else {
+		err = p.adminClient.Namespaces().RemoveInactiveTopicPolicies(*naName)
+		if err != nil && !IsNotFound(err) {
 			return err
 		}
 	}
@@ -1363,6 +1433,25 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
+	// Handle subscription expiration time
+	if params.SubscriptionExpirationTime != nil {
+		if params.SubscriptionExpirationTime.IsInfinite() {
+			// Remove explicit expiration to inherit broker defaults
+			if err := p.adminClient.Namespaces().RemoveSubscriptionExpirationTime(*naName); err != nil {
+				return err
+			}
+		} else {
+			duration, err := params.SubscriptionExpirationTime.Parse()
+			if err != nil {
+				return err
+			}
+			expirationMinutes := int(duration.Minutes())
+			if err := p.adminClient.Namespaces().SetSubscriptionExpirationTime(*naName, expirationMinutes); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Handle schema auto-update policy
 	if params.IsAllowAutoUpdateSchema != nil {
 		err = p.adminClient.Namespaces().SetIsAllowAutoUpdateSchema(*naName, *params.IsAllowAutoUpdateSchema)
@@ -1375,6 +1464,17 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		externalSchemaStrategy := convertSchemaCompatibilityStrategy(params.SchemaCompatibilityStrategy)
 		err := p.adminClient.Namespaces().SetSchemaCompatibilityStrategy(*naName, *externalSchemaStrategy)
 		if err != nil {
+			return err
+		}
+	}
+
+	// Handle namespace properties
+	if len(params.Properties) > 0 {
+		if err := p.adminClient.Namespaces().UpdateProperties(*naName, params.Properties); err != nil {
+			return err
+		}
+	} else if params.Properties != nil {
+		if err := p.adminClient.Namespaces().RemoveProperties(*naName); err != nil {
 			return err
 		}
 	}
