@@ -209,6 +209,7 @@ type PulsarNamespaceSpec struct {
 
 	// BacklogQuotaRetentionPolicy specifies the retention policy for messages when backlog quota is exceeded.
 	// Valid values are "producer_request_hold", "producer_exception", or "consumer_backlog_eviction".
+	// +kubebuilder:validation:Enum=producer_request_hold;producer_exception;consumer_backlog_eviction
 	// +optional
 	BacklogQuotaRetentionPolicy *string `json:"backlogQuotaRetentionPolicy,omitempty"`
 

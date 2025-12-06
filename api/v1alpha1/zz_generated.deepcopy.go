@@ -3008,6 +3008,11 @@ func (in *PulsarTopicSpec) DeepCopyInto(out *PulsarTopicSpec) {
 		*out = new(string)
 		**out = **in
 	}
+	if in.BacklogQuotaType != nil {
+		in, out := &in.BacklogQuotaType, &out.BacklogQuotaType
+		*out = new(string)
+		**out = **in
+	}
 	if in.SchemaInfo != nil {
 		in, out := &in.SchemaInfo, &out.SchemaInfo
 		*out = new(SchemaInfo)
