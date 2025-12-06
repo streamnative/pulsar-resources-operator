@@ -620,10 +620,11 @@ func buildBacklogQuota(limitTime *rutils.Duration, limitSize *resource.Quantity,
 
 	backlogQuotaType := utils.DestinationStorage
 	if backlogQuotaTypeStr != nil {
-		backlogQuotaType, err = utils.ParseBacklogQuotaType(*backlogQuotaTypeStr)
+		parsedType, err := utils.ParseBacklogQuotaType(*backlogQuotaTypeStr)
 		if err != nil {
 			return nil, "", err
 		}
+		backlogQuotaType = parsedType
 	}
 
 	backlogQuota := utils.BacklogQuota{
