@@ -133,6 +133,7 @@ type InactiveTopicPolicies struct {
 
 // PulsarNamespaceSpec defines the desired state of a Pulsar namespace.
 // It corresponds to the configuration options available in Pulsar's namespace admin API.
+// +kubebuilder:validation:XValidation:rule="!(has(self.backlogQuotaLimitSize) || has(self.backlogQuotaLimitTime) || has(self.backlogQuotaType)) || has(self.backlogQuotaRetentionPolicy)",message="backlogQuotaRetentionPolicy is required when configuring backlog quota"
 type PulsarNamespaceSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file

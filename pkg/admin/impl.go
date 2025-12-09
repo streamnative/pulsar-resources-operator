@@ -613,18 +613,28 @@ func buildBacklogQuota(limitTime *rutils.Duration, limitSize *resource.Quantity,
 	if retentionPolicyStr == nil {
 		return nil, "", fmt.Errorf("backlogQuotaRetentionPolicy is required when configuring backlog quota")
 	}
+	if limitTime == nil && limitSize == nil {
+		return nil, "", fmt.Errorf("backlogQuotaLimitTime or backlogQuotaLimitSize is required when configuring backlog quota")
+	}
 	retentionPolicy, err := utils.ParseRetentionPolicy(*retentionPolicyStr)
 	if err != nil {
 		return nil, "", err
 	}
 
-	backlogQuotaType := utils.DestinationStorage
-	if backlogQuotaTypeStr != nil {
+	var backlogQuotaType utils.BacklogQuotaType
+	switch {
+	case backlogQuotaTypeStr != nil:
 		parsedType, err := utils.ParseBacklogQuotaType(*backlogQuotaTypeStr)
 		if err != nil {
 			return nil, "", err
 		}
 		backlogQuotaType = parsedType
+	case limitSize != nil:
+		backlogQuotaType = utils.DestinationStorage
+	case limitTime != nil:
+		backlogQuotaType = utils.MessageAge
+	default:
+		backlogQuotaType = utils.DestinationStorage
 	}
 
 	backlogQuota := utils.BacklogQuota{
