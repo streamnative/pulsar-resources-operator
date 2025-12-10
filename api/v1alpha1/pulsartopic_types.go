@@ -27,7 +27,6 @@ import (
 
 // PulsarTopicSpec defines the desired state of PulsarTopic.
 // It corresponds to the configuration options available in Pulsar's topic admin API.
-// +kubebuilder:validation:XValidation:rule="!(has(self.backlogQuotaLimitSize) || has(self.backlogQuotaLimitTime) || has(self.backlogQuotaType)) || has(self.backlogQuotaRetentionPolicy)",message="backlogQuotaRetentionPolicy is required when configuring backlog quota"
 type PulsarTopicSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file

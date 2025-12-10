@@ -552,11 +552,6 @@ spec:
             - connectionRef
             - name
             type: object
-            x-kubernetes-validations:
-            - message: backlogQuotaRetentionPolicy is required when configuring backlog
-                quota
-              rule: '!(has(self.backlogQuotaLimitSize) || has(self.backlogQuotaLimitTime)
-                || has(self.backlogQuotaType)) || has(self.backlogQuotaRetentionPolicy)'
           status:
             description: PulsarTopicStatus defines the observed state of PulsarTopic
             properties:
