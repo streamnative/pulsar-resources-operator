@@ -28,6 +28,7 @@ import (
 	v1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metautil "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -1759,7 +1760,8 @@ var _ = Describe("Resources", func() {
 					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsar-admin namespaces get-subscription-expiration-time "+storagePoliciesPulsarNSName)
 					g.Expect(err).Should(Succeed())
-					g.Expect(stdout).Should(ContainSubstring("-1"))
+					// Pulsar returns null once the expiration time is removed (infinite)
+					g.Expect(stdout).Should(ContainSubstring("null"))
 				}, "30s", "200ms").Should(Succeed())
 			})
 
@@ -1774,15 +1776,31 @@ var _ = Describe("Resources", func() {
 				Expect(ns.Spec.Properties["team"]).Should(Equal("qa"))
 			})
 
-			It("should fail when backlog quota retention policy is unset", func() {
+			It("should surface an error condition when backlog quota retention policy is unset", func() {
 				ns := &v1alphav1.PulsarNamespace{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				ns.Spec.BacklogQuotaRetentionPolicy = nil
 
-				err := k8sClient.Update(ctx, ns)
-				Expect(err).ShouldNot(Succeed())
+				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
+
+				Eventually(func(g Gomega) metav1.ConditionStatus {
+					current := &v1alphav1.PulsarNamespace{}
+					g.Expect(k8sClient.Get(ctx, tns, current)).Should(Succeed())
+
+					cond := metautil.FindStatusCondition(current.Status.Conditions, string(v1alphav1.ConditionReady))
+					if cond == nil {
+						return metav1.ConditionUnknown
+					}
+					g.Expect(cond.Message).Should(ContainSubstring("backlogQuotaRetentionPolicy is required"))
+					return cond.Status
+				}, "30s", "500ms").Should(Equal(metav1.ConditionFalse))
+
+				// Re-fetch to get latest ResourceVersion before updating
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+				ns.Spec.BacklogQuotaRetentionPolicy = pointer.String("producer_request_hold")
+				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
 			})
 
 			It("should allow clearing inactive topic policies and properties", func() {
@@ -1821,7 +1839,7 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				// Update PersistencePolicies
-				ns.Spec.PersistencePolicies.BookkeeperEnsemble = pointer.Int32(7)
+				ns.Spec.PersistencePolicies.BookkeeperEnsemble = pointer.Int32(5)
 				ns.Spec.PersistencePolicies.BookkeeperWriteQuorum = pointer.Int32(4)
 				ns.Spec.PersistencePolicies.BookkeeperAckQuorum = pointer.Int32(3)
 
@@ -1845,10 +1863,53 @@ var _ = Describe("Resources", func() {
 
 				// Verify updated PersistencePolicies
 				Expect(ns.Spec.PersistencePolicies).ShouldNot(BeNil())
-				Expect(*ns.Spec.PersistencePolicies.BookkeeperEnsemble).Should(Equal(int32(7)))
+				Expect(*ns.Spec.PersistencePolicies.BookkeeperEnsemble).Should(Equal(int32(5)))
 				Expect(*ns.Spec.PersistencePolicies.BookkeeperWriteQuorum).Should(Equal(int32(4)))
 				Expect(*ns.Spec.PersistencePolicies.BookkeeperAckQuorum).Should(Equal(int32(3)))
 			})
+
+			It("should clear persistence policies successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Clear PersistencePolicies
+				ns.Spec.PersistencePolicies = nil
+
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after clearing persistence policies", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "30s", "100ms").Should(BeTrue())
+			})
+
+			It("should have cleared persistence policies", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				// Verify PersistencePolicies is cleared
+				Expect(ns.Spec.PersistencePolicies).Should(BeNil())
+			})
+
+			// TODO: https://github.com/apache/pulsar-client-go/pull/1447 add RemovePersistence methods
+			// It("should reflect cleared persistence policies in broker", func() {
+			// 	podName := fmt.Sprintf("%s-broker-0", brokerName)
+			// 	containerName := fmt.Sprintf("%s-broker", brokerName)
+			// 	Eventually(func(g Gomega) {
+			// 		stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+			// 			"./bin/pulsar-admin namespaces get-persistence "+storagePoliciesPulsarNSName)
+			// 		g.Expect(err).Should(Succeed())
+			// 		// When persistence policies are reset, broker returns default values (0)
+			// 		g.Expect(stdout).Should(ContainSubstring("\"bookkeeperEnsemble\" : 0"))
+			// 	}, "30s", "200ms").Should(Succeed())
+			// })
 
 			It("should update compaction threshold successfully", func() {
 				ns := &v1alphav1.PulsarNamespace{}

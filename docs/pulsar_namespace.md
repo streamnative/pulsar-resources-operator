@@ -450,6 +450,8 @@ spec:
     name: test-pulsar-connection
   backlogQuotaLimitSize: 1Gi
   backlogQuotaLimitTime: 24h
+  backlogQuotaRetentionPolicy: producer_request_hold
+  # backlogQuotaType: destination_storage
   bundles: 16
   messageTTL: 1h
   

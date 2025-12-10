@@ -621,20 +621,13 @@ func buildBacklogQuota(limitTime *rutils.Duration, limitSize *resource.Quantity,
 		return nil, "", err
 	}
 
-	var backlogQuotaType utils.BacklogQuotaType
-	switch {
-	case backlogQuotaTypeStr != nil:
+	backlogQuotaType := utils.DestinationStorage
+	if backlogQuotaTypeStr != nil {
 		parsedType, err := utils.ParseBacklogQuotaType(*backlogQuotaTypeStr)
 		if err != nil {
 			return nil, "", err
 		}
 		backlogQuotaType = parsedType
-	case limitSize != nil:
-		backlogQuotaType = utils.DestinationStorage
-	case limitTime != nil:
-		backlogQuotaType = utils.MessageAge
-	default:
-		backlogQuotaType = utils.DestinationStorage
 	}
 
 	backlogQuota := utils.BacklogQuota{
@@ -1245,6 +1238,10 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 			return err
 		}
 	}
+	// Note: When PersistencePolicies is nil, we don't call SetPersistence.
+	// The pulsar-client-go library doesn't have DeletePersistence for namespaces,
+	// and sending empty PersistencePolicies{} with BookkeeperEnsemble=0 causes
+	// validation errors (Bookkeeper-Ensemble must be > 0 and <= 5).
 	if params.BookieAffinityGroup != nil {
 		err = p.adminClient.Namespaces().SetBookieAffinityGroup(completeNSName, utils.BookieAffinityGroupData{
 			BookkeeperAffinityGroupPrimary:   params.BookieAffinityGroup.BookkeeperAffinityGroupPrimary,
