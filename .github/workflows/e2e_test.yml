@@ -79,7 +79,7 @@ jobs:
           chmod +x ./kind
           export PATH="$PWD:$PATH"
           kind version
-          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion v1.33.5
+          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion v1.33.4
 
       - name: Initialize K8s cluster
         run: |
