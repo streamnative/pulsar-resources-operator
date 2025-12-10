@@ -75,11 +75,11 @@ jobs:
       # TODO the k8s version should be configurable
       - name: Setup K8s cluster
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.30.0/kind-linux-amd64
           chmod +x ./kind
           export PATH="$PWD:$PATH"
           kind version
-          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion v1.22.17
+          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion v1.33.5
 
       - name: Initialize K8s cluster
         run: |
