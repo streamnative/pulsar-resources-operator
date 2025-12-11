@@ -327,6 +327,7 @@ func createTopicParams(topic *resourcev1alpha1.PulsarTopic) *admin.TopicParams {
 		BacklogQuotaLimitTime:             topic.Spec.BacklogQuotaLimitTime,
 		BacklogQuotaLimitSize:             topic.Spec.BacklogQuotaLimitSize,
 		BacklogQuotaRetentionPolicy:       topic.Spec.BacklogQuotaRetentionPolicy,
+		BacklogQuotaType:                  topic.Spec.BacklogQuotaType,
 		Deduplication:                     topic.Spec.Deduplication,
 		CompactionThreshold:               topic.Spec.CompactionThreshold,
 		PersistencePolicies:               topic.Spec.PersistencePolicies,
@@ -374,6 +375,7 @@ func summarizeTopicParamsForLogging(params *admin.TopicParams) map[string]interf
 	addIfNotNil(summary, "backlogQuotaLimitTime", params.BacklogQuotaLimitTime)
 	addIfNotNil(summary, "backlogQuotaLimitSize", params.BacklogQuotaLimitSize)
 	addIfNotNil(summary, "backlogQuotaRetentionPolicy", params.BacklogQuotaRetentionPolicy)
+	addIfNotNil(summary, "backlogQuotaType", params.BacklogQuotaType)
 	addIfNotNil(summary, "deduplication", params.Deduplication)
 	addIfNotNil(summary, "compactionThreshold", params.CompactionThreshold)
 	addIfNotNil(summary, "persistencePolicies", params.PersistencePolicies)

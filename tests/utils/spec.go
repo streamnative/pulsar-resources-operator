@@ -67,6 +67,8 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 	var du rsutils.Duration = "1d"
 	limitTime := &du
 	ttl := &du
+	backlogPolicy := ptr.To("producer_request_hold")
+	backlogType := ptr.To("destination_storage")
 	return &v1alpha1.PulsarNamespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace: namespace,
@@ -77,10 +79,12 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
-			BacklogQuotaLimitTime: limitTime,
-			BacklogQuotaLimitSize: &backlogSize,
-			Bundles:               &bundle,
-			MessageTTL:            ttl,
+			BacklogQuotaLimitTime:       limitTime,
+			BacklogQuotaLimitSize:       &backlogSize,
+			BacklogQuotaRetentionPolicy: backlogPolicy,
+			BacklogQuotaType:            backlogType,
+			Bundles:                     &bundle,
+			MessageTTL:                  ttl,
 			TopicAutoCreationConfig: &v1alpha1.TopicAutoCreationConfig{
 				Allow:      true,
 				Type:       "partitioned",
@@ -97,6 +101,8 @@ func MakePulsarNamespaceWithRateLimiting(namespace, name, namespaceName, connect
 	var du rsutils.Duration = "12h"
 	limitTime := &du
 	ttl := &du
+	backlogPolicy := ptr.To("producer_request_hold")
+	backlogType := ptr.To("destination_storage")
 
 	return &v1alpha1.PulsarNamespace{
 		ObjectMeta: metav1.ObjectMeta{
@@ -108,11 +114,13 @@ func MakePulsarNamespaceWithRateLimiting(namespace, name, namespaceName, connect
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
-			BacklogQuotaLimitTime: limitTime,
-			BacklogQuotaLimitSize: &backlogSize,
-			Bundles:               &bundle,
-			MessageTTL:            ttl,
-			LifecyclePolicy:       policy,
+			BacklogQuotaLimitTime:       limitTime,
+			BacklogQuotaLimitSize:       &backlogSize,
+			BacklogQuotaRetentionPolicy: backlogPolicy,
+			BacklogQuotaType:            backlogType,
+			Bundles:                     &bundle,
+			MessageTTL:                  ttl,
+			LifecyclePolicy:             policy,
 
 			// Rate limiting configurations
 			DispatchRate: &v1alpha1.DispatchRate{
