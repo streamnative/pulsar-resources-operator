@@ -1483,7 +1483,9 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	} else if params.Properties != nil {
 		if err := p.adminClient.Namespaces().RemoveProperties(*naName); err != nil {
-			return err
+			if !utils.IsNotFound(err) {
+				return err
+			}
 		}
 	}
 
