@@ -108,27 +108,27 @@ var _ = Describe("Resources", func() {
 	var (
 		ctx                 context.Context
 		pconn               *v1alphav1.PulsarConnection
-		pconnName           string = "test-connection"
+		pconnName           = "test-connection"
 		ptenant             *v1alphav1.PulsarTenant
-		ptenantName         string = "test-tenant"
-		tenantName          string = "cloud"
+		ptenantName         = "test-tenant"
+		tenantName          = "cloud"
 		lifecyclePolicy     v1alphav1.PulsarResourceLifeCyclePolicy
 		pnamespace          *v1alphav1.PulsarNamespace
-		pnamespaceName      string = "test-namespace"
-		pulsarNamespaceName string = "cloud/stage"
+		pnamespaceName      = "test-namespace"
+		pulsarNamespaceName = "cloud/stage"
 		ptopic              *v1alphav1.PulsarTopic
-		ptopicName          string = "test-topic"
-		topicName           string = "persistent://cloud/stage/user"
+		ptopicName          = "test-topic"
+		topicName           = "persistent://cloud/stage/user"
 		ptopic2             *v1alphav1.PulsarTopic
-		ptopicName2         string = "test-topic2"
-		topicName2          string = "persistent://cloud/stage/user2"
+		ptopicName2         = "test-topic2"
+		topicName2          = "persistent://cloud/stage/user2"
 		ppermission         *v1alphav1.PulsarPermission
-		ppermissionName     string = "test-permission"
+		ppermissionName     = "test-permission"
 		ppermission2        *v1alphav1.PulsarPermission
-		ppermission2Name    string = "test-permission-2"
+		ppermission2Name    = "test-permission-2"
 		ppermission3        *v1alphav1.PulsarPermission
-		ppermission3Name    string = "test-permission-3"
-		exampleSchemaDef           = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
+		ppermission3Name    = "test-permission-3"
+		exampleSchemaDef    = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
 			"\"fields\":[{\"name\":\"ID\",\"type\":\"int\"},{\"name\":\"Name\",\"type\":\"string\"}]}"
 		partitionedTopic = &v1alphav1.PulsarTopic{
 			ObjectMeta: metav1.ObjectMeta{
@@ -144,20 +144,20 @@ var _ = Describe("Resources", func() {
 			},
 		}
 		ppackage               *v1alphav1.PulsarPackage
-		ppackageurl            string = "function://public/default/api-examples@v3.2.3.3"
-		pfuncName              string = "test-func"
-		pfuncFailureName       string = "func-test-failure"
-		psinkName              string = "test-sink"
-		psourceName            string = "test-source"
-		pclusterName           string = "test-pulsar"
-		pnsIsolationPolicyName string = "test-ns-isolation-policy"
+		ppackageurl            = "function://public/default/api-examples@v3.2.3.3"
+		pfuncName              = "test-func"
+		pfuncFailureName       = "func-test-failure"
+		psinkName              = "test-sink"
+		psourceName            = "test-source"
+		pclusterName           = "test-pulsar"
+		pnsIsolationPolicyName = "test-ns-isolation-policy"
 		pfunc                  *v1alphav1.PulsarFunction
 		pfuncfailure           *v1alphav1.PulsarFunction
-		psinkpackageurl        string = "builtin://data-generator"
+		psinkpackageurl        = "builtin://data-generator"
 		psink                  *v1alphav1.PulsarSink
 		psource                *v1alphav1.PulsarSource
 		pnsisolationpolicy     *v1alphav1.PulsarNSIsolationPolicy
-		psourcepackageurl      string = "builtin://data-generator"
+		psourcepackageurl      = "builtin://data-generator"
 	)
 
 	BeforeEach(func() {
@@ -207,7 +207,7 @@ var _ = Describe("Resources", func() {
 			It("should create the pulsar broker successfully", func() {
 				Eventually(func() bool {
 					statefulset := &v1.StatefulSet{}
-					k8sClient.Get(ctx, types.NamespacedName{
+					_ = k8sClient.Get(ctx, types.NamespacedName{
 						Name:      brokerName + "-broker",
 						Namespace: namespaceName,
 					}, statefulset)
@@ -421,8 +421,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Compaction Threshold", Ordered, func() {
 			var (
 				compactionTopic     *v1alphav1.PulsarTopic
-				compactionTopicName string = "test-compaction-topic"
-				compactionThreshold int64  = 104857600 // 100MB in bytes
+				compactionTopicName       = "test-compaction-topic"
+				compactionThreshold int64 = 104857600 // 100MB in bytes
 			)
 
 			BeforeAll(func() {
@@ -529,7 +529,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Persistence Policies", Ordered, func() {
 			var (
 				persistenceTopic     *v1alphav1.PulsarTopic
-				persistenceTopicName string = "test-persistence-topic"
+				persistenceTopicName = "test-persistence-topic"
 			)
 
 			BeforeAll(func() {
@@ -606,7 +606,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Delayed Delivery", Ordered, func() {
 			var (
 				delayedDeliveryTopic     *v1alphav1.PulsarTopic
-				delayedDeliveryTopicName string = "test-delayed-delivery-topic"
+				delayedDeliveryTopicName = "test-delayed-delivery-topic"
 			)
 
 			BeforeAll(func() {
@@ -679,7 +679,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Dispatch Rate", Ordered, func() {
 			var (
 				dispatchRateTopic     *v1alphav1.PulsarTopic
-				dispatchRateTopicName string = "test-dispatch-rate-topic"
+				dispatchRateTopicName = "test-dispatch-rate-topic"
 			)
 
 			BeforeAll(func() {
@@ -754,7 +754,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Publish Rate", Ordered, func() {
 			var (
 				publishRateTopic     *v1alphav1.PulsarTopic
-				publishRateTopicName string = "test-publish-rate-topic"
+				publishRateTopicName = "test-publish-rate-topic"
 			)
 
 			BeforeAll(func() {
@@ -828,7 +828,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Inactive Topic Policies", Ordered, func() {
 			var (
 				inactiveTopicPoliciesTopic     *v1alphav1.PulsarTopic
-				inactiveTopicPoliciesTopicName string = "test-inactive-topic-policies-topic"
+				inactiveTopicPoliciesTopicName = "test-inactive-topic-policies-topic"
 			)
 
 			BeforeAll(func() {
@@ -903,7 +903,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Subscribe Rate", Ordered, func() {
 			var (
 				subscribeRateTopic     *v1alphav1.PulsarTopic
-				subscribeRateTopicName string = "test-subscribe-rate-topic"
+				subscribeRateTopicName = "test-subscribe-rate-topic"
 			)
 
 			BeforeAll(func() {
@@ -977,7 +977,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Offload Policies", Ordered, func() {
 			var (
 				offloadPoliciesTopic     *v1alphav1.PulsarTopic
-				offloadPoliciesTopicName string = "test-offload-policies-topic"
+				offloadPoliciesTopicName = "test-offload-policies-topic"
 			)
 
 			BeforeAll(func() {
@@ -1052,7 +1052,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Auto Subscription Creation", Ordered, func() {
 			var (
 				autoSubscriptionTopic     *v1alphav1.PulsarTopic
-				autoSubscriptionTopicName string = "test-auto-subscription-topic"
+				autoSubscriptionTopicName = "test-auto-subscription-topic"
 			)
 
 			BeforeAll(func() {
@@ -1124,7 +1124,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Schema Compatibility Strategy", Ordered, func() {
 			var (
 				schemaCompatibilityTopic     *v1alphav1.PulsarTopic
-				schemaCompatibilityTopicName string = "test-schema-compatibility-topic"
+				schemaCompatibilityTopicName = "test-schema-compatibility-topic"
 			)
 
 			BeforeAll(func() {
@@ -1197,20 +1197,20 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Infinite Retention Policies", Ordered, func() {
 			var (
 				infiniteRetentionTopic         *v1alphav1.PulsarTopic
-				infiniteRetentionTopicName     string = "test-infinite-retention-topic"
-				infiniteRetentionFullTopicName string = "persistent://cloud/stage/infinite-retention-test"
+				infiniteRetentionTopicName     = "test-infinite-retention-topic"
+				infiniteRetentionFullTopicName = "persistent://cloud/stage/infinite-retention-test"
 
 				infiniteTimeTopic         *v1alphav1.PulsarTopic
-				infiniteTimeTopicName     string = "test-infinite-time-topic"
-				infiniteTimeFullTopicName string = "persistent://cloud/stage/infinite-time-test"
+				infiniteTimeTopicName     = "test-infinite-time-topic"
+				infiniteTimeFullTopicName = "persistent://cloud/stage/infinite-time-test"
 
 				infiniteSizeTopic         *v1alphav1.PulsarTopic
-				infiniteSizeTopicName     string = "test-infinite-size-topic"
-				infiniteSizeFullTopicName string = "persistent://cloud/stage/infinite-size-test"
+				infiniteSizeTopicName     = "test-infinite-size-topic"
+				infiniteSizeFullTopicName = "persistent://cloud/stage/infinite-size-test"
 
 				finiteRetentionTopic         *v1alphav1.PulsarTopic
-				finiteRetentionTopicName     string = "test-finite-retention-topic"
-				finiteRetentionFullTopicName string = "persistent://cloud/stage/finite-retention-test"
+				finiteRetentionTopicName     = "test-finite-retention-topic"
+				finiteRetentionFullTopicName = "persistent://cloud/stage/finite-retention-test"
 			)
 
 			BeforeAll(func() {
@@ -1480,8 +1480,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarNamespace Rate Limiting", Ordered, func() {
 			var (
 				rateLimitingNamespace     *v1alphav1.PulsarNamespace
-				rateLimitingNamespaceName string = "test-ratelimiting-namespace"
-				rateLimitingPulsarNSName  string = "cloud/ratelimiting"
+				rateLimitingNamespaceName = "test-ratelimiting-namespace"
+				rateLimitingPulsarNSName  = "cloud/ratelimiting"
 			)
 
 			BeforeAll(func() {
@@ -1615,8 +1615,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarNamespace Storage Policies", Ordered, func() {
 			var (
 				storagePoliciesNamespace     *v1alphav1.PulsarNamespace
-				storagePoliciesNamespaceName string = "test-storage-namespace"
-				storagePoliciesPulsarNSName  string = "cloud/storage"
+				storagePoliciesNamespaceName = "test-storage-namespace"
+				storagePoliciesPulsarNSName  = "cloud/storage"
 			)
 
 			BeforeAll(func() {
@@ -1785,7 +1785,7 @@ var _ = Describe("Resources", func() {
 					current := &v1alphav1.PulsarNamespace{}
 					g.Expect(k8sClient.Get(ctx, tns, current)).Should(Succeed())
 
-					cond := metautil.FindStatusCondition(current.Status.Conditions, string(v1alphav1.ConditionReady))
+					cond := metautil.FindStatusCondition(current.Status.Conditions, v1alphav1.ConditionReady)
 					if cond == nil {
 						return metav1.ConditionUnknown
 					}
@@ -1956,8 +1956,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarNamespace Security Configuration", Ordered, func() {
 			var (
 				securityNamespace     *v1alphav1.PulsarNamespace
-				securityNamespaceName string = "test-security-namespace"
-				securityPulsarNSName  string = "cloud/security"
+				securityNamespaceName = "test-security-namespace"
+				securityPulsarNSName  = "cloud/security"
 			)
 
 			BeforeAll(func() {
