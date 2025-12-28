@@ -39,7 +39,7 @@ Options:
        -k,--k8sVersion         version of the Kubernetes cluster,default value: v1.12.8
        -v,--volumeNum          the volumes number of each kubernetes node,default value: 9
 Usage:
-    $0 --name testCluster --nodeNum 4 --k8sVersion v1.12.9
+    $0 --name testCluster --nodeNum 4 --k8sVersion v1.35.0
 EOF
 }
 
@@ -82,7 +82,7 @@ done
 
 clusterName=${clusterName:-pulsar-dev}
 nodeNum=${nodeNum:-6}
-k8sVersion=${k8sVersion:-v1.19.11}
+k8sVersion=${k8sVersion:-v1.34.2}
 volumeNum=${volumeNum:-9}
 
 echo "clusterName: ${clusterName}"

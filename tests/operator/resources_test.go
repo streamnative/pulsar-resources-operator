@@ -353,14 +353,14 @@ var _ = Describe("Resources", func() {
 					podName := fmt.Sprintf("%s-broker-0", brokerName)
 					containerName := fmt.Sprintf("%s-broker", brokerName)
 					stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
+						"./bin/pulsar-admin schemas get "+ptopic.Spec.Name)
 					g.Expect(err).Should(Succeed())
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
 					g.Expect(stdout).Should(ContainSubstring("JSON"))
 
 					stdout, _, err = utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic2.Spec.Name)
+						"./bin/pulsar-admin schemas get "+ptopic2.Spec.Name)
 					g.Expect(err).Should(Succeed())
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
@@ -372,13 +372,10 @@ var _ = Describe("Resources", func() {
 				podName := fmt.Sprintf("%s-broker-0", brokerName)
 				containerName := fmt.Sprintf("%s-broker", brokerName)
 
-				By("delete topic2 with pulsarctl")
-				_, stderr, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
-					"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN "+
-						"topics delete -f --non-partitioned "+ptopic2.Spec.Name)
+				By("delete topic2 with pulsar-admin")
+				_, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
+					"./bin/pulsar-admin topics delete -f "+ptopic2.Spec.Name)
 				Expect(err).ShouldNot(HaveOccurred())
-				format.MaxLength = 0
-				Expect(stderr).Should(ContainSubstring("successfully"))
 
 				By("delete topic1 schema in k8s")
 				topic := &v1alphav1.PulsarTopic{}
@@ -386,16 +383,6 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 				topic.Spec.SchemaInfo = nil
 				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
-
-				// By("check topic1 schema is deleted in pulsar")
-				// Eventually(func(g Gomega) {
-				// 	_, stderr, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
-				// 		"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
-				// 	g.Expect(err).ShouldNot(BeNil())
-				// 	g.Expect(stderr).Should(Not(BeEmpty()))
-				// 	format.MaxLength = 0
-				// 	g.Expect(stderr).Should(ContainSubstring("404"))
-				// }, "5s", "100ms").Should(Succeed())
 			})
 
 			It("should increase the partitions successfully", func() {

@@ -22,43 +22,34 @@ affinity:
 
 # disable auto recovery
 components:
+  functions: true
   autorecovery: false
   pulsar_manager: false
-  sql_worker: false
   proxy: false
   toolset: false
 
 ## disable monitoring stack
-monitoring:
-  # monitoring - prometheus
-  prometheus: false
-  # monitoring - grafana
-  grafana: false
-  # monitoring - node_exporter
-  node_exporter: false
-  # alerting - alert-manager
-  alert_manager: false
-  # monitoring - loki
-  loki: false
-  # monitoring - datadog
-  datadog: false
+victoria-metrics-k8s-stack:
+  enabled: false
 
 images:
   zookeeper:
-    repository: streamnative/sn-platform
-    tag: 2.10.4.3
+    repository: apachepulsar/pulsar-all
+    tag: 4.1.2
   bookie:
-    repository: streamnative/sn-platform
-    tag: 2.10.4.3
+    repository: apachepulsar/pulsar-all
+    tag: 4.1.2
   broker:
-    repository: streamnative/sn-platform
-    tag: 2.10.4.3
+    repository: apachepulsar/pulsar-all
+    tag: 4.1.2
   functions:
-    repository: streamnative/sn-platform
-    tag: 2.10.4.3
+    repository: apachepulsar/pulsar-all
+    tag: 4.1.2
 
 zookeeper:
   replicaCount: 1
+  podMonitor:
+    enabled: false
   resources:
     requests:
       memory: 256Mi
@@ -66,10 +57,8 @@ zookeeper:
 
 bookkeeper:
   replicaCount: 1
-  metadata:
-    image:
-      repository: streamnative/sn-platform
-      tag: 2.10.4.3
+  podMonitor:
+    enabled: false
   resources:
     requests:
       memory: 256Mi
@@ -94,7 +83,6 @@ bookkeeper:
       -XX:MaxGCPauseMillis=10
       -XX:+ParallelRefProcEnabled
       -XX:+UnlockExperimentalVMOptions
-      -XX:+AggressiveOpts
       -XX:+DoEscapeAnalysis
       -XX:ParallelGCThreads=4
       -XX:ConcGCThreads=4
@@ -106,11 +94,13 @@ bookkeeper:
 
 pulsar_metadata:
   image:
-    repository: streamnative/sn-platform
-    tag: 2.10.4.3
+    repository: apachepulsar/pulsar-all
+    tag: 4.1.2
 
 broker:
   replicaCount: 1
+  podMonitor:
+    enabled: false
   configData:
     ## Enable `autoSkipNonRecoverableData` since bookkeeper is running
     ## without persistence
@@ -119,16 +109,22 @@ broker:
     managedLedgerDefaultEnsembleSize: "1"
     managedLedgerDefaultWriteQuorum: "1"
     managedLedgerDefaultAckQuorum: "1"
-    enablePackagesManagement: "true"
     PULSAR_PREFIX_enablePackagesManagement: "true"
+    PULSAR_PREFIX_packagesManagementStorageProvider: org.apache.pulsar.packages.management.storage.bookkeeper.BookKeeperPackagesStorageProvider
+    PULSAR_PREFIX_packagesReplicas: "1"
+    PULSAR_PREFIX_packagesManagementLedgerRootPath: /ledgers
+    PULSAR_PREFIX_functionsWorkerEnablePackageManagement: "true"
     PULSAR_PREFIX_topicLevelPoliciesEnabled: "true"
   resources:
     requests:
       memory: 256Mi
       cpu: 10m
 
-functions:
-  functionState: false
-  useDedicatedRunner: false
-  configData:
-    narExtractionDirectory: /pulsar/data
+autorecovery:
+  podMonitor:
+    enabled: false
+
+proxy:
+  podMonitor:
+    enabled: false
+
