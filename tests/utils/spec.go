@@ -531,10 +531,11 @@ func MakePulsarFunction(namespace, name, functionPackageUrl, connectionName stri
 			TimeoutMs:                    ptr.To[int64](6666),
 			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
-					"sectest", "hello",
+					Path: "hello",
+					Key:  "secret",
 				},
 			},
-			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]any{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
@@ -573,10 +574,11 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 			},
 			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
-					"sectest", "hello",
+					Path: "hello",
+					Key:  "secret",
 				},
 			},
-			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]any{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
@@ -586,7 +588,7 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 }
 
 func getPulsarSourceConfig() *v1.JSON {
-	c := map[string]interface{}{
+	c := map[string]any{
 		"sleepBetweenMessages": 1000,
 	}
 	bytes, err := json.Marshal(c)
@@ -596,7 +598,7 @@ func getPulsarSourceConfig() *v1.JSON {
 	return &v1.JSON{Raw: bytes}
 }
 
-func getMapToJSON(c map[string]interface{}) *v1.JSON {
+func getMapToJSON(c map[string]any) *v1.JSON {
 	bytes, err := json.Marshal(c)
 	if err != nil {
 		return nil
@@ -635,7 +637,7 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 					"sectest", "hello",
 				},
 			},
-			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]any{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
