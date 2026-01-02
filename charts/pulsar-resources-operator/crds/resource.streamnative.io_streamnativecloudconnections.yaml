@@ -1,4 +1,4 @@
-# Copyright 2025 StreamNative
+# Copyright 2026 StreamNative
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -109,11 +109,11 @@ spec:
                   If not specified, the operator will use the connection name as the organization
                 type: string
               server:
+                default: https://api.streamnative.cloud
                 description: Server is the URL of the API server
                 type: string
             required:
             - auth
-            - server
             type: object
           status:
             description: StreamNativeCloudConnectionStatus defines the observed state
