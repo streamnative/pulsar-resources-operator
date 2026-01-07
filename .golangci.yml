@@ -42,6 +42,7 @@ linters:
     - prealloc
     - predeclared
     - rowserrcheck
+    - revive
     - staticcheck
     - thelper
     - unconvert
@@ -65,11 +66,6 @@ linters:
         - wrapperFunc
       enabled-tags:
         - experimental
-    godot:
-      scope: toplevel
-      exclude:
-        - ^ \+.*
-        - ^ ANCHOR.*
     gosec:
       excludes:
         - G307
@@ -130,10 +126,6 @@ linters:
           - gocritic
         text: 'appendAssign: append result not assigned to the same slice'
       - linters:
-          - ifshort
-        path: controllers/mdutil/util.go
-        text: variable .* is only used in the if-statement
-      - linters:
           - staticcheck
         path: .*(api|types)\/.*\/conversion.*\.go$
         text: 'SA1019: in.(.+) is deprecated'
@@ -157,10 +149,6 @@ linters:
           - staticcheck
         path: .*(api|types)\/.*\/conversion.*\.go$
         text: 'ST1016: methods on the same type should have the same receiver name'
-      - linters:
-          - ifshort
-        path: ^controllers/machine_controller\.go$
-        text: variable 'isDeleteNodeAllowed' is only used in the if-statement.*
     paths:
       - zz_generated.*\.go$
       - third_party
