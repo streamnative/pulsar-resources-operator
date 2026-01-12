@@ -83,7 +83,7 @@ func (c *APIConnection) connect() error {
 		ClientSecret: c.credentials.ClientSecret,
 		TokenURL:     config.TokenEndpoint,
 		EndpointParams: url.Values{
-			"audience": []string{c.config.Spec.Server},
+			"audience": []string{c.config.Spec.GetServer()},
 		},
 	}
 
@@ -101,7 +101,7 @@ func (c *APIConnection) Test(ctx context.Context) error {
 	if c.client == nil {
 		return fmt.Errorf("waiting for client")
 	}
-	req, err := http.NewRequestWithContext(ctx, "GET", c.config.Spec.Server+"/healthz", http.NoBody)
+	req, err := http.NewRequestWithContext(ctx, "GET", c.config.Spec.GetServer()+"/healthz", http.NoBody)
 	if err != nil {
 		return err
 	}
@@ -134,7 +134,7 @@ func (c *APIConnection) NeedsUpdate(
 	if c.credentials == nil {
 		return true
 	}
-	return c.config.Spec.Server != config.Spec.Server ||
+	return c.config.Spec.GetServer() != config.Spec.GetServer() ||
 		c.credentials.ClientID != creds.ClientID ||
 		c.credentials.ClientSecret != creds.ClientSecret ||
 		c.credentials.IssuerURL != creds.IssuerURL

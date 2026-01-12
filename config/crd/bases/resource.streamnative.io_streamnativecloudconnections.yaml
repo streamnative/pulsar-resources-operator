@@ -109,11 +109,11 @@ spec:
                   If not specified, the operator will use the connection name as the organization
                 type: string
               server:
+                default: https://api.streamnative.cloud
                 description: Server is the URL of the API server
                 type: string
             required:
             - auth
-            - server
             type: object
           status:
             description: StreamNativeCloudConnectionStatus defines the observed state
