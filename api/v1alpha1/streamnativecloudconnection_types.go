@@ -25,8 +25,9 @@ import (
 // StreamNativeCloudConnectionSpec defines the desired state of StreamNativeCloudConnection
 type StreamNativeCloudConnectionSpec struct {
 	// Server is the URL of the API server
-	// +required
-	Server string `json:"server"`
+	// +kubebuilder:default="https://api.streamnative.cloud"
+	// +optional
+	Server string `json:"server,omitempty"`
 
 	// Auth defines the authentication configuration
 	// +required
@@ -40,6 +41,17 @@ type StreamNativeCloudConnectionSpec struct {
 	// If not specified, the operator will use the connection name as the organization
 	// +optional
 	Organization string `json:"organization,omitempty"`
+}
+
+// DefaultStreamNativeCloudServer is the default API server URL
+const DefaultStreamNativeCloudServer = "https://api.streamnative.cloud"
+
+// GetServer returns the server URL, using the default if not specified
+func (s *StreamNativeCloudConnectionSpec) GetServer() string {
+	if s.Server == "" {
+		return DefaultStreamNativeCloudServer
+	}
+	return s.Server
 }
 
 // AuthConfig defines the authentication configuration
