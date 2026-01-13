@@ -19,7 +19,7 @@ import (
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
@@ -531,10 +531,11 @@ func MakePulsarFunction(namespace, name, functionPackageUrl, connectionName stri
 			TimeoutMs:                    ptr.To[int64](6666),
 			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
-					"sectest", "hello",
+					Path: "hello",
+					Key:  "secret",
 				},
 			},
-			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]any{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
@@ -573,10 +574,11 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 			},
 			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
-					"sectest", "hello",
+					Path: "hello",
+					Key:  "secret",
 				},
 			},
-			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]any{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},
@@ -585,23 +587,23 @@ func MakePulsarSink(namespace, name, sinkPackageUrl, connectionName string, poli
 	}
 }
 
-func getPulsarSourceConfig() *v1.JSON {
-	c := map[string]interface{}{
+func getPulsarSourceConfig() *apiextensionsv1.JSON {
+	c := map[string]any{
 		"sleepBetweenMessages": 1000,
 	}
 	bytes, err := json.Marshal(c)
 	if err != nil {
 		return nil
 	}
-	return &v1.JSON{Raw: bytes}
+	return &apiextensionsv1.JSON{Raw: bytes}
 }
 
-func getMapToJSON(c map[string]interface{}) *v1.JSON {
+func getMapToJSON(c map[string]any) *apiextensionsv1.JSON {
 	bytes, err := json.Marshal(c)
 	if err != nil {
 		return nil
 	}
-	return &v1.JSON{Raw: bytes}
+	return &apiextensionsv1.JSON{Raw: bytes}
 }
 
 // MakePulsarSource will generate a object of PulsarSource
@@ -632,10 +634,11 @@ func MakePulsarSource(namespace, name, sourcePackageUrl, connectionName string, 
 			},
 			Secrets: map[string]v1alpha1.FunctionSecretKeyRef{
 				"SECRET1": {
-					"sectest", "hello",
+					Path: "hello",
+					Key:  "secret",
 				},
 			},
-			CustomRuntimeOptions: getMapToJSON(map[string]interface{}{
+			CustomRuntimeOptions: getMapToJSON(map[string]any{
 				"env": map[string]string{
 					"HELLO": "WORLD",
 				},

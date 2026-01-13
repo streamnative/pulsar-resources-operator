@@ -34,8 +34,9 @@ jobs:
       ALWAYS_UPDATE_PULSAR_RESOURCE: ${{ matrix.alwaysUpdatePulsar }}
       GOPRIVATE: github.com/streamnative
       ACCESS_TOKEN: ${{ secrets.SNBOT_GITHUB_TOKEN }}
-      IMAGE: streamnative/sn-platform:2.10.4.3
+      IMAGE: apachepulsar/pulsar-all:4.1.2
       WATCH_CERT_MANAGER_CRDS: "false"
+      K8S_VERSION: v1.34.2
     steps:
       - name: Free Disk Space (Ubuntu)
         uses: jlumbroso/free-disk-space@v1.3.0
@@ -72,14 +73,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      # TODO the k8s version should be configurable
       - name: Setup K8s cluster
         run: |
-          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.31.0/kind-linux-amd64
           chmod +x ./kind
           export PATH="$PWD:$PATH"
           kind version
-          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion v1.22.17
+          ./hack/kind-cluster-build.sh --nodeNum 1 --k8sVersion "$K8S_VERSION"
 
       - name: Initialize K8s cluster
         run: |
@@ -102,17 +102,14 @@ jobs:
         run: |
           helm repo add streamnative https://charts.streamnative.io
           helm repo add jetstack https://charts.jetstack.io
+          helm repo add apache https://pulsar.apache.org/charts
           helm repo update
-          helm install cert-manager jetstack/cert-manager --set installCRDs=true --version v1.8.2
-
+          helm install cert-manager jetstack/cert-manager --set crds.enabled=true --version v1.19.2
           rm -rf pulsar-charts/
-          git clone --branch pulsar-operator-0.17.10 https://github.com/streamnative/charts.git pulsar-charts
+          git clone --branch pulsar-4.4.0 https://github.com/apache/pulsar-helm-chart pulsar-charts
           cd pulsar-charts/
           ./scripts/pulsar/prepare_helm_release.sh -n default -k test -c
-          helm repo add grafana https://grafana.github.io/helm-charts
-          helm repo update
-          helm dependency update charts/pulsar
-          helm install test --set initialize=true --values ../.ci/clusters/values.yaml charts/pulsar
+          helm install --set initialize=true --values ../.ci/clusters/values.yaml test apache/pulsar
           df -h
 
       - name: Run Operator Test

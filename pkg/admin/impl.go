@@ -223,10 +223,7 @@ func (p *PulsarAdminClient) DeleteTopic(name string) error {
 	if err != nil {
 		return err
 	}
-	nonPartitioned := true
-	if topicMeta.Partitions > 0 {
-		nonPartitioned = false
-	}
+	nonPartitioned := topicMeta.Partitions < 1
 	if err := p.adminClient.Topics().Delete(*topic, true, nonPartitioned); err != nil {
 		return err
 	}

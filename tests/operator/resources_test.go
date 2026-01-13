@@ -32,17 +32,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 
 	v1alphav1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	"github.com/streamnative/pulsar-resources-operator/tests/utils"
 )
-
-type testJSON struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
 
 // validatePermissionStateAnnotation validates the PulsarPermission state annotation
 func validatePermissionStateAnnotation(ctx context.Context, permissionName, namespaceName string, expected connection.PulsarPermissionState) {
@@ -93,9 +88,10 @@ func validatePermissionStateAnnotation(ctx context.Context, permissionName, name
 // but allows for additional roles to exist (for multi-permission testing)
 func validateTopicPermissionsContain(topicName string, expectedRoles []string) {
 	Eventually(func(g Gomega) {
+		ctx := context.TODO()
 		podName := fmt.Sprintf("%s-broker-0", brokerName)
 		containerName := fmt.Sprintf("%s-broker", brokerName)
-		stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+		stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
 			"./bin/pulsar-admin topics permissions "+topicName)
 		g.Expect(err).Should(Succeed())
 		g.Expect(stdout).Should(Not(BeEmpty()))
@@ -112,27 +108,27 @@ var _ = Describe("Resources", func() {
 	var (
 		ctx                 context.Context
 		pconn               *v1alphav1.PulsarConnection
-		pconnName           string = "test-connection"
+		pconnName           = "test-connection"
 		ptenant             *v1alphav1.PulsarTenant
-		ptenantName         string = "test-tenant"
-		tenantName          string = "cloud"
+		ptenantName         = "test-tenant"
+		tenantName          = "cloud"
 		lifecyclePolicy     v1alphav1.PulsarResourceLifeCyclePolicy
 		pnamespace          *v1alphav1.PulsarNamespace
-		pnamespaceName      string = "test-namespace"
-		pulsarNamespaceName string = "cloud/stage"
+		pnamespaceName      = "test-namespace"
+		pulsarNamespaceName = "cloud/stage"
 		ptopic              *v1alphav1.PulsarTopic
-		ptopicName          string = "test-topic"
-		topicName           string = "persistent://cloud/stage/user"
+		ptopicName          = "test-topic"
+		topicName           = "persistent://cloud/stage/user"
 		ptopic2             *v1alphav1.PulsarTopic
-		ptopicName2         string = "test-topic2"
-		topicName2          string = "persistent://cloud/stage/user2"
+		ptopicName2         = "test-topic2"
+		topicName2          = "persistent://cloud/stage/user2"
 		ppermission         *v1alphav1.PulsarPermission
-		ppermissionName     string = "test-permission"
+		ppermissionName     = "test-permission"
 		ppermission2        *v1alphav1.PulsarPermission
-		ppermission2Name    string = "test-permission-2"
+		ppermission2Name    = "test-permission-2"
 		ppermission3        *v1alphav1.PulsarPermission
-		ppermission3Name    string = "test-permission-3"
-		exampleSchemaDef           = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
+		ppermission3Name    = "test-permission-3"
+		exampleSchemaDef    = "{\"type\":\"record\",\"name\":\"Example\",\"namespace\":\"test\"," +
 			"\"fields\":[{\"name\":\"ID\",\"type\":\"int\"},{\"name\":\"Name\",\"type\":\"string\"}]}"
 		partitionedTopic = &v1alphav1.PulsarTopic{
 			ObjectMeta: metav1.ObjectMeta{
@@ -141,27 +137,27 @@ var _ = Describe("Resources", func() {
 			},
 			Spec: v1alphav1.PulsarTopicSpec{
 				Name:       "persistent://cloud/stage/partitioned-topic",
-				Partitions: pointer.Int32(1),
+				Partitions: ptr.To[int32](1),
 				ConnectionRef: corev1.LocalObjectReference{
 					Name: pconnName,
 				},
 			},
 		}
 		ppackage               *v1alphav1.PulsarPackage
-		ppackageurl            string = "function://public/default/api-examples@v3.2.3.3"
-		pfuncName              string = "test-func"
-		pfuncFailureName       string = "func-test-failure"
-		psinkName              string = "test-sink"
-		psourceName            string = "test-source"
-		pclusterName           string = "test-pulsar"
-		pnsIsolationPolicyName string = "test-ns-isolation-policy"
+		ppackageurl            = "function://public/default/api-examples@v3.2.3.3"
+		pfuncName              = "test-func"
+		pfuncFailureName       = "func-test-failure"
+		psinkName              = "test-sink"
+		psourceName            = "test-source"
+		pclusterName           = "test-pulsar"
+		pnsIsolationPolicyName = "test-ns-isolation-policy"
 		pfunc                  *v1alphav1.PulsarFunction
 		pfuncfailure           *v1alphav1.PulsarFunction
-		psinkpackageurl        string = "builtin://data-generator"
+		psinkpackageurl        = "builtin://data-generator"
 		psink                  *v1alphav1.PulsarSink
 		psource                *v1alphav1.PulsarSource
 		pnsisolationpolicy     *v1alphav1.PulsarNSIsolationPolicy
-		psourcepackageurl      string = "builtin://data-generator"
+		psourcepackageurl      = "builtin://data-generator"
 	)
 
 	BeforeEach(func() {
@@ -211,7 +207,7 @@ var _ = Describe("Resources", func() {
 			It("should create the pulsar broker successfully", func() {
 				Eventually(func() bool {
 					statefulset := &v1.StatefulSet{}
-					k8sClient.Get(ctx, types.NamespacedName{
+					_ = k8sClient.Get(ctx, types.NamespacedName{
 						Name:      brokerName + "-broker",
 						Namespace: namespaceName,
 					}, statefulset)
@@ -294,7 +290,7 @@ var _ = Describe("Resources", func() {
 				// Update TopicAutoCreationConfig
 				ns.Spec.TopicAutoCreationConfig.Allow = false
 				ns.Spec.TopicAutoCreationConfig.Type = "non-partitioned"
-				ns.Spec.TopicAutoCreationConfig.Partitions = pointer.Int32(5)
+				ns.Spec.TopicAutoCreationConfig.Partitions = ptr.To[int32](5)
 
 				err := k8sClient.Update(ctx, ns)
 				Expect(err).Should(Succeed())
@@ -356,15 +352,15 @@ var _ = Describe("Resources", func() {
 				Eventually(func(g Gomega) {
 					podName := fmt.Sprintf("%s-broker-0", brokerName)
 					containerName := fmt.Sprintf("%s-broker", brokerName)
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
+					stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin schemas get "+ptopic.Spec.Name)
 					g.Expect(err).Should(Succeed())
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
 					g.Expect(stdout).Should(ContainSubstring("JSON"))
 
-					stdout, _, err = utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-						"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic2.Spec.Name)
+					stdout, _, err = utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin schemas get "+ptopic2.Spec.Name)
 					g.Expect(err).Should(Succeed())
 					g.Expect(stdout).Should(Not(BeEmpty()))
 					format.MaxLength = 0
@@ -376,13 +372,10 @@ var _ = Describe("Resources", func() {
 				podName := fmt.Sprintf("%s-broker-0", brokerName)
 				containerName := fmt.Sprintf("%s-broker", brokerName)
 
-				By("delete topic2 with pulsarctl")
-				_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-					"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN "+
-						"topics delete -f --non-partitioned "+ptopic2.Spec.Name)
+				By("delete topic2 with pulsar-admin")
+				_, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
+					"./bin/pulsar-admin topics delete -f "+ptopic2.Spec.Name)
 				Expect(err).ShouldNot(HaveOccurred())
-				format.MaxLength = 0
-				Expect(stderr).Should(ContainSubstring("successfully"))
 
 				By("delete topic1 schema in k8s")
 				topic := &v1alphav1.PulsarTopic{}
@@ -390,16 +383,6 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 				topic.Spec.SchemaInfo = nil
 				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
-
-				// By("check topic1 schema is deleted in pulsar")
-				// Eventually(func(g Gomega) {
-				// 	_, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-				// 		"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN  schemas get "+ptopic.Spec.Name)
-				// 	g.Expect(err).ShouldNot(BeNil())
-				// 	g.Expect(stderr).Should(Not(BeEmpty()))
-				// 	format.MaxLength = 0
-				// 	g.Expect(stderr).Should(ContainSubstring("404"))
-				// }, "5s", "100ms").Should(Succeed())
 			})
 
 			It("should increase the partitions successfully", func() {
@@ -409,7 +392,7 @@ var _ = Describe("Resources", func() {
 					Name:      partitionedTopic.Name,
 				}, curTopic)).ShouldNot(HaveOccurred())
 
-				curTopic.Spec.Partitions = pointer.Int32(2)
+				curTopic.Spec.Partitions = ptr.To[int32](2)
 				err := k8sClient.Update(ctx, curTopic)
 				Expect(err).ShouldNot(HaveOccurred())
 				Eventually(func() bool {
@@ -425,8 +408,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Compaction Threshold", Ordered, func() {
 			var (
 				compactionTopic     *v1alphav1.PulsarTopic
-				compactionTopicName string = "test-compaction-topic"
-				compactionThreshold int64  = 104857600 // 100MB in bytes
+				compactionTopicName       = "test-compaction-topic"
+				compactionThreshold int64 = 104857600 // 100MB in bytes
 			)
 
 			BeforeAll(func() {
@@ -510,7 +493,7 @@ var _ = Describe("Resources", func() {
 						return true
 					}
 
-					var state map[string]interface{}
+					var state map[string]any
 					Expect(json.Unmarshal([]byte(rawState), &state)).Should(Succeed())
 					value, ok := state["compactionThreshold"]
 					return !ok || value == nil
@@ -533,7 +516,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Persistence Policies", Ordered, func() {
 			var (
 				persistenceTopic     *v1alphav1.PulsarTopic
-				persistenceTopicName string = "test-persistence-topic"
+				persistenceTopicName = "test-persistence-topic"
 			)
 
 			BeforeAll(func() {
@@ -579,9 +562,9 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update persistence policies
-				topic.Spec.PersistencePolicies.BookkeeperEnsemble = pointer.Int32(5)
-				topic.Spec.PersistencePolicies.BookkeeperWriteQuorum = pointer.Int32(3)
-				topic.Spec.PersistencePolicies.BookkeeperAckQuorum = pointer.Int32(3)
+				topic.Spec.PersistencePolicies.BookkeeperEnsemble = ptr.To[int32](5)
+				topic.Spec.PersistencePolicies.BookkeeperWriteQuorum = ptr.To[int32](3)
+				topic.Spec.PersistencePolicies.BookkeeperAckQuorum = ptr.To[int32](3)
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -610,7 +593,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Delayed Delivery", Ordered, func() {
 			var (
 				delayedDeliveryTopic     *v1alphav1.PulsarTopic
-				delayedDeliveryTopicName string = "test-delayed-delivery-topic"
+				delayedDeliveryTopicName = "test-delayed-delivery-topic"
 			)
 
 			BeforeAll(func() {
@@ -654,7 +637,7 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update delayed delivery
-				topic.Spec.DelayedDelivery.TickTimeMillis = pointer.Int64(2000)
+				topic.Spec.DelayedDelivery.TickTimeMillis = ptr.To[int64](2000)
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -683,7 +666,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Dispatch Rate", Ordered, func() {
 			var (
 				dispatchRateTopic     *v1alphav1.PulsarTopic
-				dispatchRateTopicName string = "test-dispatch-rate-topic"
+				dispatchRateTopicName = "test-dispatch-rate-topic"
 			)
 
 			BeforeAll(func() {
@@ -728,8 +711,8 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update dispatch rate
-				topic.Spec.DispatchRate.DispatchThrottlingRateInMsg = pointer.Int32(1000)
-				topic.Spec.DispatchRate.DispatchThrottlingRateInByte = pointer.Int64(1048576)
+				topic.Spec.DispatchRate.DispatchThrottlingRateInMsg = ptr.To[int32](1000)
+				topic.Spec.DispatchRate.DispatchThrottlingRateInByte = ptr.To[int64](1048576)
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -758,7 +741,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Publish Rate", Ordered, func() {
 			var (
 				publishRateTopic     *v1alphav1.PulsarTopic
-				publishRateTopicName string = "test-publish-rate-topic"
+				publishRateTopicName = "test-publish-rate-topic"
 			)
 
 			BeforeAll(func() {
@@ -802,8 +785,8 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update publish rate
-				topic.Spec.PublishRate.PublishThrottlingRateInMsg = pointer.Int32(2000)
-				topic.Spec.PublishRate.PublishThrottlingRateInByte = pointer.Int64(2097152)
+				topic.Spec.PublishRate.PublishThrottlingRateInMsg = ptr.To[int32](2000)
+				topic.Spec.PublishRate.PublishThrottlingRateInByte = ptr.To[int64](2097152)
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -832,7 +815,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Inactive Topic Policies", Ordered, func() {
 			var (
 				inactiveTopicPoliciesTopic     *v1alphav1.PulsarTopic
-				inactiveTopicPoliciesTopicName string = "test-inactive-topic-policies-topic"
+				inactiveTopicPoliciesTopicName = "test-inactive-topic-policies-topic"
 			)
 
 			BeforeAll(func() {
@@ -877,8 +860,8 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update inactive topic policies
-				topic.Spec.InactiveTopicPolicies.MaxInactiveDurationInSeconds = pointer.Int32(3600)
-				topic.Spec.InactiveTopicPolicies.DeleteWhileInactive = pointer.Bool(false)
+				topic.Spec.InactiveTopicPolicies.MaxInactiveDurationInSeconds = ptr.To[int32](3600)
+				topic.Spec.InactiveTopicPolicies.DeleteWhileInactive = ptr.To(false)
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -907,7 +890,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Subscribe Rate", Ordered, func() {
 			var (
 				subscribeRateTopic     *v1alphav1.PulsarTopic
-				subscribeRateTopicName string = "test-subscribe-rate-topic"
+				subscribeRateTopicName = "test-subscribe-rate-topic"
 			)
 
 			BeforeAll(func() {
@@ -951,8 +934,8 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update subscribe rate
-				topic.Spec.SubscribeRate.SubscribeThrottlingRatePerConsumer = pointer.Int32(20)
-				topic.Spec.SubscribeRate.RatePeriodInSecond = pointer.Int32(60)
+				topic.Spec.SubscribeRate.SubscribeThrottlingRatePerConsumer = ptr.To[int32](20)
+				topic.Spec.SubscribeRate.RatePeriodInSecond = ptr.To[int32](60)
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -981,7 +964,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Offload Policies", Ordered, func() {
 			var (
 				offloadPoliciesTopic     *v1alphav1.PulsarTopic
-				offloadPoliciesTopicName string = "test-offload-policies-topic"
+				offloadPoliciesTopicName = "test-offload-policies-topic"
 			)
 
 			BeforeAll(func() {
@@ -1056,7 +1039,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Auto Subscription Creation", Ordered, func() {
 			var (
 				autoSubscriptionTopic     *v1alphav1.PulsarTopic
-				autoSubscriptionTopicName string = "test-auto-subscription-topic"
+				autoSubscriptionTopicName = "test-auto-subscription-topic"
 			)
 
 			BeforeAll(func() {
@@ -1128,7 +1111,7 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Schema Compatibility Strategy", Ordered, func() {
 			var (
 				schemaCompatibilityTopic     *v1alphav1.PulsarTopic
-				schemaCompatibilityTopicName string = "test-schema-compatibility-topic"
+				schemaCompatibilityTopicName = "test-schema-compatibility-topic"
 			)
 
 			BeforeAll(func() {
@@ -1201,20 +1184,20 @@ var _ = Describe("Resources", func() {
 		Context("PulsarTopic Infinite Retention Policies", Ordered, func() {
 			var (
 				infiniteRetentionTopic         *v1alphav1.PulsarTopic
-				infiniteRetentionTopicName     string = "test-infinite-retention-topic"
-				infiniteRetentionFullTopicName string = "persistent://cloud/stage/infinite-retention-test"
+				infiniteRetentionTopicName     = "test-infinite-retention-topic"
+				infiniteRetentionFullTopicName = "persistent://cloud/stage/infinite-retention-test"
 
 				infiniteTimeTopic         *v1alphav1.PulsarTopic
-				infiniteTimeTopicName     string = "test-infinite-time-topic"
-				infiniteTimeFullTopicName string = "persistent://cloud/stage/infinite-time-test"
+				infiniteTimeTopicName     = "test-infinite-time-topic"
+				infiniteTimeFullTopicName = "persistent://cloud/stage/infinite-time-test"
 
 				infiniteSizeTopic         *v1alphav1.PulsarTopic
-				infiniteSizeTopicName     string = "test-infinite-size-topic"
-				infiniteSizeFullTopicName string = "persistent://cloud/stage/infinite-size-test"
+				infiniteSizeTopicName     = "test-infinite-size-topic"
+				infiniteSizeFullTopicName = "persistent://cloud/stage/infinite-size-test"
 
 				finiteRetentionTopic         *v1alphav1.PulsarTopic
-				finiteRetentionTopicName     string = "test-finite-retention-topic"
-				finiteRetentionFullTopicName string = "persistent://cloud/stage/finite-retention-test"
+				finiteRetentionTopicName     = "test-finite-retention-topic"
+				finiteRetentionFullTopicName = "persistent://cloud/stage/finite-retention-test"
 			)
 
 			BeforeAll(func() {
@@ -1484,8 +1467,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarNamespace Rate Limiting", Ordered, func() {
 			var (
 				rateLimitingNamespace     *v1alphav1.PulsarNamespace
-				rateLimitingNamespaceName string = "test-ratelimiting-namespace"
-				rateLimitingPulsarNSName  string = "cloud/ratelimiting"
+				rateLimitingNamespaceName = "test-ratelimiting-namespace"
+				rateLimitingPulsarNSName  = "cloud/ratelimiting"
 			)
 
 			BeforeAll(func() {
@@ -1576,8 +1559,8 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				// Update DispatchRate
-				ns.Spec.DispatchRate.DispatchThrottlingRateInMsg = pointer.Int32(1500)
-				ns.Spec.DispatchRate.DispatchThrottlingRateInByte = pointer.Int64(1572864) // 1.5MB
+				ns.Spec.DispatchRate.DispatchThrottlingRateInMsg = ptr.To[int32](1500)
+				ns.Spec.DispatchRate.DispatchThrottlingRateInByte = ptr.To[int64](1572864) // 1.5MB
 
 				err := k8sClient.Update(ctx, ns)
 				Expect(err).Should(Succeed())
@@ -1619,8 +1602,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarNamespace Storage Policies", Ordered, func() {
 			var (
 				storagePoliciesNamespace     *v1alphav1.PulsarNamespace
-				storagePoliciesNamespaceName string = "test-storage-namespace"
-				storagePoliciesPulsarNSName  string = "cloud/storage"
+				storagePoliciesNamespaceName = "test-storage-namespace"
+				storagePoliciesPulsarNSName  = "cloud/storage"
 			)
 
 			BeforeAll(func() {
@@ -1715,7 +1698,7 @@ var _ = Describe("Resources", func() {
 				podName := fmt.Sprintf("%s-broker-0", brokerName)
 				containerName := fmt.Sprintf("%s-broker", brokerName)
 				Eventually(func(g Gomega) {
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+					stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsar-admin namespaces get-subscription-expiration-time "+storagePoliciesPulsarNSName)
 					g.Expect(err).Should(Succeed())
 					// 7d -> 10080 minutes
@@ -1757,7 +1740,7 @@ var _ = Describe("Resources", func() {
 				podName := fmt.Sprintf("%s-broker-0", brokerName)
 				containerName := fmt.Sprintf("%s-broker", brokerName)
 				Eventually(func(g Gomega) {
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+					stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsar-admin namespaces get-subscription-expiration-time "+storagePoliciesPulsarNSName)
 					g.Expect(err).Should(Succeed())
 					// Pulsar returns null once the expiration time is removed (infinite)
@@ -1789,7 +1772,7 @@ var _ = Describe("Resources", func() {
 					current := &v1alphav1.PulsarNamespace{}
 					g.Expect(k8sClient.Get(ctx, tns, current)).Should(Succeed())
 
-					cond := metautil.FindStatusCondition(current.Status.Conditions, string(v1alphav1.ConditionReady))
+					cond := metautil.FindStatusCondition(current.Status.Conditions, v1alphav1.ConditionReady)
 					if cond == nil {
 						return metav1.ConditionUnknown
 					}
@@ -1799,7 +1782,7 @@ var _ = Describe("Resources", func() {
 
 				// Re-fetch to get latest ResourceVersion before updating
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
-				ns.Spec.BacklogQuotaRetentionPolicy = pointer.String("producer_request_hold")
+				ns.Spec.BacklogQuotaRetentionPolicy = ptr.To("producer_request_hold")
 				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
 			})
 
@@ -1839,9 +1822,10 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				// Update PersistencePolicies
-				ns.Spec.PersistencePolicies.BookkeeperEnsemble = pointer.Int32(5)
-				ns.Spec.PersistencePolicies.BookkeeperWriteQuorum = pointer.Int32(4)
-				ns.Spec.PersistencePolicies.BookkeeperAckQuorum = pointer.Int32(3)
+
+				ns.Spec.PersistencePolicies.BookkeeperEnsemble = ptr.To[int32](5)
+				ns.Spec.PersistencePolicies.BookkeeperWriteQuorum = ptr.To[int32](4)
+				ns.Spec.PersistencePolicies.BookkeeperAckQuorum = ptr.To[int32](3)
 
 				err := k8sClient.Update(ctx, ns)
 				Expect(err).Should(Succeed())
@@ -1903,7 +1887,7 @@ var _ = Describe("Resources", func() {
 			// 	podName := fmt.Sprintf("%s-broker-0", brokerName)
 			// 	containerName := fmt.Sprintf("%s-broker", brokerName)
 			// 	Eventually(func(g Gomega) {
-			// 		stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+			// 		stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
 			// 			"./bin/pulsar-admin namespaces get-persistence "+storagePoliciesPulsarNSName)
 			// 		g.Expect(err).Should(Succeed())
 			// 		// When persistence policies are reset, broker returns default values (0)
@@ -1959,8 +1943,8 @@ var _ = Describe("Resources", func() {
 		Context("PulsarNamespace Security Configuration", Ordered, func() {
 			var (
 				securityNamespace     *v1alphav1.PulsarNamespace
-				securityNamespaceName string = "test-security-namespace"
-				securityPulsarNSName  string = "cloud/security"
+				securityNamespaceName = "test-security-namespace"
+				securityPulsarNSName  = "cloud/security"
 			)
 
 			BeforeAll(func() {
@@ -2080,7 +2064,7 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				// Temporarily disable encryption requirement
-				ns.Spec.EncryptionRequired = pointer.Bool(false)
+				ns.Spec.EncryptionRequired = ptr.To(false)
 
 				err := k8sClient.Update(ctx, ns)
 				Expect(err).Should(Succeed())
@@ -2111,7 +2095,7 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				// Disable producer name validation
-				ns.Spec.ValidateProducerName = pointer.Bool(false)
+				ns.Spec.ValidateProducerName = ptr.To(false)
 
 				err := k8sClient.Update(ctx, ns)
 				Expect(err).Should(Succeed())
@@ -2200,7 +2184,7 @@ var _ = Describe("Resources", func() {
 				Eventually(func(g Gomega) {
 					podName := fmt.Sprintf("%s-broker-0", brokerName)
 					containerName := fmt.Sprintf("%s-broker", brokerName)
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+					stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsar-admin topics permissions "+ppermission.Spec.ResourceName)
 					g.Expect(err).Should(Succeed())
 					g.Expect(stdout).Should(Not(BeEmpty()))
@@ -2246,7 +2230,7 @@ var _ = Describe("Resources", func() {
 				Eventually(func(g Gomega) {
 					podName := fmt.Sprintf("%s-broker-0", brokerName)
 					containerName := fmt.Sprintf("%s-broker", brokerName)
-					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+					stdout, _, err := utils.ExecInPod(ctx, k8sConfig, namespaceName, podName, containerName,
 						"./bin/pulsar-admin topics permissions "+ptopic.Spec.Name)
 					g.Expect(err).Should(Succeed())
 					g.Expect(stdout).Should(Not(BeEmpty()))

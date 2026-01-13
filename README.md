@@ -44,9 +44,9 @@ You can install the Pulsar Resources Operator using the officially supported `pu
 
 ## Prerequisites
 
-- Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl) (v1.16 - v1.24), compatible with your cluster (+/- 1 minor release from your cluster).
+- Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl) (v1.16 - v1.34), compatible with your cluster (+/- 1 minor release from your cluster).
 - Install [`Helm`](https://helm.sh/docs/intro/install/) (v3.0.2 or higher).
-- Prepare a Kubernetes cluster (v1.16 - v1.24).
+- Prepare a Kubernetes cluster (v1.16 - v1.34).
 - Prepare a [Pulsar cluster](https://docs.streamnative.io/operators/pulsar-operator/tutorial/deploy-pulsar)
 
 

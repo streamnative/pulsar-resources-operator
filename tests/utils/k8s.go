@@ -16,6 +16,7 @@ package utils
 
 import (
 	"bytes"
+	"context"
 	"path/filepath"
 	"strings"
 
@@ -31,13 +32,13 @@ import (
 // GetKubeConfig return the kubeconfig from kubeConfigPath
 // if the path is empty, it will get config from $HOME/.kube/config as default
 func GetKubeConfig(kubeConfigPath string) (*rest.Config, error) {
-	if len(kubeConfigPath) != 0 {
+	if kubeConfigPath != "" {
 		return clientcmd.BuildConfigFromFlags("", kubeConfigPath)
 	}
 	return clientcmd.BuildConfigFromFlags("", filepath.Join(homedir.HomeDir(), ".kube", "config"))
 }
 
-func ExecInPod(config *rest.Config, namespace, podName, containerName, command string) (string, string, error) {
+func ExecInPod(ctx context.Context, config *rest.Config, namespace, podName, containerName, command string) (string, string, error) {
 	k8sCli, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return "", "", err
@@ -68,7 +69,7 @@ func ExecInPod(config *rest.Config, namespace, podName, containerName, command s
 	if err != nil {
 		return "", "", err
 	}
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  nil,
 		Stdout: &stdout,
 		Stderr: &stderr,
