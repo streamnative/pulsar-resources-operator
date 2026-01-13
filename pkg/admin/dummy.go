@@ -236,6 +236,16 @@ func (d *DummyPulsarAdmin) GetSchema(string) (*v1alpha1.SchemaInfo, error) {
 	return nil, nil
 }
 
+// GetSchemaInfoWithVersion is a fake implements of GetSchemaInfoWithVersion
+func (d *DummyPulsarAdmin) GetSchemaInfoWithVersion(string) (*v1alpha1.SchemaInfo, int64, error) {
+	return nil, 0, nil
+}
+
+// GetSchemaVersionBySchemaInfo is a fake implements of GetSchemaVersionBySchemaInfo
+func (d *DummyPulsarAdmin) GetSchemaVersionBySchemaInfo(string, *v1alpha1.SchemaInfo) (int64, error) {
+	return 0, nil
+}
+
 // UploadSchema is a fake implements of UploadSchema
 func (d *DummyPulsarAdmin) UploadSchema(string, *SchemaParams) error {
 	return nil
