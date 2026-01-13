@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	pulsarutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
@@ -2773,20 +2774,29 @@ func updateTopicSchema(ctx context.Context, topicName, exampleSchemaDef string) 
 }
 
 func createTopicInPulsar(topicName string) {
+	parsedTopicName, err := pulsarutils.GetTopicName(topicName)
+	Expect(err).Should(Succeed())
+
+	endpoint := fmt.Sprintf("http://localhost:8080/admin/v2/%s/%s/%s/%s",
+		parsedTopicName.GetDomain(),
+		parsedTopicName.GetTenant(),
+		parsedTopicName.GetNamespace(),
+		parsedTopicName.GetLocalName())
 	podName := fmt.Sprintf("%s-broker-0", brokerName)
 	containerName := fmt.Sprintf("%s-broker", brokerName)
 	stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
-		"./bin/pulsarctl -s http://localhost:8080 --token=$PROXY_TOKEN topics create --non-partitioned "+topicName)
-	if err == nil {
+		"curl -s -o /dev/null -w \"%{http_code}\" -H \"Authorization: Bearer $PROXY_TOKEN\" -X PUT "+endpoint)
+	if err != nil {
+		Expect(err).Should(Succeed())
+	}
+
+	code, err := strconv.Atoi(strings.TrimSpace(stdout))
+	Expect(err).Should(Succeed())
+	if code == 200 || code == 204 || code == 409 {
 		return
 	}
 
-	msg := strings.ToLower(stdout + " " + stderr)
-	if strings.Contains(msg, "already exists") || strings.Contains(msg, "already exist") ||
-		strings.Contains(msg, "conflict") || strings.Contains(msg, "409") {
-		return
-	}
-	Expect(err).Should(Succeed())
+	Expect(fmt.Errorf("unexpected status code %d (stderr: %s)", code, stderr)).Should(Succeed())
 }
 
 func mustGetSchemaVersionCount(topic string) int {
