@@ -1689,6 +1689,39 @@ func (p *PulsarAdminClient) GetSchema(topic string) (*v1alpha1.SchemaInfo, error
 	return rsp, nil
 }
 
+// GetSchemaInfoWithVersion get schema info with version for a given topic
+func (p *PulsarAdminClient) GetSchemaInfoWithVersion(topic string) (*v1alpha1.SchemaInfo, int64, error) {
+	info, err := p.adminClient.Schemas().GetSchemaInfoWithVersion(topic)
+	if err != nil {
+		return nil, 0, err
+	}
+	if info == nil {
+		return nil, 0, errors.New("schema info is empty")
+	}
+	if info.SchemaInfo == nil {
+		return nil, info.Version, nil
+	}
+	rsp := &v1alpha1.SchemaInfo{
+		Type:       info.SchemaInfo.Type,
+		Schema:     string(info.SchemaInfo.Schema),
+		Properties: info.SchemaInfo.Properties,
+	}
+	return rsp, info.Version, nil
+}
+
+// GetSchemaVersionBySchemaInfo gets schema version for a given schema payload
+func (p *PulsarAdminClient) GetSchemaVersionBySchemaInfo(topic string, info *v1alpha1.SchemaInfo) (int64, error) {
+	if info == nil {
+		return 0, errors.New("schema info is nil")
+	}
+	payload := utils.SchemaInfo{
+		Type:       info.Type,
+		Schema:     []byte(info.Schema),
+		Properties: info.Properties,
+	}
+	return p.adminClient.Schemas().GetVersionBySchemaInfo(topic, payload)
+}
+
 // UploadSchema creates or updates a schema for a given topic
 func (p *PulsarAdminClient) UploadSchema(topic string, params *SchemaParams) error {
 	var payload utils.PostSchemaPayload

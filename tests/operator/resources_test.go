@@ -19,7 +19,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"slices"
+	"strconv"
+	"strings"
 
+	pulsarutils "github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/format"
@@ -126,6 +129,12 @@ var _ = Describe("Resources", func() {
 		ptopic2             *v1alphav1.PulsarTopic
 		ptopicName2         string = "test-topic2"
 		topicName2          string = "persistent://cloud/stage/user2"
+		pexistingTopic      *v1alphav1.PulsarTopic
+		pexistingTopicName  string = "test-existing-topic"
+		existingTopicName   string = "persistent://cloud/stage/existing"
+		pemptySchemaTopic   *v1alphav1.PulsarTopic
+		pemptySchemaName    string = "test-empty-schema-topic"
+		emptySchemaTopic    string = "persistent://cloud/stage/empty-schema"
 		ppermission         *v1alphav1.PulsarPermission
 		ppermissionName     string = "test-permission"
 		ppermission2        *v1alphav1.PulsarPermission
@@ -179,6 +188,15 @@ var _ = Describe("Resources", func() {
 		pnamespace = utils.MakePulsarNamespace(namespaceName, pnamespaceName, pulsarNamespaceName, pconnName, lifecyclePolicy)
 		ptopic = utils.MakePulsarTopic(namespaceName, ptopicName, topicName, pconnName, lifecyclePolicy)
 		ptopic2 = utils.MakePulsarTopic(namespaceName, ptopicName2, topicName2, pconnName, lifecyclePolicy)
+		pexistingTopic = utils.MakePulsarTopic(namespaceName, pexistingTopicName, existingTopicName, pconnName, lifecyclePolicy)
+		pemptySchemaTopic = utils.MakePulsarTopic(namespaceName, pemptySchemaName, emptySchemaTopic, pconnName, lifecyclePolicy)
+		pemptySchemaTopic.Spec.SchemaInfo = &v1alphav1.SchemaInfo{
+			Type:   "STRING",
+			Schema: "",
+		}
+		pemptySchemaTopic.Spec.Properties = map[string]string{
+			"schema-case": "empty",
+		}
 		roles := []string{"ironman"}
 		actions := []string{"produce", "consume", "functions"}
 		ppermission = utils.MakePulsarPermission(namespaceName, ppermissionName, topicName, pconnName, v1alphav1.PulsarResourceTypeTopic, roles, actions, v1alphav1.CleanUpAfterDeletion)
@@ -324,10 +342,18 @@ var _ = Describe("Resources", func() {
 		})
 
 		Context("PulsarTopic operation", Ordered, func() {
+			It("should create existing topic directly in Pulsar", func() {
+				createTopicInPulsar(existingTopicName)
+			})
+
 			It("should create the pulsartopic successfully", Label("Permissions"), func() {
 				err := k8sClient.Create(ctx, ptopic)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 				err = k8sClient.Create(ctx, ptopic2)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+				err = k8sClient.Create(ctx, pexistingTopic)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+				err = k8sClient.Create(ctx, pemptySchemaTopic)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
 				err = k8sClient.Create(ctx, partitionedTopic)
 				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
@@ -337,6 +363,18 @@ var _ = Describe("Resources", func() {
 				Eventually(func() bool {
 					t := &v1alphav1.PulsarTopic{}
 					tns := types.NamespacedName{Namespace: namespaceName, Name: ptopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pexistingTopicName}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: pemptySchemaName}
 					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 					return v1alphav1.IsPulsarResourceReady(t)
 				}, "20s", "100ms").Should(BeTrue())
@@ -400,6 +438,30 @@ var _ = Describe("Resources", func() {
 				// 	format.MaxLength = 0
 				// 	g.Expect(stderr).Should(ContainSubstring("404"))
 				// }, "5s", "100ms").Should(Succeed())
+			})
+
+			It("should not create new schema versions for empty schema", func() {
+				initialCount := mustGetSchemaVersionCount(emptySchemaTopic)
+				Expect(initialCount).Should(BeNumerically(">", 0))
+
+				topic := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pemptySchemaName}
+				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
+				if topic.Spec.Properties == nil {
+					topic.Spec.Properties = map[string]string{}
+				}
+				topic.Spec.Properties["schema-update"] = "true"
+				Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
+
+				Eventually(func() bool {
+					t := &v1alphav1.PulsarTopic{}
+					Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(t)
+				}, "20s", "100ms").Should(BeTrue())
+
+				Consistently(func() int {
+					return mustGetSchemaVersionCount(emptySchemaTopic)
+				}, "10s", "1s").Should(Equal(initialCount))
 			})
 
 			It("should increase the partitions successfully", func() {
@@ -2635,6 +2697,20 @@ var _ = Describe("Resources", func() {
 
 			Eventually(func(g Gomega) {
 				t := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pexistingTopicName}
+				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+			}).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				t := &v1alphav1.PulsarTopic{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: pemptySchemaName}
+				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
+				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+			}).Should(Succeed())
+
+			Eventually(func(g Gomega) {
+				t := &v1alphav1.PulsarTopic{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: partitionedTopic.Name}
 				g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 				g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
@@ -2695,4 +2771,62 @@ func updateTopicSchema(ctx context.Context, topicName, exampleSchemaDef string) 
 		Schema: exampleSchemaDef,
 	}
 	Expect(k8sClient.Update(ctx, topic)).Should(Succeed())
+}
+
+func createTopicInPulsar(topicName string) {
+	parsedTopicName, err := pulsarutils.GetTopicName(topicName)
+	Expect(err).Should(Succeed())
+
+	endpoint := fmt.Sprintf("http://localhost:8080/admin/v2/%s/%s/%s/%s",
+		parsedTopicName.GetDomain(),
+		parsedTopicName.GetTenant(),
+		parsedTopicName.GetNamespace(),
+		parsedTopicName.GetLocalName())
+	podName := fmt.Sprintf("%s-broker-0", brokerName)
+	containerName := fmt.Sprintf("%s-broker", brokerName)
+	stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+		"curl -s -o /dev/null -w \"%{http_code}\" -H \"Authorization: Bearer $PROXY_TOKEN\" -X PUT "+endpoint)
+	if err != nil {
+		Expect(err).Should(Succeed())
+	}
+
+	code, err := strconv.Atoi(strings.TrimSpace(stdout))
+	Expect(err).Should(Succeed())
+	if code == 200 || code == 204 || code == 409 {
+		return
+	}
+
+	Expect(fmt.Errorf("unexpected status code %d (stderr: %s)", code, stderr)).Should(Succeed())
+}
+
+func mustGetSchemaVersionCount(topic string) int {
+	count, err := getSchemaVersionCount(topic)
+	Expect(err).Should(Succeed())
+	return count
+}
+
+func getSchemaVersionCount(topic string) (int, error) {
+	topicName, err := pulsarutils.GetTopicName(topic)
+	if err != nil {
+		return 0, err
+	}
+	endpoint := fmt.Sprintf("http://localhost:8080/admin/v2/schemas/%s/%s/%s/schemas",
+		topicName.GetTenant(), topicName.GetNamespace(), topicName.GetLocalName())
+	podName := fmt.Sprintf("%s-broker-0", brokerName)
+	containerName := fmt.Sprintf("%s-broker", brokerName)
+	stdout, stderr, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+		"curl -s -H \"Authorization: Bearer $PROXY_TOKEN\" "+endpoint)
+	if err != nil {
+		return 0, fmt.Errorf("fetch schema versions failed: %w (stderr: %s)", err, stderr)
+	}
+
+	var response struct {
+		Schemas []struct {
+			Version int64 `json:"version"`
+		} `json:"getSchemaResponses"`
+	}
+	if err := json.Unmarshal([]byte(stdout), &response); err != nil {
+		return 0, err
+	}
+	return len(response.Schemas), nil
 }

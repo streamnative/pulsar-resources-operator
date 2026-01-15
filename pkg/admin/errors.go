@@ -17,6 +17,7 @@ package admin
 import (
 	"errors"
 	"net"
+	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/rest"
 )
@@ -51,12 +52,22 @@ const (
 
 // ErrorReason returns the HTTP status code for the error
 func ErrorReason(err error) Reason {
-	cliError, ok := err.(rest.Error)
-	if !ok {
-		// can't determine error reason as can't convert to a cli error
+	if err == nil {
 		return ReasonUnknown
 	}
-	return Reason(cliError.Code)
+
+	var restErrPtr *rest.Error
+	if errors.As(err, &restErrPtr) && restErrPtr != nil {
+		return Reason(restErrPtr.Code)
+	}
+
+	var restErr rest.Error
+	if errors.As(err, &restErr) {
+		return Reason(restErr.Code)
+	}
+
+	// can't determine error reason as can't convert to a cli error
+	return ReasonUnknown
 }
 
 // IsNotFound returns true if the error indicates the resource is not found on server
@@ -66,7 +77,25 @@ func IsNotFound(err error) bool {
 
 // IsAlreadyExist returns true if the error indicates the resource already exist
 func IsAlreadyExist(err error) bool {
-	return ErrorReason(err) == ReasonAlreadyExist
+	if err == nil {
+		return false
+	}
+
+	reason := ErrorReason(err)
+	if reason == ReasonAlreadyExist {
+		return true
+	}
+	if reason == ReasonInvalidParameter {
+		return isAlreadyExistsMessage(err)
+	}
+	if reason != ReasonUnknown {
+		return false
+	}
+	return isAlreadyExistsMessage(err)
+}
+
+func isAlreadyExistsMessage(err error) bool {
+	return strings.Contains(strings.ToLower(err.Error()), "already exist")
 }
 
 // IsInternalServerError returns true if the error indicates the resource already exist
