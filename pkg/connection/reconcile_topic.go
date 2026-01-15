@@ -17,7 +17,6 @@ package connection
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"slices"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
@@ -287,23 +286,43 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 }
 
 func applySchema(pulsarAdmin admin.PulsarAdmin, topic *resourcev1alpha1.PulsarTopic, log logr.Logger) error {
-	schema, serr := pulsarAdmin.GetSchema(topic.Spec.Name)
-	if serr != nil && !admin.IsNotFound(serr) {
-		return serr
-	}
 	if topic.Spec.SchemaInfo != nil {
-		// Only upload the schema when schema doesn't exist or the schema has been updated
-		if admin.IsNotFound(serr) || !reflect.DeepEqual(topic.Spec.SchemaInfo, schema) {
+		uploadSchema := func(currentVersion int64, desiredVersion int64) error {
 			info := topic.Spec.SchemaInfo
 			param := &admin.SchemaParams{
 				Type:       info.Type,
 				Schema:     info.Schema,
 				Properties: info.Properties,
 			}
-			log.Info("Upload schema for the topic", "name", topic.Spec.Name, "type", info.Type, "schema", info.Schema, "properties", info.Properties)
-			if err := pulsarAdmin.UploadSchema(topic.Spec.Name, param); err != nil {
-				return err
+			log.Info("Upload schema for the topic",
+				"name", topic.Spec.Name,
+				"type", info.Type,
+				"schema", info.Schema,
+				"properties", info.Properties,
+				"currentVersion", currentVersion,
+				"desiredVersion", desiredVersion)
+			return pulsarAdmin.UploadSchema(topic.Spec.Name, param)
+		}
+
+		_, currentVersion, serr := pulsarAdmin.GetSchemaInfoWithVersion(topic.Spec.Name)
+		if serr != nil {
+			if admin.IsNotFound(serr) {
+				return uploadSchema(currentVersion, -1)
 			}
+			return serr
+		}
+
+		desiredVersion, verr := pulsarAdmin.GetSchemaVersionBySchemaInfo(topic.Spec.Name, topic.Spec.SchemaInfo)
+		if verr != nil {
+			if admin.IsNotFound(verr) {
+				return uploadSchema(currentVersion, -1)
+			}
+			return verr
+		}
+
+		// Only upload the schema when schema doesn't exist or the schema has been updated
+		if desiredVersion < 0 || desiredVersion != currentVersion {
+			return uploadSchema(currentVersion, desiredVersion)
 		}
 	}
 	// Note: We intentionally do NOT delete existing schemas when schemaInfo is not specified.
