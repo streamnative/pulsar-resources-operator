@@ -22,6 +22,7 @@ Pulsar: `>= 2.9.0.x`
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Add affinity for pod |
+| annotations | object | `{}` | Add annotations for the deployment |
 | features.alwaysUpdatePulsarResource | bool | `false` |  |
 | fullnameOverride | string | `""` | It will override the name of deployment |
 | image.kubeRbacProxy.registry | string | `"gcr.io"` | Specififies the registry of images, especially when user want to use a different image hub |

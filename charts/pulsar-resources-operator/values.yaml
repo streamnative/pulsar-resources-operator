@@ -66,6 +66,9 @@ serviceAccount:
 # -- Add labels for the deployment
 labels: {}
 
+# -- Add annotations for the deployment
+annotations: {}
+
 # -- Add annotations for the deployment pod
 podAnnotations: {}
 
