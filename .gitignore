@@ -52,4 +52,7 @@ node_modules/
 
 .cursor
 .envrc
+
+docker-compose.yaml
 mise.toml
+.jj/
