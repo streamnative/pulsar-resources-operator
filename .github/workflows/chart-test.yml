@@ -120,7 +120,7 @@ jobs:
           sudo swapoff -a
           sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
-          docker rmi $(docker images -q) -f
+          docker image prune -af
           df -h
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
@@ -199,7 +199,7 @@ jobs:
           sudo swapoff -a
           sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
-          docker rmi $(docker images -q) -f
+          docker image prune -af
           df -h
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
@@ -278,7 +278,7 @@ jobs:
           sudo swapoff -a
           sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
-          docker rmi $(docker images -q) -f
+          docker image prune -af
           df -h
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 
@@ -357,7 +357,7 @@ jobs:
           sudo swapoff -a
           sudo rm -rf /swapfile /usr/share/dotnet /usr/local/lib/android /opt/ghc "$AGENT_TOOLSDIRECTORY"
           sudo apt clean
-          docker rmi $(docker images -q) -f
+          docker image prune -af
           df -h
         if: ${{ needs.lint-test.outputs.changed == 'true' }}
 

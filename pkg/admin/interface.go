@@ -265,6 +265,12 @@ type PulsarAdmin interface {
 	// GetSchema retrieves the latest schema of a topic
 	GetSchema(topic string) (*v1alpha1.SchemaInfo, error)
 
+	// GetSchemaInfoWithVersion retrieves the latest schema and its version for a topic
+	GetSchemaInfoWithVersion(topic string) (*v1alpha1.SchemaInfo, int64, error)
+
+	// GetSchemaVersionBySchemaInfo retrieves the version for a given schema payload
+	GetSchemaVersionBySchemaInfo(topic string, info *v1alpha1.SchemaInfo) (int64, error)
+
 	// UploadSchema creates or updates a schema for a given topic
 	UploadSchema(topic string, params *SchemaParams) error
 
