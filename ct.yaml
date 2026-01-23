@@ -30,7 +30,6 @@ target-branch: main
 charts:
   - charts/pulsar-resources-operator
 
-# 添加固定的命名配置
 namespace: chart-testing
 release-label: app.kubernetes.io/instance
 release-name: pulsar-resources-operator
