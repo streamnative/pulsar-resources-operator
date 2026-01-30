@@ -424,6 +424,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 			ClientID:       conf.ClientID,
 			Audience:       conf.Audience,
 		}, oauth2.ClientCredentialsFlowOptions{
+			IssuerURL:        conf.IssuerEndpoint,
 			KeyFile:          keyFilePath,
 			AdditionalScopes: strings.Split(conf.Scope, " "),
 		})
