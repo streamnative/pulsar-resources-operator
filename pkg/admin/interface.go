@@ -30,6 +30,8 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
 
+var newAuthenticationOAuth2WithFlow = auth.NewAuthenticationOAuth2WithFlow
+
 // TenantParams indicates the parameters for creating a tenant
 type TenantParams struct {
 	AdminRoles      []string
@@ -419,7 +421,7 @@ func NewPulsarAdmin(conf PulsarAdminConfig) (PulsarAdmin, error) {
 		cfg.KeyFile = keyFilePath
 		cfg.Scope = conf.Scope
 
-		oauthProvider, err := auth.NewAuthenticationOAuth2WithFlow(oauth2.Issuer{
+		oauthProvider, err := newAuthenticationOAuth2WithFlow(oauth2.Issuer{
 			IssuerEndpoint: conf.IssuerEndpoint,
 			ClientID:       conf.ClientID,
 			Audience:       conf.Audience,
