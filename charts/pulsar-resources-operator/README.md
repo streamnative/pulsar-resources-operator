@@ -1,6 +1,6 @@
 # Pulsar Resources Operator
 
-![Version: v0.17.0](https://img.shields.io/badge/Version-v0.17.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.17.0](https://img.shields.io/badge/AppVersion-v0.17.0-informational?style=flat-square)
+![Version: v0.18.0-rc.1](https://img.shields.io/badge/Version-v0.18.0-rc.1-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v0.18.0-rc.1](https://img.shields.io/badge/AppVersion-v0.18.0-rc.1-informational?style=flat-square)
 
 ## Installing the Chart
 
@@ -28,28 +28,28 @@ Apply from the local chart directory:
 $ kubectl apply -f charts/pulsar-resources-operator/crds
 ```
 
-Apply from raw URLs for a specific version (v0.17.0 shown below):
+Apply from raw URLs for a specific version (v0.18.0-rc.1 shown below):
 
 ```console
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarfunctions.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_serviceaccounts.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpackages.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_serviceaccountbindings.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_computeworkspaces.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsargeoreplications.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_apikeys.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_computeflinkdeployments.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarconnections.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpermissions.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnamespaces.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsinks.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartopics.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_secrets.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_rolebindings.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnsisolationpolicies.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartenants.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsources.yaml
-kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.17.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_streamnativecloudconnections.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarfunctions.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_serviceaccounts.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpackages.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_serviceaccountbindings.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_computeworkspaces.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsargeoreplications.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_apikeys.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_computeflinkdeployments.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarconnections.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarpermissions.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnamespaces.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsinks.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartopics.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_secrets.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_rolebindings.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarnsisolationpolicies.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsartenants.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_pulsarsources.yaml
+kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/v0.18.0-rc.1/charts/pulsar-resources-operator/crds/resource.streamnative.io_streamnativecloudconnections.yaml
 ```
 
 ## Values
