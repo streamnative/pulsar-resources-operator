@@ -237,7 +237,7 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 			}
 		} else {
 			// Remote binding exists.
-			logger.Info("Remote ServiceAccountBinding already exists", "bindingName", remoteName, "poolMemberRef", poolMemberRef, "existingRemoteName", existingRemoteBinding.ObjectMeta.Name)
+			logger.Info("Remote ServiceAccountBinding already exists", "bindingName", remoteName, "poolMemberRef", poolMemberRef, "existingRemoteName", existingRemoteBinding.Name)
 			// TODO: Implement update logic if necessary.
 			// Compare existingRemoteBinding.Spec with what payloadForClient would generate via conversion.
 			// For now, we assume if it exists, it's correctly configured or updates are not handled here.
