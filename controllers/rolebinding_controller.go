@@ -72,13 +72,25 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
+	connErr := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      roleBinding.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateRoleBindingStatus(ctx, roleBinding, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
-		return ctrl.Result{}, err
+	}, connection)
+	if roleBinding.DeletionTimestamp != nil && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", roleBinding.Spec.APIServerRef.Name)
+		if controllerutil.ContainsFinalizer(roleBinding, roleBindingFinalizer) {
+			controllerutil.RemoveFinalizer(roleBinding, roleBindingFinalizer)
+			if err := r.Update(ctx, roleBinding); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateRoleBindingStatus(ctx, roleBinding, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get APIServerConnection: %v", connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection

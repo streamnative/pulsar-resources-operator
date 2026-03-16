@@ -153,13 +153,25 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
+	connErr := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      apiKey.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateAPIKeyStatus(ctx, apiKey, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
-		return ctrl.Result{}, err
+	}, connection)
+	if !apiKey.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", apiKey.Spec.APIServerRef.Name)
+		if controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
+			apiKey.Finalizers = controllers2.RemoveString(apiKey.Finalizers, APIKeyFinalizer)
+			if err := r.Update(ctx, apiKey); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateAPIKeyStatus(ctx, apiKey, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get APIServerConnection: %v", connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection

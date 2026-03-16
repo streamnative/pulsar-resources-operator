@@ -98,13 +98,25 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Get StreamNativeCloudConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace, // Assuming connection is in the same namespace
+	connErr := r.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
 		Name:      secretCR.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateSecretStatus(ctx, secretCR, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", secretCR.Spec.APIServerRef.Name, err))
-		return ctrl.Result{}, err
+	}, connection)
+	if !secretCR.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", secretCR.Spec.APIServerRef.Name)
+		if controllerutil.ContainsFinalizer(secretCR, cloudapi.SecretFinalizer) {
+			controllerutil.RemoveFinalizer(secretCR, cloudapi.SecretFinalizer)
+			if err := r.Update(ctx, secretCR); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateSecretStatus(ctx, secretCR, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", secretCR.Spec.APIServerRef.Name, connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get or create API connection

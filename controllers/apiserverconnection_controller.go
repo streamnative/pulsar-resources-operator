@@ -28,8 +28,12 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
+
+const CloudConnectionFinalizer = "resource.streamnative.io/cloud-connection-finalizer"
 
 // APIServerConnectionReconciler reconciles a APIServerConnection object
 type APIServerConnectionReconciler struct {
@@ -59,6 +63,37 @@ func (r *APIServerConnectionReconciler) Reconcile(ctx context.Context, req ctrl.
 			return ctrl.Result{}, nil
 		}
 		return ctrl.Result{}, err
+	}
+
+	// Handle deletion
+	if !connection.DeletionTimestamp.IsZero() {
+		if controllerutil.ContainsFinalizer(connection, CloudConnectionFinalizer) {
+			remaining, err := r.listDependentResources(ctx, req.Namespace, req.Name)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+			if len(remaining) > 0 {
+				msg := fmt.Sprintf("waiting for dependent resources to be deleted: %v", remaining)
+				logger.Info(msg)
+				r.updateConnectionStatus(ctx, connection, fmt.Errorf("dependent resources remain"), "WaitingForDependents", msg)
+				return ctrl.Result{}, nil
+			}
+			_ = r.ConnectionManager.CloseConnection(req.Name)
+			controllerutil.RemoveFinalizer(connection, CloudConnectionFinalizer)
+			if err := r.Update(ctx, connection); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+
+	// Add finalizer
+	if !controllerutil.ContainsFinalizer(connection, CloudConnectionFinalizer) {
+		controllerutil.AddFinalizer(connection, CloudConnectionFinalizer)
+		if err := r.Update(ctx, connection); err != nil {
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Get the credentials secret
@@ -196,9 +231,131 @@ func (r *APIServerConnectionReconciler) updateConnectionStatus(
 	}
 }
 
+// listDependentResources returns a list of dependent resources that reference the given connection.
+func (r *APIServerConnectionReconciler) listDependentResources(ctx context.Context, namespace, connectionName string) ([]string, error) {
+	var remaining []string
+
+	workspaceList := &resourcev1alpha1.ComputeWorkspaceList{}
+	if err := r.List(ctx, workspaceList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list ComputeWorkspaces: %w", err)
+	}
+	for i := range workspaceList.Items {
+		if workspaceList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("ComputeWorkspace/%s", workspaceList.Items[i].Name))
+		}
+	}
+
+	flinkList := &resourcev1alpha1.ComputeFlinkDeploymentList{}
+	if err := r.List(ctx, flinkList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list ComputeFlinkDeployments: %w", err)
+	}
+	for i := range flinkList.Items {
+		if flinkList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("ComputeFlinkDeployment/%s", flinkList.Items[i].Name))
+		}
+	}
+
+	secretList := &resourcev1alpha1.SecretList{}
+	if err := r.List(ctx, secretList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list Secrets: %w", err)
+	}
+	for i := range secretList.Items {
+		if secretList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("Secret/%s", secretList.Items[i].Name))
+		}
+	}
+
+	saList := &resourcev1alpha1.ServiceAccountList{}
+	if err := r.List(ctx, saList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list ServiceAccounts: %w", err)
+	}
+	for i := range saList.Items {
+		if saList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("ServiceAccount/%s", saList.Items[i].Name))
+		}
+	}
+
+	sabList := &resourcev1alpha1.ServiceAccountBindingList{}
+	if err := r.List(ctx, sabList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list ServiceAccountBindings: %w", err)
+	}
+	for i := range sabList.Items {
+		if sabList.Items[i].Spec.APIServerRef != nil && sabList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("ServiceAccountBinding/%s", sabList.Items[i].Name))
+		}
+	}
+
+	akList := &resourcev1alpha1.APIKeyList{}
+	if err := r.List(ctx, akList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list APIKeys: %w", err)
+	}
+	for i := range akList.Items {
+		if akList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("APIKey/%s", akList.Items[i].Name))
+		}
+	}
+
+	rbList := &resourcev1alpha1.RoleBindingList{}
+	if err := r.List(ctx, rbList, client.InNamespace(namespace)); err != nil {
+		return nil, fmt.Errorf("failed to list RoleBindings: %w", err)
+	}
+	for i := range rbList.Items {
+		if rbList.Items[i].Spec.APIServerRef.Name == connectionName {
+			remaining = append(remaining, fmt.Sprintf("RoleBinding/%s", rbList.Items[i].Name))
+		}
+	}
+
+	return remaining, nil
+}
+
+// apiServerRefName extracts the APIServerRef name from a dependent resource.
+func apiServerRefName(obj client.Object) string {
+	switch o := obj.(type) {
+	case *resourcev1alpha1.ComputeWorkspace:
+		return o.Spec.APIServerRef.Name
+	case *resourcev1alpha1.ComputeFlinkDeployment:
+		return o.Spec.APIServerRef.Name
+	case *resourcev1alpha1.Secret:
+		return o.Spec.APIServerRef.Name
+	case *resourcev1alpha1.ServiceAccount:
+		return o.Spec.APIServerRef.Name
+	case *resourcev1alpha1.ServiceAccountBinding:
+		if o.Spec.APIServerRef != nil {
+			return o.Spec.APIServerRef.Name
+		}
+		return ""
+	case *resourcev1alpha1.APIKey:
+		return o.Spec.APIServerRef.Name
+	case *resourcev1alpha1.RoleBinding:
+		return o.Spec.APIServerRef.Name
+	default:
+		return ""
+	}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *APIServerConnectionReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	mapFunc := func(ctx context.Context, obj client.Object) []ctrl.Request {
+		name := apiServerRefName(obj)
+		if name == "" {
+			return nil
+		}
+		return []ctrl.Request{
+			{NamespacedName: types.NamespacedName{
+				Namespace: obj.GetNamespace(),
+				Name:      name,
+			}},
+		}
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.StreamNativeCloudConnection{}).
+		Watches(&resourcev1alpha1.ComputeWorkspace{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
+		Watches(&resourcev1alpha1.ComputeFlinkDeployment{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
+		Watches(&resourcev1alpha1.Secret{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
+		Watches(&resourcev1alpha1.ServiceAccount{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
+		Watches(&resourcev1alpha1.ServiceAccountBinding{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
+		Watches(&resourcev1alpha1.APIKey{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
+		Watches(&resourcev1alpha1.RoleBinding{}, handler.EnqueueRequestsFromMapFunc(mapFunc)).
 		Complete(r)
 }

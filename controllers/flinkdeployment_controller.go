@@ -64,6 +64,8 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
+	finalizerName := controllers2.FlinkDeploymentFinalizer
+
 	apiServerRef := deployment.Spec.APIServerRef
 	if apiServerRef.Name == "" {
 		workspace := &resourcev1alpha1.ComputeWorkspace{}
@@ -71,6 +73,17 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			Namespace: req.Namespace,
 			Name:      deployment.Spec.WorkspaceName,
 		}, workspace); err != nil {
+			if !deployment.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
+				logger.Info("Workspace not found during deletion, removing finalizer without remote cleanup",
+					"workspace", deployment.Spec.WorkspaceName)
+				if controllerutil.ContainsFinalizer(deployment, finalizerName) {
+					controllerutil.RemoveFinalizer(deployment, finalizerName)
+					if err := r.Update(ctx, deployment); err != nil {
+						return ctrl.Result{}, err
+					}
+				}
+				return ctrl.Result{}, nil
+			}
 			r.updateDeploymentStatus(ctx, deployment, err, "GetWorkspaceFailed",
 				fmt.Sprintf("Failed to get ComputeWorkspace %s: %v", deployment.Spec.WorkspaceName, err))
 			return ctrl.Result{}, err
@@ -88,6 +101,17 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		Namespace: req.Namespace,
 		Name:      apiServerRef.Name,
 	}, apiConnResource); err != nil {
+		if !deployment.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
+			logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+				"connection", apiServerRef.Name)
+			if controllerutil.ContainsFinalizer(deployment, finalizerName) {
+				controllerutil.RemoveFinalizer(deployment, finalizerName)
+				if err := r.Update(ctx, deployment); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
+			return ctrl.Result{}, nil
+		}
 		r.updateDeploymentStatus(ctx, deployment, err, "GetAPIServerConnectionFailed",
 			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", apiServerRef.Name, err))
 		return ctrl.Result{}, err
@@ -116,7 +140,6 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	finalizerName := controllers2.FlinkDeploymentFinalizer
 	if !deployment.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(deployment, finalizerName) {
 			if err := deploymentClient.DeleteFlinkDeployment(ctx, deployment); err != nil {

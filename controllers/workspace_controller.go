@@ -65,13 +65,25 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
+	connErr := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      workspace.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateWorkspaceStatus(ctx, workspace, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
-		return ctrl.Result{}, err
+	}, connection)
+	if !workspace.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", workspace.Spec.APIServerRef.Name)
+		if controllerutil.ContainsFinalizer(workspace, controllers2.WorkspaceFinalizer) {
+			controllerutil.RemoveFinalizer(workspace, controllers2.WorkspaceFinalizer)
+			if err := r.Update(ctx, workspace); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateWorkspaceStatus(ctx, workspace, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get APIServerConnection: %v", connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection
