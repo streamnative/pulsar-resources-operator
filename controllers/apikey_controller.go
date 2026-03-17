@@ -33,7 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -444,11 +446,31 @@ func (r *APIKeyReconciler) updateAPIKeyStatus(
 	}
 }
 
+func (r *APIKeyReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	resourceList := &resourcev1alpha1.APIKeyList{}
+	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
+		return nil
+	}
+	var requests []ctrl.Request
+	for i := range resourceList.Items {
+		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: resourceList.Items[i].Namespace,
+					Name:      resourceList.Items[i].Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *APIKeyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.APIKey{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.APIKey{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }
 

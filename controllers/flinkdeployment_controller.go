@@ -28,8 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -270,10 +272,57 @@ func (r *FlinkDeploymentReconciler) updateDeploymentStatus(
 	}
 }
 
+func (r *FlinkDeploymentReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	connName := obj.GetName()
+	ns := obj.GetNamespace()
+
+	deployments := &resourcev1alpha1.ComputeFlinkDeploymentList{}
+	if err := r.List(ctx, deployments, client.InNamespace(ns)); err != nil {
+		return nil
+	}
+
+	// Find workspaces referencing this connection (for indirect lookups)
+	workspaces := &resourcev1alpha1.ComputeWorkspaceList{}
+	connWorkspaces := map[string]bool{}
+	if err := r.List(ctx, workspaces, client.InNamespace(ns)); err == nil {
+		for i := range workspaces.Items {
+			if workspaces.Items[i].Spec.APIServerRef.Name == connName {
+				connWorkspaces[workspaces.Items[i].Name] = true
+			}
+		}
+	}
+
+	var requests []ctrl.Request
+	for i := range deployments.Items {
+		d := &deployments.Items[i]
+		// Direct reference
+		if d.Spec.APIServerRef.Name == connName {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: d.Namespace,
+					Name:      d.Name,
+				},
+			})
+			continue
+		}
+		// Indirect reference via workspace
+		if d.Spec.APIServerRef.Name == "" && connWorkspaces[d.Spec.WorkspaceName] {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: d.Namespace,
+					Name:      d.Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *FlinkDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.ComputeFlinkDeployment{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.ComputeFlinkDeployment{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

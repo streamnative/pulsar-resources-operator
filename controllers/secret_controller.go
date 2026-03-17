@@ -28,8 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -310,11 +312,31 @@ func findCondition(conditions []metav1.Condition, conditionType string) *metav1.
 	return nil
 }
 
+func (r *SecretReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	resourceList := &resourcev1alpha1.SecretList{}
+	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
+		return nil
+	}
+	var requests []ctrl.Request
+	for i := range resourceList.Items {
+		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: resourceList.Items[i].Namespace,
+					Name:      resourceList.Items[i].Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.Secret{}).
-		Owns(&corev1.Secret{}).                                  // If we want to react to changes in owned k8s secrets
-		WithEventFilter(predicate.GenerationChangedPredicate{}). // Only reconcile on spec changes or finalizer changes
+		For(&resourcev1alpha1.Secret{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&corev1.Secret{}).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

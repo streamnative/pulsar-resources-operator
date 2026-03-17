@@ -30,8 +30,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -342,10 +344,57 @@ func (r *ServiceAccountBindingReconciler) updateServiceAccountBindingStatus(
 	}
 }
 
+func (r *ServiceAccountBindingReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	connName := obj.GetName()
+	ns := obj.GetNamespace()
+
+	bindings := &resourcev1alpha1.ServiceAccountBindingList{}
+	if err := r.List(ctx, bindings, client.InNamespace(ns)); err != nil {
+		return nil
+	}
+
+	// Find service accounts referencing this connection (for indirect lookups)
+	serviceAccounts := &resourcev1alpha1.ServiceAccountList{}
+	connServiceAccounts := map[string]bool{}
+	if err := r.List(ctx, serviceAccounts, client.InNamespace(ns)); err == nil {
+		for i := range serviceAccounts.Items {
+			if serviceAccounts.Items[i].Spec.APIServerRef.Name == connName {
+				connServiceAccounts[serviceAccounts.Items[i].Name] = true
+			}
+		}
+	}
+
+	var requests []ctrl.Request
+	for i := range bindings.Items {
+		b := &bindings.Items[i]
+		// Direct reference
+		if b.Spec.APIServerRef != nil && b.Spec.APIServerRef.Name == connName {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: b.Namespace,
+					Name:      b.Name,
+				},
+			})
+			continue
+		}
+		// Indirect reference via service account
+		if (b.Spec.APIServerRef == nil || b.Spec.APIServerRef.Name == "") && connServiceAccounts[b.Spec.ServiceAccountName] {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: b.Namespace,
+					Name:      b.Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *ServiceAccountBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.ServiceAccountBinding{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.ServiceAccountBinding{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }
