@@ -42,6 +42,16 @@ type WorkspaceReconciler struct {
 	ConnectionManager *ConnectionManager
 }
 
+const workspaceAPIServerRefNameField = ".spec.apiServerRef.name"
+
+func workspaceAPIServerRefNameIndex(object client.Object) []string {
+	name := object.(*resourcev1alpha1.ComputeWorkspace).Spec.APIServerRef.Name
+	if name == "" {
+		return nil
+	}
+	return []string{name}
+}
+
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces/finalizers,verbs=update
@@ -239,25 +249,37 @@ func (r *WorkspaceReconciler) updateWorkspaceStatus(
 
 func (r *WorkspaceReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
 	resourceList := &resourcev1alpha1.ComputeWorkspaceList{}
-	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
+	if err := r.List(
+		ctx,
+		resourceList,
+		client.InNamespace(obj.GetNamespace()),
+		client.MatchingFields{workspaceAPIServerRefNameField: obj.GetName()},
+	); err != nil {
 		return nil
 	}
 	var requests []ctrl.Request
 	for i := range resourceList.Items {
-		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
-			requests = append(requests, ctrl.Request{
-				NamespacedName: types.NamespacedName{
-					Namespace: resourceList.Items[i].Namespace,
-					Name:      resourceList.Items[i].Name,
-				},
-			})
-		}
+		requests = append(requests, ctrl.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: resourceList.Items[i].Namespace,
+				Name:      resourceList.Items[i].Name,
+			},
+		})
 	}
 	return requests
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *WorkspaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetCache().IndexField(
+		context.TODO(),
+		&resourcev1alpha1.ComputeWorkspace{},
+		workspaceAPIServerRefNameField,
+		workspaceAPIServerRefNameIndex,
+	); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&resourcev1alpha1.ComputeWorkspace{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
