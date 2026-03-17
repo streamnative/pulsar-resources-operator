@@ -46,6 +46,7 @@ type APIServerConnectionReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections/finalizers,verbs=update
+//+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces;computeflinkdeployments;secrets;serviceaccounts;serviceaccountbindings;apikeys;rolebindings,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
 func (r *APIServerConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
