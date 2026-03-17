@@ -240,8 +240,10 @@ func (r *APIServerConnectionReconciler) listDependentResources(ctx context.Conte
 	if err := r.List(ctx, workspaceList, client.InNamespace(namespace)); err != nil {
 		return nil, fmt.Errorf("failed to list ComputeWorkspaces: %w", err)
 	}
+	connWorkspaces := make(map[string]struct{}, len(workspaceList.Items))
 	for i := range workspaceList.Items {
 		if workspaceList.Items[i].Spec.APIServerRef.Name == connectionName {
+			connWorkspaces[workspaceList.Items[i].Name] = struct{}{}
 			remaining = append(remaining, fmt.Sprintf("ComputeWorkspace/%s", workspaceList.Items[i].Name))
 		}
 	}
@@ -253,6 +255,12 @@ func (r *APIServerConnectionReconciler) listDependentResources(ctx context.Conte
 	for i := range flinkList.Items {
 		if flinkList.Items[i].Spec.APIServerRef.Name == connectionName {
 			remaining = append(remaining, fmt.Sprintf("ComputeFlinkDeployment/%s", flinkList.Items[i].Name))
+			continue
+		}
+		if flinkList.Items[i].Spec.APIServerRef.Name == "" {
+			if _, ok := connWorkspaces[flinkList.Items[i].Spec.WorkspaceName]; ok {
+				remaining = append(remaining, fmt.Sprintf("ComputeFlinkDeployment/%s", flinkList.Items[i].Name))
+			}
 		}
 	}
 
@@ -270,8 +278,10 @@ func (r *APIServerConnectionReconciler) listDependentResources(ctx context.Conte
 	if err := r.List(ctx, saList, client.InNamespace(namespace)); err != nil {
 		return nil, fmt.Errorf("failed to list ServiceAccounts: %w", err)
 	}
+	connServiceAccounts := make(map[string]struct{}, len(saList.Items))
 	for i := range saList.Items {
 		if saList.Items[i].Spec.APIServerRef.Name == connectionName {
+			connServiceAccounts[saList.Items[i].Name] = struct{}{}
 			remaining = append(remaining, fmt.Sprintf("ServiceAccount/%s", saList.Items[i].Name))
 		}
 	}
@@ -283,6 +293,12 @@ func (r *APIServerConnectionReconciler) listDependentResources(ctx context.Conte
 	for i := range sabList.Items {
 		if sabList.Items[i].Spec.APIServerRef != nil && sabList.Items[i].Spec.APIServerRef.Name == connectionName {
 			remaining = append(remaining, fmt.Sprintf("ServiceAccountBinding/%s", sabList.Items[i].Name))
+			continue
+		}
+		if sabList.Items[i].Spec.APIServerRef == nil || sabList.Items[i].Spec.APIServerRef.Name == "" {
+			if _, ok := connServiceAccounts[sabList.Items[i].Spec.ServiceAccountName]; ok {
+				remaining = append(remaining, fmt.Sprintf("ServiceAccountBinding/%s", sabList.Items[i].Name))
+			}
 		}
 	}
 
@@ -309,22 +325,53 @@ func (r *APIServerConnectionReconciler) listDependentResources(ctx context.Conte
 	return remaining, nil
 }
 
-// apiServerRefName extracts the APIServerRef name from a dependent resource.
-func apiServerRefName(obj client.Object) string {
+// connectionNameForDependentResource resolves the APIServerRef used by a dependent resource.
+func (r *APIServerConnectionReconciler) connectionNameForDependentResource(ctx context.Context, obj client.Object) string {
 	switch o := obj.(type) {
 	case *resourcev1alpha1.ComputeWorkspace:
 		return o.Spec.APIServerRef.Name
 	case *resourcev1alpha1.ComputeFlinkDeployment:
-		return o.Spec.APIServerRef.Name
+		if o.Spec.APIServerRef.Name != "" {
+			return o.Spec.APIServerRef.Name
+		}
+		if o.Spec.WorkspaceName == "" {
+			return ""
+		}
+		workspace := &resourcev1alpha1.ComputeWorkspace{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Namespace: o.Namespace,
+			Name:      o.Spec.WorkspaceName,
+		}, workspace); err != nil {
+			if !apierrors.IsNotFound(err) {
+				log.FromContext(ctx).Error(err, "Failed to resolve ComputeWorkspace for dependent FlinkDeployment",
+					"namespace", o.Namespace, "deployment", o.Name, "workspace", o.Spec.WorkspaceName)
+			}
+			return ""
+		}
+		return workspace.Spec.APIServerRef.Name
 	case *resourcev1alpha1.Secret:
 		return o.Spec.APIServerRef.Name
 	case *resourcev1alpha1.ServiceAccount:
 		return o.Spec.APIServerRef.Name
 	case *resourcev1alpha1.ServiceAccountBinding:
-		if o.Spec.APIServerRef != nil {
+		if o.Spec.APIServerRef != nil && o.Spec.APIServerRef.Name != "" {
 			return o.Spec.APIServerRef.Name
 		}
-		return ""
+		if o.Spec.ServiceAccountName == "" {
+			return ""
+		}
+		serviceAccount := &resourcev1alpha1.ServiceAccount{}
+		if err := r.Get(ctx, types.NamespacedName{
+			Namespace: o.Namespace,
+			Name:      o.Spec.ServiceAccountName,
+		}, serviceAccount); err != nil {
+			if !apierrors.IsNotFound(err) {
+				log.FromContext(ctx).Error(err, "Failed to resolve ServiceAccount for dependent ServiceAccountBinding",
+					"namespace", o.Namespace, "binding", o.Name, "serviceAccount", o.Spec.ServiceAccountName)
+			}
+			return ""
+		}
+		return serviceAccount.Spec.APIServerRef.Name
 	case *resourcev1alpha1.APIKey:
 		return o.Spec.APIServerRef.Name
 	case *resourcev1alpha1.RoleBinding:
@@ -337,7 +384,7 @@ func apiServerRefName(obj client.Object) string {
 // SetupWithManager sets up the controller with the Manager.
 func (r *APIServerConnectionReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	mapFunc := func(ctx context.Context, obj client.Object) []ctrl.Request {
-		name := apiServerRefName(obj)
+		name := r.connectionNameForDependentResource(ctx, obj)
 		if name == "" {
 			return nil
 		}
