@@ -284,7 +284,7 @@ func (r *ServiceAccountReconciler) findResourcesForConnection(ctx context.Contex
 	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
 		return nil
 	}
-	var requests []ctrl.Request
+	requests := make([]ctrl.Request, 0, len(resourceList.Items))
 	for i := range resourceList.Items {
 		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
 			requests = append(requests, ctrl.Request{

@@ -292,7 +292,7 @@ func (r *FlinkDeploymentReconciler) findResourcesForConnection(ctx context.Conte
 		}
 	}
 
-	var requests []ctrl.Request
+	requests := make([]ctrl.Request, 0, len(deployments.Items))
 	for i := range deployments.Items {
 		d := &deployments.Items[i]
 		// Direct reference

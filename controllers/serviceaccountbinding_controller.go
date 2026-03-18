@@ -364,7 +364,7 @@ func (r *ServiceAccountBindingReconciler) findResourcesForConnection(ctx context
 		}
 	}
 
-	var requests []ctrl.Request
+	requests := make([]ctrl.Request, 0, len(bindings.Items))
 	for i := range bindings.Items {
 		b := &bindings.Items[i]
 		// Direct reference

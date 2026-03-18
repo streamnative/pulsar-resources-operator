@@ -257,7 +257,7 @@ func (r *WorkspaceReconciler) findResourcesForConnection(ctx context.Context, ob
 	); err != nil {
 		return nil
 	}
-	var requests []ctrl.Request
+	requests := make([]ctrl.Request, 0, len(resourceList.Items))
 	for i := range resourceList.Items {
 		requests = append(requests, ctrl.Request{
 			NamespacedName: types.NamespacedName{
