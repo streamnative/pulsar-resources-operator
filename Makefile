@@ -62,8 +62,6 @@ ENVTEST_K8S_VERSION ?= $(shell go list -m -f '{{if .Replace}}{{.Replace.Version}
 # Architecture to use envtest with
 ENVTEST_ARCH ?= $(shell go env GOARCH)
 
-KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
-
 REDHAT_SCAN_REGITRY ?= "quay.io"
 PROJECT_ID_PULSAR_RESOURCES_OPERATOR ?= "62f2585dfcd25442e1f1ee46"
 VET_EXCLUDES ?= pulsar-charts
@@ -248,11 +246,9 @@ bundle-redhat: manifests kustomize
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	cd config/manager && $(KUSTOMIZE) edit add patch --group apps --version v1 --kind Deployment --name controller-manager \
 			--patch '[{"op": "add", "path": "/spec/template/metadata/labels/service.istio.io~1canonical-revision", "value": "$(VERSION)"}]'
-	cd config/default && $(KUSTOMIZE) edit set image gcr.io/kubebuilder/kube-rbac-proxy=$(KUBE_RBAC_PROXY_IMG)
 	$(KUSTOMIZE) build config/manifests-redhat | operator-sdk generate bundle --kustomize-dir config/manifests-redhat -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 	operator-sdk bundle validate ./bundle
 	sed -i  "s|containerImage: .*|containerImage: $(IMG)|g" bundle/manifests/pulsar-resources-operator.clusterserviceversion.yaml
-	sed -i  "s|image: docker.cloudsmith.io/.*|image: $(KUBE_RBAC_PROXY_IMG)|g" bundle/manifests/pulsar-resources-operator.clusterserviceversion.yaml
 
 	echo "  # OpenShift annotations." >> bundle/metadata/annotations.yaml
 	echo "  com.redhat.openshift.versions: v4.6-v4.17" >> bundle/metadata/annotations.yaml

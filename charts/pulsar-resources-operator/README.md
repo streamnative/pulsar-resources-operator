@@ -60,9 +60,6 @@ kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources
 | annotations | object | `{}` | Add annotations for the deployment |
 | features.alwaysUpdatePulsarResource | bool | `false` |  |
 | fullnameOverride | string | `""` | It will override the name of deployment |
-| image.kubeRbacProxy.registry | string | `"gcr.io"` | Specififies the registry of images, especially when user want to use a different image hub |
-| image.kubeRbacProxy.repository | string | `"kubebuilder/kube-rbac-proxy"` | The full repo name for image. |
-| image.kubeRbacProxy.tag | string | `"v0.14.4"` | Image tag, it can override the image tag whose default is the chart appVersion. |
 | image.manager.registry | string | `"docker.io"` | Specififies the registry of images, especially when user want to use a different image hub |
 | image.manager.repository | string | `"streamnative/pulsar-resources-operator"` | The full repo name for image. |
 | image.manager.tag | string | `""` | Image tag, it can override the image tag whose default is the chart appVersion. |
