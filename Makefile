@@ -51,11 +51,16 @@ BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.23
+LOCALBIN ?= $(shell pwd)/bin
+# Envtest release assets moved away from the legacy GCS location in release-0.19.
+# Keep the bootstrap tool on at least release-0.19 even when the controller-runtime
+# library version is older.
+ENVTEST_VERSION ?= $(shell go list -m -f '{{if .Replace}}{{.Replace.Version}}{{else}}{{.Version}}{{end}}' sigs.k8s.io/controller-runtime | awk -F'[v.]' '{major=$$2; minor=$$3; if (major == 0 && minor < 19) minor = 19; printf "release-%d.%d", major, minor}')
+# ENVTEST_K8S_VERSION refers to the Kubernetes minor version of the envtest assets.
+ENVTEST_K8S_VERSION ?= $(shell go list -m -f '{{if .Replace}}{{.Replace.Version}}{{else}}{{.Version}}{{end}}' k8s.io/api | awk -F'[v.]' '{printf "1.%d", $$3}')
 
 # Architecture to use envtest with
-ENVTEST_ARCH ?= amd64
+ENVTEST_ARCH ?= $(shell go env GOARCH)
 
 KUBE_RBAC_PROXY_IMG ?= gcr.io/kubebuilder/kube-rbac-proxy:v0.14.4
 
@@ -71,7 +76,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
-# This is a requirement for 'setup-envtest.sh' in the test target.
+# This is a requirement for 'setup-envtest' in the test target.
 # Options are set to exit when a recipe line exits non-zero or a piped command fails.
 SHELL = /usr/bin/env bash -o pipefail
 .SHELLFLAGS = -ec
@@ -123,8 +128,10 @@ vet: ## Run go vet against code.
 	if [ -z "$$packages" ]; then echo "No packages to vet"; else go vet $$packages; fi
 
 .PHONY: test
-test: manifests generate generate-internal fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --arch=${ENVTEST_ARCH} -p path)" go test ./... -coverprofile cover.out
+test: manifests generate generate-internal fmt vet setup-envtest ## Run tests.
+	@KUBEBUILDER_ASSETS="$$( $(ENVTEST) use $(ENVTEST_K8S_VERSION) --arch=$(ENVTEST_ARCH) --bin-dir $(LOCALBIN) -p path )"; \
+	export KUBEBUILDER_ASSETS; \
+	go test ./... -coverprofile cover.out
 
 ##@ Build
 
@@ -190,35 +197,40 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
 	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
-CONTROLLER_GEN = $(shell pwd)/bin/controller-gen
+CONTROLLER_GEN = $(LOCALBIN)/controller-gen
 .PHONY: controller-gen
 controller-gen: ## Download controller-gen locally if necessary.
 	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.15.0)
 
-KUSTOMIZE = $(shell pwd)/bin/kustomize
+KUSTOMIZE = $(LOCALBIN)/kustomize
 .PHONY: kustomize
 kustomize: ## Download kustomize locally if necessary.
 	$(call go-get-tool,$(KUSTOMIZE),sigs.k8s.io/kustomize/kustomize/v4@v4.5.4)
 
-ENVTEST = $(shell pwd)/bin/setup-envtest
+ENVTEST = $(LOCALBIN)/setup-envtest
 .PHONY: envtest
 envtest: ## Download envtest-setup locally if necessary.
-	$(call go-get-tool,$(ENVTEST),sigs.k8s.io/controller-runtime/tools/setup-envtest@v0.0.0-20240320141353-395cfc7486e6)
+	@mkdir -p $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@$(ENVTEST_VERSION)
 
-CLIENT_GEN = $(shell pwd)/bin/client-gen
+.PHONY: setup-envtest
+setup-envtest: envtest ## Download envtest binaries locally if necessary.
+	@$(ENVTEST) use $(ENVTEST_K8S_VERSION) --arch=$(ENVTEST_ARCH) --bin-dir $(LOCALBIN) -p path > /dev/null
+
+CLIENT_GEN = $(LOCALBIN)/client-gen
 client-gen:
 	$(call go-get-tool,$(CLIENT_GEN),k8s.io/code-generator/cmd/client-gen@$(CODE_GENERATOR_VERSION))
 
 # go-get-tool will 'go get' any package $2 and install it to $1.
-PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-get-tool
 @[ -f $(1) ] || { \
 set -e ;\
+mkdir -p $(LOCALBIN) ;\
 TMP_DIR=$$(mktemp -d) ;\
 cd $$TMP_DIR ;\
 go mod init tmp ;\
 echo "Downloading $(2)" ;\
-GOBIN=$(PROJECT_DIR)/bin go install $(2) ;\
+GOBIN=$(LOCALBIN) go install $(2) ;\
 rm -rf $$TMP_DIR ;\
 }
 endef
@@ -302,7 +314,7 @@ husky:
 
 
 
-LICENSE_EYE = $(shell pwd)/bin/license-eye
+LICENSE_EYE = $(LOCALBIN)/license-eye
 .PHONY: license-eye
 license-eye: ## Download license-eye locally if necessary. https://github.com/apache/skywalking-eyes
 	$(call go-get-tool,$(LICENSE_EYE),github.com/apache/skywalking-eyes/cmd/license-eye@v0.4.0)

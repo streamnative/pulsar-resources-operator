@@ -15,7 +15,10 @@
 package controllers
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -36,17 +39,35 @@ import (
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
+var testEnvStarted bool
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Controller Suite")
 }
 
+func validateKubebuilderAssetsEnv() error {
+	value, ok := os.LookupEnv("KUBEBUILDER_ASSETS")
+	if !ok {
+		return nil
+	}
+
+	if strings.TrimSpace(value) == "" {
+		return fmt.Errorf("KUBEBUILDER_ASSETS is set but empty; unset it or point it to a directory containing envtest binaries")
+	}
+
+	return nil
+}
+
 var _ = BeforeSuite(func() {
 	var err error
+	testEnvStarted = false
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
 
 	By("bootstrapping test environment")
+	err = validateKubebuilderAssetsEnv()
+	Expect(err).NotTo(HaveOccurred())
+
 	testEnv = &envtest.Environment{
 		CRDDirectoryPaths:     []string{filepath.Join("..", "config", "crd", "bases")},
 		ErrorIfCRDPathMissing: true,
@@ -64,11 +85,16 @@ var _ = BeforeSuite(func() {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
+	testEnvStarted = true
 
 }, 60)
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")
+	if testEnv == nil || !testEnvStarted {
+		return
+	}
+
 	err := testEnv.Stop()
 	Expect(err).NotTo(HaveOccurred())
 })
