@@ -28,8 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -64,6 +66,8 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
+	finalizerName := controllers2.FlinkDeploymentFinalizer
+
 	apiServerRef := deployment.Spec.APIServerRef
 	if apiServerRef.Name == "" {
 		workspace := &resourcev1alpha1.ComputeWorkspace{}
@@ -71,6 +75,17 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 			Namespace: req.Namespace,
 			Name:      deployment.Spec.WorkspaceName,
 		}, workspace); err != nil {
+			if !deployment.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
+				logger.Info("Workspace not found during deletion, removing finalizer without remote cleanup",
+					"workspace", deployment.Spec.WorkspaceName)
+				if controllerutil.ContainsFinalizer(deployment, finalizerName) {
+					controllerutil.RemoveFinalizer(deployment, finalizerName)
+					if err := r.Update(ctx, deployment); err != nil {
+						return ctrl.Result{}, err
+					}
+				}
+				return ctrl.Result{}, nil
+			}
 			r.updateDeploymentStatus(ctx, deployment, err, "GetWorkspaceFailed",
 				fmt.Sprintf("Failed to get ComputeWorkspace %s: %v", deployment.Spec.WorkspaceName, err))
 			return ctrl.Result{}, err
@@ -88,6 +103,17 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		Namespace: req.Namespace,
 		Name:      apiServerRef.Name,
 	}, apiConnResource); err != nil {
+		if !deployment.DeletionTimestamp.IsZero() && apierrors.IsNotFound(err) {
+			logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+				"connection", apiServerRef.Name)
+			if controllerutil.ContainsFinalizer(deployment, finalizerName) {
+				controllerutil.RemoveFinalizer(deployment, finalizerName)
+				if err := r.Update(ctx, deployment); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
+			return ctrl.Result{}, nil
+		}
 		r.updateDeploymentStatus(ctx, deployment, err, "GetAPIServerConnectionFailed",
 			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", apiServerRef.Name, err))
 		return ctrl.Result{}, err
@@ -116,7 +142,6 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 		return ctrl.Result{}, err
 	}
 
-	finalizerName := controllers2.FlinkDeploymentFinalizer
 	if !deployment.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(deployment, finalizerName) {
 			if err := deploymentClient.DeleteFlinkDeployment(ctx, deployment); err != nil {
@@ -247,10 +272,57 @@ func (r *FlinkDeploymentReconciler) updateDeploymentStatus(
 	}
 }
 
+func (r *FlinkDeploymentReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	connName := obj.GetName()
+	ns := obj.GetNamespace()
+
+	deployments := &resourcev1alpha1.ComputeFlinkDeploymentList{}
+	if err := r.List(ctx, deployments, client.InNamespace(ns)); err != nil {
+		return nil
+	}
+
+	// Find workspaces referencing this connection (for indirect lookups)
+	workspaces := &resourcev1alpha1.ComputeWorkspaceList{}
+	connWorkspaces := map[string]bool{}
+	if err := r.List(ctx, workspaces, client.InNamespace(ns)); err == nil {
+		for i := range workspaces.Items {
+			if workspaces.Items[i].Spec.APIServerRef.Name == connName {
+				connWorkspaces[workspaces.Items[i].Name] = true
+			}
+		}
+	}
+
+	requests := make([]ctrl.Request, 0, len(deployments.Items))
+	for i := range deployments.Items {
+		d := &deployments.Items[i]
+		// Direct reference
+		if d.Spec.APIServerRef.Name == connName {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: d.Namespace,
+					Name:      d.Name,
+				},
+			})
+			continue
+		}
+		// Indirect reference via workspace
+		if d.Spec.APIServerRef.Name == "" && connWorkspaces[d.Spec.WorkspaceName] {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: d.Namespace,
+					Name:      d.Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *FlinkDeploymentReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.ComputeFlinkDeployment{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.ComputeFlinkDeployment{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

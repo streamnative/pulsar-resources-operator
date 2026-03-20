@@ -27,8 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -38,6 +40,16 @@ type WorkspaceReconciler struct {
 	client.Client
 	Scheme            *runtime.Scheme
 	ConnectionManager *ConnectionManager
+}
+
+const workspaceAPIServerRefNameField = ".spec.apiServerRef.name"
+
+func workspaceAPIServerRefNameIndex(object client.Object) []string {
+	name := object.(*resourcev1alpha1.ComputeWorkspace).Spec.APIServerRef.Name
+	if name == "" {
+		return nil
+	}
+	return []string{name}
 }
 
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=computeworkspaces,verbs=get;list;watch;create;update;patch;delete
@@ -65,13 +77,25 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
+	connErr := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      workspace.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateWorkspaceStatus(ctx, workspace, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
-		return ctrl.Result{}, err
+	}, connection)
+	if !workspace.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", workspace.Spec.APIServerRef.Name)
+		if controllerutil.ContainsFinalizer(workspace, controllers2.WorkspaceFinalizer) {
+			controllerutil.RemoveFinalizer(workspace, controllers2.WorkspaceFinalizer)
+			if err := r.Update(ctx, workspace); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateWorkspaceStatus(ctx, workspace, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get APIServerConnection: %v", connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection
@@ -223,10 +247,42 @@ func (r *WorkspaceReconciler) updateWorkspaceStatus(
 	}
 }
 
+func (r *WorkspaceReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	resourceList := &resourcev1alpha1.ComputeWorkspaceList{}
+	if err := r.List(
+		ctx,
+		resourceList,
+		client.InNamespace(obj.GetNamespace()),
+		client.MatchingFields{workspaceAPIServerRefNameField: obj.GetName()},
+	); err != nil {
+		return nil
+	}
+	requests := make([]ctrl.Request, 0, len(resourceList.Items))
+	for i := range resourceList.Items {
+		requests = append(requests, ctrl.Request{
+			NamespacedName: types.NamespacedName{
+				Namespace: resourceList.Items[i].Namespace,
+				Name:      resourceList.Items[i].Name,
+			},
+		})
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *WorkspaceReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	if err := mgr.GetCache().IndexField(
+		context.TODO(),
+		&resourcev1alpha1.ComputeWorkspace{},
+		workspaceAPIServerRefNameField,
+		workspaceAPIServerRefNameIndex,
+	); err != nil {
+		return err
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.ComputeWorkspace{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.ComputeWorkspace{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

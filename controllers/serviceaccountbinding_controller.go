@@ -30,8 +30,10 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -70,52 +72,83 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 
 	// Get the ServiceAccount
 	serviceAccount := &resourcev1alpha1.ServiceAccount{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace, // Assuming ServiceAccount is in the same namespace as the binding
+	saErr := r.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
 		Name:      binding.Spec.ServiceAccountName,
-	}, serviceAccount); err != nil {
-		r.updateServiceAccountBindingStatus(ctx, binding, err, "ServiceAccountNotFound",
-			fmt.Sprintf("Failed to get ServiceAccount %s: %v", binding.Spec.ServiceAccountName, err))
-		return ctrl.Result{}, err // Return error to requeue immediately
+	}, serviceAccount)
+
+	// If binding is being deleted and SA not found, try to use binding's own APIServerRef
+	// or skip remote cleanup entirely
+	if !binding.DeletionTimestamp.IsZero() && apierrors.IsNotFound(saErr) {
+		if binding.Spec.APIServerRef == nil || binding.Spec.APIServerRef.Name == "" {
+			// Cannot resolve connection, remove finalizer directly
+			logger.Info("ServiceAccount and own APIServerRef not found during deletion, removing finalizer without remote cleanup",
+				"serviceAccount", binding.Spec.ServiceAccountName)
+			if controllerutil.ContainsFinalizer(binding, ServiceAccountBindingFinalizer) {
+				controllerutil.RemoveFinalizer(binding, ServiceAccountBindingFinalizer)
+				if err := r.Update(ctx, binding); err != nil {
+					return ctrl.Result{}, err
+				}
+			}
+			return ctrl.Result{}, nil
+		}
+		// Fall through using binding's own APIServerRef
+	} else if saErr != nil {
+		r.updateServiceAccountBindingStatus(ctx, binding, saErr, "ServiceAccountNotFound",
+			fmt.Sprintf("Failed to get ServiceAccount %s: %v", binding.Spec.ServiceAccountName, saErr))
+		return ctrl.Result{}, saErr
 	}
 
-	// Check if the referenced ServiceAccount is ready.
-	// This is a simplified check. A more robust check would iterate through conditions.
-	saReady := false
-	for _, cond := range serviceAccount.Status.Conditions {
-		if cond.Type == "Ready" && cond.Status == metav1.ConditionTrue {
-			saReady = true
-			break
+	// Check if the referenced ServiceAccount is ready (skip during deletion)
+	if binding.DeletionTimestamp.IsZero() && saErr == nil {
+		saReady := false
+		for _, cond := range serviceAccount.Status.Conditions {
+			if cond.Type == "Ready" && cond.Status == metav1.ConditionTrue {
+				saReady = true
+				break
+			}
 		}
-	}
-	if !saReady {
-		errMsg := fmt.Sprintf("ServiceAccount %s is not yet Ready. Will requeue.", serviceAccount.Name)
-		logger.Info(errMsg)
-		r.updateServiceAccountBindingStatus(ctx, binding, errors.New(errMsg), "ServiceAccountNotReady", errMsg)
-		return ctrl.Result{RequeueAfter: requeueInterval}, nil // Requeue, as SA might become ready.
+		if !saReady {
+			errMsg := fmt.Sprintf("ServiceAccount %s is not yet Ready. Will requeue.", serviceAccount.Name)
+			logger.Info(errMsg)
+			r.updateServiceAccountBindingStatus(ctx, binding, errors.New(errMsg), "ServiceAccountNotReady", errMsg)
+			return ctrl.Result{RequeueAfter: requeueInterval}, nil
+		}
 	}
 
 	// Determine which APIServerRef to use
 	apiServerRefName := ""
 	if binding.Spec.APIServerRef != nil && binding.Spec.APIServerRef.Name != "" {
 		apiServerRefName = binding.Spec.APIServerRef.Name
-	} else if serviceAccount.Spec.APIServerRef.Name != "" { // Corrected: Check Name for non-pointer struct
+	} else if saErr == nil && serviceAccount.Spec.APIServerRef.Name != "" {
 		apiServerRefName = serviceAccount.Spec.APIServerRef.Name
 	} else {
 		err := fmt.Errorf("APIServerRef not found in ServiceAccountBinding spec or its referenced ServiceAccount spec")
 		r.updateServiceAccountBindingStatus(ctx, binding, err, "ValidationFailed", err.Error())
-		return ctrl.Result{}, err // No need to requeue if this is a permanent misconfiguration
+		return ctrl.Result{}, err
 	}
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace, // Assuming StreamNativeCloudConnection is in the same namespace
+	connErr := r.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
 		Name:      apiServerRefName,
-	}, connection); err != nil {
-		r.updateServiceAccountBindingStatus(ctx, binding, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", apiServerRefName, err))
-		return ctrl.Result{}, err // Return error to requeue immediately
+	}, connection)
+	if !binding.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", apiServerRefName)
+		if controllerutil.ContainsFinalizer(binding, ServiceAccountBindingFinalizer) {
+			controllerutil.RemoveFinalizer(binding, ServiceAccountBindingFinalizer)
+			if err := r.Update(ctx, binding); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateServiceAccountBindingStatus(ctx, binding, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", apiServerRefName, connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection
@@ -311,10 +344,57 @@ func (r *ServiceAccountBindingReconciler) updateServiceAccountBindingStatus(
 	}
 }
 
+func (r *ServiceAccountBindingReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	connName := obj.GetName()
+	ns := obj.GetNamespace()
+
+	bindings := &resourcev1alpha1.ServiceAccountBindingList{}
+	if err := r.List(ctx, bindings, client.InNamespace(ns)); err != nil {
+		return nil
+	}
+
+	// Find service accounts referencing this connection (for indirect lookups)
+	serviceAccounts := &resourcev1alpha1.ServiceAccountList{}
+	connServiceAccounts := map[string]bool{}
+	if err := r.List(ctx, serviceAccounts, client.InNamespace(ns)); err == nil {
+		for i := range serviceAccounts.Items {
+			if serviceAccounts.Items[i].Spec.APIServerRef.Name == connName {
+				connServiceAccounts[serviceAccounts.Items[i].Name] = true
+			}
+		}
+	}
+
+	requests := make([]ctrl.Request, 0, len(bindings.Items))
+	for i := range bindings.Items {
+		b := &bindings.Items[i]
+		// Direct reference
+		if b.Spec.APIServerRef != nil && b.Spec.APIServerRef.Name == connName {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: b.Namespace,
+					Name:      b.Name,
+				},
+			})
+			continue
+		}
+		// Indirect reference via service account
+		if (b.Spec.APIServerRef == nil || b.Spec.APIServerRef.Name == "") && connServiceAccounts[b.Spec.ServiceAccountName] {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: b.Namespace,
+					Name:      b.Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *ServiceAccountBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.ServiceAccountBinding{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.ServiceAccountBinding{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

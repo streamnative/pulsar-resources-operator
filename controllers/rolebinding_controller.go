@@ -27,8 +27,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -72,13 +74,25 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
+	connErr := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      roleBinding.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateRoleBindingStatus(ctx, roleBinding, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
-		return ctrl.Result{}, err
+	}, connection)
+	if roleBinding.DeletionTimestamp != nil && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", roleBinding.Spec.APIServerRef.Name)
+		if controllerutil.ContainsFinalizer(roleBinding, roleBindingFinalizer) {
+			controllerutil.RemoveFinalizer(roleBinding, roleBindingFinalizer)
+			if err := r.Update(ctx, roleBinding); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateRoleBindingStatus(ctx, roleBinding, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get APIServerConnection: %v", connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection
@@ -254,10 +268,30 @@ func (r *RoleBindingReconciler) updateRoleBindingStatus(
 	}
 }
 
+func (r *RoleBindingReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	resourceList := &resourcev1alpha1.RoleBindingList{}
+	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
+		return nil
+	}
+	requests := make([]ctrl.Request, 0, len(resourceList.Items))
+	for i := range resourceList.Items {
+		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: resourceList.Items[i].Namespace,
+					Name:      resourceList.Items[i].Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *RoleBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.RoleBinding{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.RoleBinding{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

@@ -33,7 +33,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 
@@ -153,13 +155,25 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
+	connErr := r.Get(ctx, types.NamespacedName{
 		Namespace: req.Namespace,
 		Name:      apiKey.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateAPIKeyStatus(ctx, apiKey, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get APIServerConnection: %v", err))
-		return ctrl.Result{}, err
+	}, connection)
+	if !apiKey.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", apiKey.Spec.APIServerRef.Name)
+		if controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
+			apiKey.Finalizers = controllers2.RemoveString(apiKey.Finalizers, APIKeyFinalizer)
+			if err := r.Update(ctx, apiKey); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateAPIKeyStatus(ctx, apiKey, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get APIServerConnection: %v", connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get API connection
@@ -432,11 +446,31 @@ func (r *APIKeyReconciler) updateAPIKeyStatus(
 	}
 }
 
+func (r *APIKeyReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	resourceList := &resourcev1alpha1.APIKeyList{}
+	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
+		return nil
+	}
+	requests := make([]ctrl.Request, 0, len(resourceList.Items))
+	for i := range resourceList.Items {
+		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: resourceList.Items[i].Namespace,
+					Name:      resourceList.Items[i].Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *APIKeyReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.APIKey{}).
-		WithEventFilter(predicate.GenerationChangedPredicate{}).
+		For(&resourcev1alpha1.APIKey{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }
 

@@ -58,7 +58,7 @@ spec:
       containers:
       - args:
         - --health-probe-bind-address=:8081
-        - --metrics-bind-address=127.0.0.1:8080
+        - --metrics-bind-address=0.0.0.0:8443
         - --leader-elect
         - --resync-period={{ .Values.features.resyncPeriod | default 10 }}
         - --retry-count={{ .Values.features.retryCount | default 5 }}
@@ -109,6 +109,10 @@ spec:
           {{- toYaml .Values.securityContext | nindent 10 }}
         image: "{{ .Values.image.manager.registry }}/{{ .Values.image.manager.repository }}:{{ .Values.image.manager.tag | default .Chart.AppVersion }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: 8443
+          name: metrics
+          protocol: TCP
         {{- if and .Values.cloudStorage.gcs.enabled (not .Values.cloudStorage.gcs.serviceAccount.useWorkloadIdentity) }}
         volumeMounts:
         - name: gcs-credentials

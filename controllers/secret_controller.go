@@ -28,8 +28,10 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 )
@@ -98,13 +100,25 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Get StreamNativeCloudConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
-	if err := r.Get(ctx, types.NamespacedName{
-		Namespace: req.Namespace, // Assuming connection is in the same namespace
+	connErr := r.Get(ctx, types.NamespacedName{
+		Namespace: req.Namespace,
 		Name:      secretCR.Spec.APIServerRef.Name,
-	}, connection); err != nil {
-		r.updateSecretStatus(ctx, secretCR, err, "ConnectionNotFound",
-			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", secretCR.Spec.APIServerRef.Name, err))
-		return ctrl.Result{}, err
+	}, connection)
+	if !secretCR.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
+		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
+			"connection", secretCR.Spec.APIServerRef.Name)
+		if controllerutil.ContainsFinalizer(secretCR, cloudapi.SecretFinalizer) {
+			controllerutil.RemoveFinalizer(secretCR, cloudapi.SecretFinalizer)
+			if err := r.Update(ctx, secretCR); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+		return ctrl.Result{}, nil
+	}
+	if connErr != nil {
+		r.updateSecretStatus(ctx, secretCR, connErr, "ConnectionNotFound",
+			fmt.Sprintf("Failed to get StreamNativeCloudConnection %s: %v", secretCR.Spec.APIServerRef.Name, connErr))
+		return ctrl.Result{}, connErr
 	}
 
 	// Get or create API connection
@@ -298,11 +312,31 @@ func findCondition(conditions []metav1.Condition, conditionType string) *metav1.
 	return nil
 }
 
+func (r *SecretReconciler) findResourcesForConnection(ctx context.Context, obj client.Object) []ctrl.Request {
+	resourceList := &resourcev1alpha1.SecretList{}
+	if err := r.List(ctx, resourceList, client.InNamespace(obj.GetNamespace())); err != nil {
+		return nil
+	}
+	requests := make([]ctrl.Request, 0, len(resourceList.Items))
+	for i := range resourceList.Items {
+		if resourceList.Items[i].Spec.APIServerRef.Name == obj.GetName() {
+			requests = append(requests, ctrl.Request{
+				NamespacedName: types.NamespacedName{
+					Namespace: resourceList.Items[i].Namespace,
+					Name:      resourceList.Items[i].Name,
+				},
+			})
+		}
+	}
+	return requests
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *SecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&resourcev1alpha1.Secret{}).
-		Owns(&corev1.Secret{}).                                  // If we want to react to changes in owned k8s secrets
-		WithEventFilter(predicate.GenerationChangedPredicate{}). // Only reconcile on spec changes or finalizer changes
+		For(&resourcev1alpha1.Secret{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
+		Owns(&corev1.Secret{}).
+		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
+			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
 		Complete(r)
 }

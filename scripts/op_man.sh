@@ -861,12 +861,6 @@ function release() {
       echo "Using uri separator [$URI_SEP]"
       export URI_SEP
     fi
-    KUBE_RBAC_PROXY_IMG=$("$YQ" e ".config.imageBases[$ii].kubeRbacProxyImage" registry-config.yaml)
-    if [ "$KUBE_RBAC_PROXY_IMG" != "" -a "$KUBE_RBAC_PROXY_IMG" != 'null' ]
-    then
-      echo "Using kube_rbac_proxy image [$KUBE_RBAC_PROXY_IMG]"
-      export KUBE_RBAC_PROXY_IMG
-    fi
     ii=$(echo $ii + 1|bc)
 
     if [ "$SKIP_REGISTRY_BUILD" == '' ]
