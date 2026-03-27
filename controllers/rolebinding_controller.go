@@ -152,9 +152,13 @@ func (r *RoleBindingReconciler) handleRoleBindingDeletion(ctx context.Context, r
 		// Delete the RoleBinding from the API server
 		err := rbClient.DeleteRoleBinding(ctx, roleBinding)
 		if err != nil {
-			logger.Error(err, "Failed to delete RoleBinding from API server")
-			r.updateRoleBindingStatus(ctx, roleBinding, err, "DeletionError", "Failed to delete RoleBinding from API server")
-			return ctrl.Result{}, err
+			if apierrors.IsNotFound(err) {
+				logger.Info("RoleBinding not found on API server, skipping deletion", "name", roleBinding.Name)
+			} else {
+				logger.Error(err, "Failed to delete RoleBinding from API server")
+				r.updateRoleBindingStatus(ctx, roleBinding, err, "DeletionError", "Failed to delete RoleBinding from API server")
+				return ctrl.Result{}, err
+			}
 		}
 
 		// Remove the finalizer
