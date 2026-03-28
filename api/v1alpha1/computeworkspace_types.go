@@ -38,7 +38,7 @@ type ComputeWorkspaceSpec struct {
 
 	// UseExternalAccess is the flag to indicate whether the workspace will use external access.
 	// +optional
-	UseExternalAccess *bool `json:"useExternalAccess,omitempty"`
+	UseExternalAccess *bool `json:"useExternalAccess"`
 
 	// FlinkBlobStorage is the configuration for the Flink blob storage.
 	// +optional

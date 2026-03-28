@@ -38,15 +38,15 @@ type PulsarFunctionSpec struct {
 
 	// CleanupSubscription is the flag to indicate whether the subscription should be cleaned up when the function is deleted
 	// +optional
-	CleanupSubscription *bool `json:"cleanupSubscription,omitempty"`
+	CleanupSubscription *bool `json:"cleanupSubscription"`
 
 	// RetainOrdering is the flag to indicate whether the function should retain ordering
 	// +optional
-	RetainOrdering *bool `json:"retainOrdering,omitempty"`
+	RetainOrdering *bool `json:"retainOrdering"`
 
 	// RetainKeyOrdering is the flag to indicate whether the function should retain key ordering
 	// +optional
-	RetainKeyOrdering *bool `json:"retainKeyOrdering,omitempty"`
+	RetainKeyOrdering *bool `json:"retainKeyOrdering"`
 
 	// BatchBuilder is the batch builder that the function uses
 	// +optional
@@ -54,11 +54,11 @@ type PulsarFunctionSpec struct {
 
 	// ForwardSourceMessageProperty is the flag to indicate whether the function should forward source message properties
 	// +optional
-	ForwardSourceMessageProperty *bool `json:"forwardSourceMessageProperty,omitempty"`
+	ForwardSourceMessageProperty *bool `json:"forwardSourceMessageProperty"`
 
 	// AutoAck is the flag to indicate whether the function should auto ack
 	// +optional
-	AutoAck *bool `json:"autoAck,omitempty"`
+	AutoAck *bool `json:"autoAck"`
 
 	// Parallelism is the parallelism of the function
 	// +optional
@@ -186,11 +186,11 @@ type PulsarFunctionSpec struct {
 
 	// ExposePulsarAdminClientEnabled is the flag to indicate whether the function should expose pulsar admin client
 	// +optional
-	ExposePulsarAdminClientEnabled *bool `json:"exposePulsarAdminClientEnabled,omitempty"`
+	ExposePulsarAdminClientEnabled *bool `json:"exposePulsarAdminClientEnabled"`
 
 	// SkipToLatest is the flag to indicate whether the function should skip to latest
 	// +optional
-	SkipToLatest *bool `json:"skipToLatest,omitempty"`
+	SkipToLatest *bool `json:"skipToLatest"`
 
 	// SubscriptionPosition is the subscription position of the function
 	// +optional

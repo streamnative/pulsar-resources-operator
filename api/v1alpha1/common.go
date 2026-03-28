@@ -170,7 +170,7 @@ type ProducerConfig struct {
 	MaxPendingMessagesAcrossPartitions int `json:"maxPendingMessagesAcrossPartitions,omitempty" yaml:"maxPendingMessagesAcrossPartitions"`
 
 	// +optional
-	UseThreadLocalProducers bool `json:"useThreadLocalProducers,omitempty" yaml:"useThreadLocalProducers"`
+	UseThreadLocalProducers bool `json:"useThreadLocalProducers" yaml:"useThreadLocalProducers"`
 
 	// +optional
 	CryptoConfig *CryptoConfig `json:"cryptoConfig,omitempty" yaml:"cryptoConfig"`
@@ -191,7 +191,7 @@ type ConsumerConfig struct {
 	SerdeClassName string `json:"serdeClassName,omitempty" yaml:"serdeClassName"`
 
 	// +optional
-	RegexPattern bool `json:"regexPattern,omitempty" yaml:"regexPattern"`
+	RegexPattern bool `json:"regexPattern" yaml:"regexPattern"`
 
 	// +optional
 	ReceiverQueueSize int `json:"receiverQueueSize,omitempty" yaml:"receiverQueueSize"`
@@ -206,7 +206,7 @@ type ConsumerConfig struct {
 	CryptoConfig *CryptoConfig `json:"cryptoConfig,omitempty" yaml:"cryptoConfig"`
 
 	// +optional
-	PoolMessages bool `json:"poolMessages,omitempty" yaml:"poolMessages"`
+	PoolMessages bool `json:"poolMessages" yaml:"poolMessages"`
 }
 
 // CryptoConfig represents the configuration for the crypto of the pulsar functions and connectors
