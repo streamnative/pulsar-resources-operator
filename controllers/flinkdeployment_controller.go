@@ -69,7 +69,7 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	finalizerName := controllers2.FlinkDeploymentFinalizer
 
 	if !deployment.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(deployment.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, deployment, finalizerName, "ComputeFlinkDeployment")
+		return finalizeKeptResource(ctx, r.Client, deployment, finalizerName, "ComputeFlinkDeployment", deployment.Spec.LifecyclePolicy)
 	}
 
 	apiServerRef := deployment.Spec.APIServerRef

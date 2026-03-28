@@ -73,7 +73,7 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 	}
 
 	if roleBinding.DeletionTimestamp != nil && shouldKeepRemoteResource(roleBinding.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, roleBinding, roleBindingFinalizer, "RoleBinding")
+		return finalizeKeptResource(ctx, r.Client, roleBinding, roleBindingFinalizer, "RoleBinding", roleBinding.Spec.LifecyclePolicy)
 	}
 
 	// Get the APIServerConnection

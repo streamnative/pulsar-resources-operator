@@ -92,7 +92,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if !secretCR.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(secretCR.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, secretCR, cloudapi.SecretFinalizer, "Secret")
+		return finalizeKeptResource(ctx, r.Client, secretCR, cloudapi.SecretFinalizer, "Secret", secretCR.Spec.LifecyclePolicy)
 	}
 
 	// Validate APIServerRef

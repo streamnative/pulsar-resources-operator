@@ -34,6 +34,7 @@ func finalizeKeptResource(
 	obj client.Object,
 	finalizer string,
 	resourceKind string,
+	policy resourcev1alpha1.PulsarResourceLifeCyclePolicy,
 ) (ctrl.Result, error) {
 	if !controllerutil.ContainsFinalizer(obj, finalizer) {
 		return ctrl.Result{}, nil
@@ -44,7 +45,7 @@ func finalizeKeptResource(
 		"resource", resourceKind,
 		"namespace", obj.GetNamespace(),
 		"name", obj.GetName(),
-		"lifecyclePolicy", resourcev1alpha1.KeepAfterDeletion,
+		"lifecyclePolicy", policy,
 	)
 
 	controllerutil.RemoveFinalizer(obj, finalizer)

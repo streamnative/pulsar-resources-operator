@@ -71,7 +71,7 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 
 	if !serviceAccount.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(serviceAccount.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, serviceAccount, ServiceAccountFinalizer, "ServiceAccount")
+		return finalizeKeptResource(ctx, r.Client, serviceAccount, ServiceAccountFinalizer, "ServiceAccount", serviceAccount.Spec.LifecyclePolicy)
 	}
 
 	// Get the APIServerConnection

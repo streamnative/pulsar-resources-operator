@@ -76,7 +76,7 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if !workspace.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(workspace.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, workspace, controllers2.WorkspaceFinalizer, "ComputeWorkspace")
+		return finalizeKeptResource(ctx, r.Client, workspace, controllers2.WorkspaceFinalizer, "ComputeWorkspace", workspace.Spec.LifecyclePolicy)
 	}
 
 	// Get the APIServerConnection

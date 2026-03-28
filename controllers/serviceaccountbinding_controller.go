@@ -71,7 +71,7 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 	}
 
 	if !binding.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(binding.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, binding, ServiceAccountBindingFinalizer, "ServiceAccountBinding")
+		return finalizeKeptResource(ctx, r.Client, binding, ServiceAccountBindingFinalizer, "ServiceAccountBinding", binding.Spec.LifecyclePolicy)
 	}
 
 	// Get the ServiceAccount

@@ -155,7 +155,7 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if !apiKey.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(apiKey.Spec.LifecyclePolicy) {
-		return finalizeKeptResource(ctx, r.Client, apiKey, APIKeyFinalizer, "APIKey")
+		return finalizeKeptResource(ctx, r.Client, apiKey, APIKeyFinalizer, "APIKey", apiKey.Spec.LifecyclePolicy)
 	}
 
 	// Get the APIServerConnection
