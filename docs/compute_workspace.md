@@ -9,6 +9,7 @@ The `ComputeWorkspace` resource defines a workspace in StreamNative Cloud for co
 | Field                    | Description                                                                                | Required |
 |--------------------------|--------------------------------------------------------------------------------------------|----------|
 | `apiServerRef`           | Reference to the StreamNativeCloudConnection resource for API server access                | Yes      |
+| `lifecyclePolicy`        | Whether to delete the remote workspace or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `pulsarClusterNames`     | List of Pulsar cluster names that the workspace will have access to                        | No       |
 | `poolRef`                | Reference to the compute pool that the workspace will use                                   | No       |
 | `useExternalAccess`      | Whether to use external access for the workspace                                           | No       |
@@ -93,4 +94,6 @@ To delete a ComputeWorkspace resource:
 kubectl delete computeworkspace test-operator-workspace
 ```
 
-Note that deleting the workspace will affect any resources that depend on it, such as ComputeFlinkDeployments. Make sure to handle any dependent resources appropriately before deletion. 
+Note that deleting the workspace will affect any resources that depend on it, such as ComputeFlinkDeployments. Make sure to handle any dependent resources appropriately before deletion.
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want the operator to remove only the Kubernetes finalizer and leave the remote StreamNative Cloud workspace untouched.

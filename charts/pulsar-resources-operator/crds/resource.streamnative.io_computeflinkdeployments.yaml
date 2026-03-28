@@ -5182,6 +5182,14 @@ spec:
                   type: string
                 description: Labels to add to the deployment
                 type: object
+              lifecyclePolicy:
+                description: |-
+                  LifecyclePolicy determines whether to keep or delete the remote Flink deployment
+                  when the Kubernetes resource is deleted.
+                enum:
+                - CleanUpAfterDeletion
+                - KeepAfterDeletion
+                type: string
               template:
                 description: Template is the VVP deployment template
                 properties:

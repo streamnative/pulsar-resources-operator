@@ -29,6 +29,12 @@ type SecretSpec struct {
 	// +required
 	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
 
+	// LifecyclePolicy determines whether to keep or delete the remote secret
+	// when the Kubernetes resource is deleted.
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
+
 	// InstanceName is the name of the instance this secret is for (e.g. pulsar-instance)
 	// +optional
 	InstanceName string `json:"instanceName"`

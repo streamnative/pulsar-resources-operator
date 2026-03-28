@@ -31,6 +31,7 @@ spec:
 | Field | Type | Description | Required |
 | --- | --- | --- | --- |
 | `spec.apiServerRef` | [LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#localobjectreference-v1-core) | Reference to a StreamNativeCloudConnection in the same namespace. | Yes |
+| `spec.lifecyclePolicy` | string | Whether to delete the remote role binding or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `spec.clusterRole` | string | The name of the `ClusterRole` to be granted. See [Predefined RBAC Roles](https://docs.streamnative.io/cloud/security/access/rbac/predefined-rbac-roles). | Yes |
 | `spec.users` | []string | A list of user emails that will be granted the role. | No |
 | `spec.identityPools` | []string | A list of identity pools that will be granted the role. | No |
@@ -113,4 +114,6 @@ spec:
 
 ## Deleting a RoleBinding
 
-When you delete a `RoleBinding` resource from Kubernetes, the controller will automatically remove the corresponding binding from StreamNative Cloud, effectively revoking the granted permissions. 
+When you delete a `RoleBinding` resource from Kubernetes, the controller will automatically remove the corresponding binding from StreamNative Cloud, effectively revoking the granted permissions.
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want deleting the Kubernetes resource to leave the remote StreamNative Cloud role binding untouched.

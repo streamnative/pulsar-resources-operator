@@ -91,6 +91,10 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	if !secretCR.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(secretCR.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, secretCR, cloudapi.SecretFinalizer, "Secret")
+	}
+
 	// Validate APIServerRef
 	if secretCR.Spec.APIServerRef.Name == "" {
 		err := fmt.Errorf("APIServerRef.Name is required in Secret spec but not specified")

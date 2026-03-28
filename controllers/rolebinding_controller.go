@@ -72,6 +72,10 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		return ctrl.Result{}, err
 	}
 
+	if roleBinding.DeletionTimestamp != nil && shouldKeepRemoteResource(roleBinding.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, roleBinding, roleBindingFinalizer, "RoleBinding")
+	}
+
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
 	connErr := r.Get(ctx, types.NamespacedName{
