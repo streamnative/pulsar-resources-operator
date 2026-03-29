@@ -62,7 +62,9 @@ spec:
         - --leader-elect
         - --resync-period={{ .Values.features.resyncPeriod | default 10 }}
         - --retry-count={{ .Values.features.retryCount | default 5 }}
-        - --max-concurrent-reconciles={{ .Values.features.maxConcurrentReconciles | default 1 }}
+        {{- if and .Values.features.maxConcurrentReconciles (gt (int .Values.features.maxConcurrentReconciles) 1) }}
+        - --max-concurrent-reconciles={{ .Values.features.maxConcurrentReconciles }}
+        {{- end }}
         command:
         - /manager
         env:
