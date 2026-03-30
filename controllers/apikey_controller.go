@@ -35,6 +35,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -153,6 +154,10 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err
 	}
 
+	if !apiKey.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(apiKey.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, apiKey, APIKeyFinalizer, "APIKey", apiKey.Spec.LifecyclePolicy)
+	}
+
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
 	connErr := r.Get(ctx, types.NamespacedName{
@@ -162,8 +167,8 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if !apiKey.DeletionTimestamp.IsZero() && apierrors.IsNotFound(connErr) {
 		logger.Info("Connection not found during deletion, removing finalizer without remote cleanup",
 			"connection", apiKey.Spec.APIServerRef.Name)
-		if controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
-			apiKey.Finalizers = controllers2.RemoveString(apiKey.Finalizers, APIKeyFinalizer)
+		if controllerutil.ContainsFinalizer(apiKey, APIKeyFinalizer) {
+			controllerutil.RemoveFinalizer(apiKey, APIKeyFinalizer)
 			if err := r.Update(ctx, apiKey); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -206,7 +211,7 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	// Handle deletion
 	if !apiKey.DeletionTimestamp.IsZero() {
-		if controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
+		if controllerutil.ContainsFinalizer(apiKey, APIKeyFinalizer) {
 			if err := apiKeyClient.DeleteAPIKey(ctx, apiKey); err != nil {
 				if !apierrors.IsNotFound(err) {
 					r.updateAPIKeyStatus(ctx, apiKey, err, "DeleteFailed",
@@ -216,7 +221,7 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 				logger.Info("Remote APIKey already deleted or not found",
 					"apiKey", apiKey.Name)
 			}
-			apiKey.Finalizers = controllers2.RemoveString(apiKey.Finalizers, APIKeyFinalizer)
+			controllerutil.RemoveFinalizer(apiKey, APIKeyFinalizer)
 			if err := r.Update(ctx, apiKey); err != nil {
 				return ctrl.Result{}, err
 			}
@@ -224,8 +229,8 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, nil
 	}
 
-	if !controllers2.ContainsString(apiKey.Finalizers, APIKeyFinalizer) {
-		apiKey.Finalizers = append(apiKey.Finalizers, APIKeyFinalizer)
+	if !controllerutil.ContainsFinalizer(apiKey, APIKeyFinalizer) {
+		controllerutil.AddFinalizer(apiKey, APIKeyFinalizer)
 		if err := r.Update(ctx, apiKey); err != nil {
 			return ctrl.Result{}, err
 		}

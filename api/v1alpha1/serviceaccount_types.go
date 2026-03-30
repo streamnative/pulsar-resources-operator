@@ -24,6 +24,12 @@ type ServiceAccountSpec struct {
 	// APIServerRef is the reference to the StreamNativeCloudConnection
 	// +required
 	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
+
+	// LifecyclePolicy determines whether to keep or delete the remote service account
+	// when the Kubernetes resource is deleted.
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
 }
 
 // ServiceAccountStatus defines the observed state of ServiceAccount

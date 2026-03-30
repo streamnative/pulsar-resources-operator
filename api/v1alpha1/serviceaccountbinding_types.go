@@ -30,6 +30,12 @@ type ServiceAccountBindingSpec struct {
 	// +optional
 	APIServerRef *corev1.LocalObjectReference `json:"apiServerRef,omitempty"`
 
+	// LifecyclePolicy determines whether to keep or delete the remote service account bindings
+	// when the Kubernetes resource is deleted.
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
+
 	// PoolMemberRefs refers to a list of PoolMembers in the current namespace or other namespaces
 	// +required
 	PoolMemberRefs []PoolMemberReference `json:"poolMemberRefs"`

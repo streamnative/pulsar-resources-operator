@@ -64,6 +64,7 @@ func main() {
 	var probeAddr string
 	var resyncPeriod int
 	var retryCount int
+	var maxConcurrentReconciles int
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8443", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
@@ -71,6 +72,7 @@ func main() {
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.IntVar(&resyncPeriod, "resync-period", 10, "resyncPeriod is the base frequency the informers are resynced.")
 	flag.IntVar(&retryCount, "retry-count", 5, "The number of retries in case of error.")
+	flag.IntVar(&maxConcurrentReconciles, "max-concurrent-reconciles", 1, "The maximum number of concurrent reconciles per controller.")
 	opts := k8szap.Options{}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
@@ -116,7 +118,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	// TODO get MaxConcurrentReconciles from cmd params
 	if err = (&controllers.PulsarConnectionReconciler{
 		Client:             mgr.GetClient(),
 		Scheme:             mgr.GetScheme(),
@@ -124,7 +125,7 @@ func main() {
 		Recorder:           mgr.GetEventRecorderFor("pulsarconnection-controller"),
 		PulsarAdminCreator: admin.NewPulsarAdmin,
 		Retryer:            utils.NewReconcileRetryer(retryCount, utils.NewEventSource(ctrl.Log.WithName("eventSource"))),
-	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: 1}); err != nil {
+	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "PulsarConnection")
 		os.Exit(1)
 	}
@@ -206,7 +207,7 @@ func main() {
 		Client:            mgr.GetClient(),
 		Scheme:            mgr.GetScheme(),
 		ConnectionManager: connectionManager,
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: maxConcurrentReconciles}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "RoleBinding")
 		os.Exit(1)
 	}

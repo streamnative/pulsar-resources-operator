@@ -9,6 +9,7 @@ The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative
 | Field                | Description                                                                                | Required |
 |----------------------|--------------------------------------------------------------------------------------------|----------|
 | `apiServerRef`       | Reference to the StreamNativeCloudConnection resource for API server access. If not specified, the APIServerRef from the referenced ComputeWorkspace will be used. | No       |
+| `lifecyclePolicy`    | Whether to delete the remote Flink deployment or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `workspaceName`      | Name of the ComputeWorkspace where the Flink deployment will run                           | Yes      |
 | `labels`             | Labels to add to the deployment                                                             | No       |
 | `annotations`        | Annotations to add to the deployment                                                        | No       |

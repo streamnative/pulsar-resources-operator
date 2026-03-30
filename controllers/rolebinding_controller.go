@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -70,6 +71,10 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 		// Error reading the object - requeue the request.
 		logger.Error(err, "Failed to get RoleBinding")
 		return ctrl.Result{}, err
+	}
+
+	if roleBinding.DeletionTimestamp != nil && shouldKeepRemoteResource(roleBinding.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, roleBinding, roleBindingFinalizer, "RoleBinding", roleBinding.Spec.LifecyclePolicy)
 	}
 
 	// Get the APIServerConnection
@@ -137,7 +142,7 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		logger.Info("Added finalizer to RoleBinding")
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Reconcile the RoleBinding
@@ -292,8 +297,9 @@ func (r *RoleBindingReconciler) findResourcesForConnection(ctx context.Context, 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *RoleBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *RoleBindingReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&resourcev1alpha1.RoleBinding{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
 			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).

@@ -20,6 +20,7 @@ spec:
 | Field | Type | Description | Required |
 | --- | --- | --- | --- |
 | `spec.apiServerRef` | [LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#localobjectreference-v1-core) | Reference to a StreamNativeCloudConnection in the same namespace | Yes |
+| `spec.lifecyclePolicy` | string | Whether to delete the remote service account or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 
 ## Status
 
@@ -90,6 +91,8 @@ spec:
 ```
 
 The application can then read the credentials from `/etc/credentials/credentials.json` and use them for OAuth2 authentication.
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want deleting the Kubernetes `ServiceAccount` resource to leave the remote StreamNative Cloud service account in place.
 
 ## Creating API Keys
 
