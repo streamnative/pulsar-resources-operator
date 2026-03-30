@@ -257,6 +257,306 @@ func TestServiceAccountBindingReconcilerIgnoresRemoteNotFoundDuringDeletion(t *t
 	}
 }
 
+func TestAPIKeyReconcilerIgnoresRemoteNotFoundDuringDeletion(t *testing.T) {
+	t.Parallel()
+
+	const (
+		namespace      = "test-ns"
+		connectionName = "test-connection"
+		organization   = "test-org"
+		apiKeyName     = "test-api-key"
+	)
+
+	server, deleteRequests := newDeleteNotFoundTestServer(
+		t,
+		fmt.Sprintf("/apis/cloud.streamnative.io/v1alpha1/namespaces/%s/apikeys/%s", organization, apiKeyName),
+		fmt.Sprintf("apikeys.cloud.streamnative.io %q not found", apiKeyName),
+	)
+	defer server.Close()
+
+	scheme := runtime.NewScheme()
+	if err := resourcev1alpha1.AddToScheme(scheme); err != nil {
+		t.Fatalf("add resource scheme: %v", err)
+	}
+
+	connection := newTestCloudConnection(namespace, connectionName, organization, server.URL)
+	now := metav1.NewTime(time.Now())
+	apiKey := &resourcev1alpha1.APIKey{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              apiKeyName,
+			Namespace:         namespace,
+			DeletionTimestamp: &now,
+			Finalizers:        []string{APIKeyFinalizer},
+		},
+		Spec: resourcev1alpha1.APIKeySpec{
+			APIServerRef: corev1.LocalObjectReference{Name: connectionName},
+		},
+	}
+
+	client := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(connection, apiKey).
+		Build()
+
+	reconciler := &APIKeyReconciler{
+		Client:            client,
+		Scheme:            scheme,
+		ConnectionManager: newTestConnectionManager(t, client, connection, server.URL),
+	}
+
+	request := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: namespace,
+			Name:      apiKeyName,
+		},
+	}
+
+	result, err := reconciler.Reconcile(context.Background(), request)
+	assertDeleteNotFoundCleanup(t, result, err, deleteRequests, client, request.NamespacedName, &resourcev1alpha1.APIKey{})
+}
+
+func TestSecretReconcilerIgnoresRemoteNotFoundDuringDeletion(t *testing.T) {
+	t.Parallel()
+
+	const (
+		namespace      = "test-ns"
+		connectionName = "test-connection"
+		organization   = "test-org"
+		secretName     = "test-secret"
+	)
+
+	server, deleteRequests := newDeleteNotFoundTestServer(
+		t,
+		fmt.Sprintf("/apis/cloud.streamnative.io/v1alpha1/namespaces/%s/secrets/%s", organization, secretName),
+		fmt.Sprintf("secrets.cloud.streamnative.io %q not found", secretName),
+	)
+	defer server.Close()
+
+	scheme := runtime.NewScheme()
+	if err := resourcev1alpha1.AddToScheme(scheme); err != nil {
+		t.Fatalf("add resource scheme: %v", err)
+	}
+
+	connection := newTestCloudConnection(namespace, connectionName, organization, server.URL)
+	now := metav1.NewTime(time.Now())
+	secretCR := &resourcev1alpha1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              secretName,
+			Namespace:         namespace,
+			DeletionTimestamp: &now,
+			Finalizers:        []string{controllers2.SecretFinalizer},
+		},
+		Spec: resourcev1alpha1.SecretSpec{
+			APIServerRef: corev1.LocalObjectReference{Name: connectionName},
+		},
+	}
+
+	client := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(connection, secretCR).
+		Build()
+
+	reconciler := &SecretReconciler{
+		Client:            client,
+		Scheme:            scheme,
+		ConnectionManager: newTestConnectionManager(t, client, connection, server.URL),
+	}
+
+	request := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: namespace,
+			Name:      secretName,
+		},
+	}
+
+	result, err := reconciler.Reconcile(context.Background(), request)
+	assertDeleteNotFoundCleanup(t, result, err, deleteRequests, client, request.NamespacedName, &resourcev1alpha1.Secret{})
+}
+
+func TestWorkspaceReconcilerIgnoresRemoteNotFoundDuringDeletion(t *testing.T) {
+	t.Parallel()
+
+	const (
+		namespace      = "test-ns"
+		connectionName = "test-connection"
+		organization   = "test-org"
+		workspaceName  = "test-workspace"
+	)
+
+	server, deleteRequests := newDeleteNotFoundTestServer(
+		t,
+		fmt.Sprintf("/apis/compute.streamnative.io/v1alpha1/namespaces/%s/workspaces/%s", organization, workspaceName),
+		fmt.Sprintf("workspaces.compute.streamnative.io %q not found", workspaceName),
+	)
+	defer server.Close()
+
+	scheme := runtime.NewScheme()
+	if err := resourcev1alpha1.AddToScheme(scheme); err != nil {
+		t.Fatalf("add resource scheme: %v", err)
+	}
+
+	connection := newTestCloudConnection(namespace, connectionName, organization, server.URL)
+	now := metav1.NewTime(time.Now())
+	workspace := &resourcev1alpha1.ComputeWorkspace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              workspaceName,
+			Namespace:         namespace,
+			DeletionTimestamp: &now,
+			Finalizers:        []string{controllers2.WorkspaceFinalizer},
+		},
+		Spec: resourcev1alpha1.ComputeWorkspaceSpec{
+			APIServerRef: corev1.LocalObjectReference{Name: connectionName},
+		},
+	}
+
+	client := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(connection, workspace).
+		Build()
+
+	reconciler := &WorkspaceReconciler{
+		Client:            client,
+		Scheme:            scheme,
+		ConnectionManager: newTestConnectionManager(t, client, connection, server.URL),
+	}
+
+	request := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: namespace,
+			Name:      workspaceName,
+		},
+	}
+
+	result, err := reconciler.Reconcile(context.Background(), request)
+	assertDeleteNotFoundCleanup(t, result, err, deleteRequests, client, request.NamespacedName, &resourcev1alpha1.ComputeWorkspace{})
+}
+
+func TestFlinkDeploymentReconcilerIgnoresRemoteNotFoundDuringDeletion(t *testing.T) {
+	t.Parallel()
+
+	const (
+		namespace      = "test-ns"
+		connectionName = "test-connection"
+		organization   = "test-org"
+		deploymentName = "test-deployment"
+		workspaceName  = "unused-workspace"
+	)
+
+	server, deleteRequests := newDeleteNotFoundTestServer(
+		t,
+		fmt.Sprintf("/apis/compute.streamnative.io/v1alpha1/namespaces/%s/flinkdeployments/%s", organization, deploymentName),
+		fmt.Sprintf("flinkdeployments.compute.streamnative.io %q not found", deploymentName),
+	)
+	defer server.Close()
+
+	scheme := runtime.NewScheme()
+	if err := resourcev1alpha1.AddToScheme(scheme); err != nil {
+		t.Fatalf("add resource scheme: %v", err)
+	}
+
+	connection := newTestCloudConnection(namespace, connectionName, organization, server.URL)
+	now := metav1.NewTime(time.Now())
+	deployment := &resourcev1alpha1.ComputeFlinkDeployment{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:              deploymentName,
+			Namespace:         namespace,
+			DeletionTimestamp: &now,
+			Finalizers:        []string{controllers2.FlinkDeploymentFinalizer},
+		},
+		Spec: resourcev1alpha1.ComputeFlinkDeploymentSpec{
+			APIServerRef:  corev1.LocalObjectReference{Name: connectionName},
+			WorkspaceName: workspaceName,
+		},
+	}
+
+	client := fake.NewClientBuilder().
+		WithScheme(scheme).
+		WithObjects(connection, deployment).
+		Build()
+
+	reconciler := &FlinkDeploymentReconciler{
+		Client:            client,
+		Scheme:            scheme,
+		ConnectionManager: newTestConnectionManager(t, client, connection, server.URL),
+	}
+
+	request := ctrl.Request{
+		NamespacedName: types.NamespacedName{
+			Namespace: namespace,
+			Name:      deploymentName,
+		},
+	}
+
+	result, err := reconciler.Reconcile(context.Background(), request)
+	assertDeleteNotFoundCleanup(t, result, err, deleteRequests, client, request.NamespacedName, &resourcev1alpha1.ComputeFlinkDeployment{})
+}
+
+func newDeleteNotFoundTestServer(t *testing.T, deletePath, notFoundMessage string) (*httptest.Server, *atomic.Int32) {
+	t.Helper()
+
+	var deleteRequests atomic.Int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/.well-known/openid-configuration":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"token_endpoint": fmt.Sprintf("%s/oauth/token", serverURL(r)),
+			})
+		case r.Method == http.MethodPost && r.URL.Path == "/oauth/token":
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"access_token": "test-token",
+				"token_type":   "Bearer",
+				"expires_in":   3600,
+			})
+		case r.Method == http.MethodDelete && r.URL.Path == deletePath:
+			deleteRequests.Add(1)
+			w.WriteHeader(http.StatusNotFound)
+			_ = json.NewEncoder(w).Encode(metav1.Status{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "v1",
+					Kind:       "Status",
+				},
+				Status:  metav1.StatusFailure,
+				Reason:  metav1.StatusReasonNotFound,
+				Code:    http.StatusNotFound,
+				Message: notFoundMessage,
+			})
+		default:
+			w.WriteHeader(http.StatusInternalServerError)
+			t.Fatalf("unexpected request: %s %s", r.Method, r.URL.Path)
+		}
+	}))
+
+	return server, &deleteRequests
+}
+
+func assertDeleteNotFoundCleanup(
+	t *testing.T,
+	result ctrl.Result,
+	err error,
+	deleteRequests *atomic.Int32,
+	k8sClient client.Client,
+	key types.NamespacedName,
+	obj client.Object,
+) {
+	t.Helper()
+
+	if err != nil {
+		t.Fatalf("reconcile deletion: %v", err)
+	}
+	if result != (ctrl.Result{}) {
+		t.Fatalf("expected no requeue after successful deletion, got %#v", result)
+	}
+	if deleteRequests.Load() != 1 {
+		t.Fatalf("expected one remote delete request, got %d", deleteRequests.Load())
+	}
+	if err := k8sClient.Get(context.Background(), key, obj); !apierrors.IsNotFound(err) {
+		t.Fatalf("expected object to be fully removed after finalizer cleanup, got err=%v object=%#v", err, obj)
+	}
+}
+
 func newTestCloudConnection(namespace, name, organization, serverURL string) *resourcev1alpha1.StreamNativeCloudConnection {
 	return &resourcev1alpha1.StreamNativeCloudConnection{
 		ObjectMeta: metav1.ObjectMeta{

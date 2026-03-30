@@ -157,8 +157,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if !secretCR.ObjectMeta.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(secretCR, finalizerName) {
 			if err := secretClient.DeleteSecret(ctx, secretCR); err != nil {
-				// If the remote secret is already gone, that's okay.
-				if !apierrors.IsNotFound(err) {
+				if !ignoreDeleteNotFound(logger, err, "Remote Secret already deleted or not found", "secret", secretCR.Name) {
 					r.updateSecretStatus(ctx, secretCR, err, "DeleteRemoteSecretFailed", fmt.Sprintf("Failed to delete remote Secret: %v", err))
 					return ctrl.Result{}, err
 				}

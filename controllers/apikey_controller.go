@@ -213,13 +213,11 @@ func (r *APIKeyReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	if !apiKey.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(apiKey, APIKeyFinalizer) {
 			if err := apiKeyClient.DeleteAPIKey(ctx, apiKey); err != nil {
-				if !apierrors.IsNotFound(err) {
+				if !ignoreDeleteNotFound(logger, err, "Remote APIKey already deleted or not found", "apiKey", apiKey.Name) {
 					r.updateAPIKeyStatus(ctx, apiKey, err, "DeleteFailed",
 						fmt.Sprintf("Failed to delete external resources: %v", err))
 					return ctrl.Result{}, err
 				}
-				logger.Info("Remote APIKey already deleted or not found",
-					"apiKey", apiKey.Name)
 			}
 			controllerutil.RemoveFinalizer(apiKey, APIKeyFinalizer)
 			if err := r.Update(ctx, apiKey); err != nil {

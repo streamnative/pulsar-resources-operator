@@ -131,14 +131,11 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if controllerutil.ContainsFinalizer(serviceAccount, ServiceAccountFinalizer) {
 			// Try to delete remote ServiceAccount
 			if err := saClient.DeleteServiceAccount(ctx, serviceAccount); err != nil {
-				if !apierrors.IsNotFound(err) {
+				if !ignoreDeleteNotFound(logger, err, "Remote ServiceAccount already deleted or not found", "serviceAccount", serviceAccount.Name) {
 					r.updateServiceAccountStatus(ctx, serviceAccount, err, "DeleteFailed",
 						fmt.Sprintf("Failed to delete external resources: %v", err))
 					return ctrl.Result{}, err
 				}
-				// If the resource is already gone, that's fine
-				logger.Info("Remote ServiceAccount already deleted or not found",
-					"serviceAccount", serviceAccount.Name)
 			}
 
 			// Remove finalizer after successful deletion

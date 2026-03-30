@@ -149,12 +149,11 @@ func (r *FlinkDeploymentReconciler) Reconcile(ctx context.Context, req ctrl.Requ
 	if !deployment.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(deployment, finalizerName) {
 			if err := deploymentClient.DeleteFlinkDeployment(ctx, deployment); err != nil {
-				if !apierrors.IsNotFound(err) {
+				if !ignoreDeleteNotFound(logger, err, "Remote FlinkDeployment already deleted or not found", "deploymentName", deployment.Name) {
 					r.updateDeploymentStatus(ctx, deployment, err, "DeleteFailed",
 						fmt.Sprintf("Failed to delete remote FlinkDeployment: %v", err))
 					return ctrl.Result{}, err
 				}
-				logger.Info("Remote FlinkDeployment already deleted or not found", "deploymentName", deployment.Name)
 			}
 
 			controllerutil.RemoveFinalizer(deployment, finalizerName)
