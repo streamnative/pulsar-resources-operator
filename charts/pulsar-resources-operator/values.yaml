@@ -47,6 +47,8 @@ features:
   resyncPeriod: 10
   # The number of retries in case of error.
   retryCount: 5
+  # The maximum number of concurrent reconciles per controller.
+  maxConcurrentReconciles: 1
 
 # -- It will override the value of label `app.kubernetes.io/name` on pod
 nameOverride: ""

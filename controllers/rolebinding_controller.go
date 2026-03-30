@@ -29,6 +29,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -141,7 +142,7 @@ func (r *RoleBindingReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 			return ctrl.Result{}, err
 		}
 		logger.Info("Added finalizer to RoleBinding")
-		return ctrl.Result{}, nil
+		return ctrl.Result{Requeue: true}, nil
 	}
 
 	// Reconcile the RoleBinding
@@ -156,9 +157,13 @@ func (r *RoleBindingReconciler) handleRoleBindingDeletion(ctx context.Context, r
 		// Delete the RoleBinding from the API server
 		err := rbClient.DeleteRoleBinding(ctx, roleBinding)
 		if err != nil {
-			logger.Error(err, "Failed to delete RoleBinding from API server")
-			r.updateRoleBindingStatus(ctx, roleBinding, err, "DeletionError", "Failed to delete RoleBinding from API server")
-			return ctrl.Result{}, err
+			if apierrors.IsNotFound(err) {
+				logger.Info("RoleBinding not found on API server, skipping deletion", "name", roleBinding.Name)
+			} else {
+				logger.Error(err, "Failed to delete RoleBinding from API server")
+				r.updateRoleBindingStatus(ctx, roleBinding, err, "DeletionError", "Failed to delete RoleBinding from API server")
+				return ctrl.Result{}, err
+			}
 		}
 
 		// Remove the finalizer
@@ -292,8 +297,9 @@ func (r *RoleBindingReconciler) findResourcesForConnection(ctx context.Context, 
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *RoleBindingReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *RoleBindingReconciler) SetupWithManager(mgr ctrl.Manager, options controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
+		WithOptions(options).
 		For(&resourcev1alpha1.RoleBinding{}, builder.WithPredicates(predicate.GenerationChangedPredicate{})).
 		Watches(&resourcev1alpha1.StreamNativeCloudConnection{},
 			handler.EnqueueRequestsFromMapFunc(r.findResourcesForConnection)).
