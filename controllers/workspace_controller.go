@@ -136,14 +136,11 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		if controllerutil.ContainsFinalizer(workspace, controllers2.WorkspaceFinalizer) {
 			// Try to delete remote workspace
 			if err := workspaceClient.DeleteWorkspace(ctx, workspace); err != nil {
-				if !apierrors.IsNotFound(err) {
+				if !ignoreDeleteNotFound(logger, err, "Remote Workspace already deleted or not found", "workspace", workspace.Name) {
 					r.updateWorkspaceStatus(ctx, workspace, err, "DeleteFailed",
 						fmt.Sprintf("Failed to delete external resources: %v", err))
 					return ctrl.Result{}, err
 				}
-				// If the resource is already gone, that's fine
-				logger.Info("Remote Workspace already deleted or not found",
-					"workspace", workspace.Name)
 			}
 
 			// Remove finalizer after successful deletion

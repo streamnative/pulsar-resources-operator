@@ -200,13 +200,17 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 						Name: remoteName, // This should ideally match the name used when creating/getting
 					},
 				}); err != nil {
-					if !apierrors.IsNotFound(err) {
+					if !ignoreDeleteNotFound(
+						logger,
+						err,
+						"Remote ServiceAccountBinding already deleted or not found",
+						"binding", remoteName,
+						"poolMemberRef", poolMemberRef,
+					) {
 						r.updateServiceAccountBindingStatus(ctx, binding, err, "DeleteFailed",
 							fmt.Sprintf("Failed to delete remote ServiceAccountBinding for PoolMemberRef %d (%s): %v", i, remoteName, err))
 						return ctrl.Result{}, err
 					}
-					logger.Info("Remote ServiceAccountBinding already deleted or not found",
-						"binding", remoteName, "poolMemberRef", poolMemberRef)
 				}
 			}
 
