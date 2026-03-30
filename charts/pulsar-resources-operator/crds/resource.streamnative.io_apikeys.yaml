@@ -105,6 +105,14 @@ spec:
                 description: InstanceName is the name of the instance this API key
                   is for
                 type: string
+              lifecyclePolicy:
+                description: |-
+                  LifecyclePolicy determines whether to keep or delete the remote API key
+                  when the Kubernetes resource is deleted.
+                enum:
+                - CleanUpAfterDeletion
+                - KeepAfterDeletion
+                type: string
               revoke:
                 description: Revoke indicates whether this API key should be revoked
                 type: boolean

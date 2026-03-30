@@ -75,6 +75,10 @@ func (r *WorkspaceReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	if !workspace.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(workspace.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, workspace, controllers2.WorkspaceFinalizer, "ComputeWorkspace", workspace.Spec.LifecyclePolicy)
+	}
+
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
 	connErr := r.Get(ctx, types.NamespacedName{

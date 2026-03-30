@@ -28,6 +28,12 @@ type ComputeWorkspaceSpec struct {
 	// +required
 	APIServerRef corev1.LocalObjectReference `json:"apiServerRef"`
 
+	// LifecyclePolicy determines whether to keep or delete the remote workspace
+	// when the Kubernetes resource is deleted.
+	// +kubebuilder:validation:Enum=CleanUpAfterDeletion;KeepAfterDeletion
+	// +optional
+	LifecyclePolicy PulsarResourceLifeCyclePolicy `json:"lifecyclePolicy,omitempty"`
+
 	// PulsarClusterNames is the list of Pulsar clusters that the workspace will have access to.
 	// +optional
 	PulsarClusterNames []string `json:"pulsarClusterNames,omitempty"`

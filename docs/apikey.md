@@ -24,6 +24,7 @@ spec:
 | Field | Type | Description | Required |
 | --- | --- | --- | --- |
 | `spec.apiServerRef` | [LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#localobjectreference-v1-core) | Reference to a StreamNativeCloudConnection in the same namespace | Yes |
+| `spec.lifecyclePolicy` | string | Whether to delete the remote API key or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `spec.instanceName` | string | Name of the instance this API key is for | No |
 | `spec.serviceAccountName` | string | Name of the service account this API key is for | Yes |
 | `spec.description` | string | User-defined description of the API key | No |
@@ -110,6 +111,8 @@ spec:
 ```
 
 The application can then read the token from `/etc/apikey/token`.
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want to remove the Kubernetes `APIKey` resource while preserving the remote key in StreamNative Cloud.
 
 ### Revoking an API Key
 

@@ -94,6 +94,14 @@ spec:
                 required:
                 - bucket
                 type: object
+              lifecyclePolicy:
+                description: |-
+                  LifecyclePolicy determines whether to keep or delete the remote workspace
+                  when the Kubernetes resource is deleted.
+                enum:
+                - CleanUpAfterDeletion
+                - KeepAfterDeletion
+                type: string
               poolRef:
                 description: PoolRef is the reference to the pool that the workspace
                   will be access to.

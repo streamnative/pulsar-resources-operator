@@ -70,6 +70,10 @@ func (r *ServiceAccountReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, err
 	}
 
+	if !serviceAccount.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(serviceAccount.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, serviceAccount, ServiceAccountFinalizer, "ServiceAccount", serviceAccount.Spec.LifecyclePolicy)
+	}
+
 	// Get the APIServerConnection
 	connection := &resourcev1alpha1.StreamNativeCloudConnection{}
 	connErr := r.Get(ctx, types.NamespacedName{

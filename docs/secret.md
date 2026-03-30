@@ -9,6 +9,7 @@ The `Secret` resource defines a secret in StreamNative Cloud. It allows you to c
 | Field | Description | Required |
 |-------|-------------|----------|
 | `apiServerRef` | Reference to the StreamNativeCloudConnection resource for API server access | Yes |
+| `lifecyclePolicy` | Whether to delete the remote secret or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `instanceName` | Name of the instance this secret is for (e.g. pulsar-instance) | No |
 | `location` | Location of the secret | No |
 | `data` | Secret data, values should be base64 encoded | No* |
@@ -115,4 +116,6 @@ To delete a Secret resource:
 kubectl delete secret.resource.streamnative.io resource-operator-secret
 ```
 
-Note that deleting the secret will affect any resources that depend on it, such as ComputeFlinkDeployments. Make sure to handle any dependent resources appropriately before deletion. 
+Note that deleting the secret will affect any resources that depend on it, such as ComputeFlinkDeployments. Make sure to handle any dependent resources appropriately before deletion.
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want to keep the remote StreamNative Cloud secret after the Kubernetes resource is removed.

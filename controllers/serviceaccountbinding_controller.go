@@ -70,6 +70,10 @@ func (r *ServiceAccountBindingReconciler) Reconcile(ctx context.Context, req ctr
 		return ctrl.Result{}, err
 	}
 
+	if !binding.DeletionTimestamp.IsZero() && shouldKeepRemoteResource(binding.Spec.LifecyclePolicy) {
+		return finalizeKeptResource(ctx, r.Client, binding, ServiceAccountBindingFinalizer, "ServiceAccountBinding", binding.Spec.LifecyclePolicy)
+	}
+
 	// Get the ServiceAccount
 	serviceAccount := &resourcev1alpha1.ServiceAccount{}
 	saErr := r.Get(ctx, types.NamespacedName{

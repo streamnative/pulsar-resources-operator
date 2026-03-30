@@ -28,6 +28,7 @@ spec:
 | --- | --- | --- | --- |
 | `spec.serviceAccountName` | string | Reference to a ServiceAccount in the same namespace as this binding object | Yes |
 | `spec.apiServerRef.name` | string | Optional reference to a StreamNativeCloudConnection. If not provided, the connection from the ServiceAccount will be used | No |
+| `spec.lifecyclePolicy` | string | Whether to delete the remote binding set or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `spec.poolMemberRefs` | []PoolMemberReference | List of pool members this service account will be bound to | Yes |
 | `spec.poolMemberRefs[].name` | string | Name of the pool member | Yes |
 | `spec.poolMemberRefs[].namespace` | string | Namespace of the pool member | Yes |
@@ -102,3 +103,5 @@ For more detailed status information:
 ```bash
 kubectl describe serviceaccountbinding app-service-binding -n default
 ```
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want the operator to stop managing the remote bindings without deleting them from StreamNative Cloud.

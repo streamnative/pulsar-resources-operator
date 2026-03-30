@@ -92,6 +92,14 @@ spec:
                 items:
                   type: string
                 type: array
+              lifecyclePolicy:
+                description: |-
+                  LifecyclePolicy determines whether to keep or delete the remote role binding
+                  when the Kubernetes resource is deleted.
+                enum:
+                - CleanUpAfterDeletion
+                - KeepAfterDeletion
+                type: string
               serviceAccounts:
                 description: ServiceAccounts is a list of ServiceAccounts that will
                   be granted the role
