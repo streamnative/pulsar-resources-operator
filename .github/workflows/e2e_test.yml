@@ -55,10 +55,13 @@ jobs:
       - name: Cleanup disk
         run: sudo rm -rf /usr/local/.ghcup
 
-      - name: Set up Go 1.24
-        uses: actions/setup-go@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version-file: go.work
         id: go
 
       - name: Set up Git token
@@ -68,9 +71,6 @@ jobs:
       - name: Set up Ginkgo
         run: |
           go install github.com/onsi/ginkgo/ginkgo@latest
-
-      - name: Checkout
-        uses: actions/checkout@v3
 
       # TODO the k8s version should be configurable
       - name: Setup K8s cluster
