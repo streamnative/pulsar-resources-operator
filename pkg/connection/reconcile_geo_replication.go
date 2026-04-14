@@ -359,6 +359,7 @@ func createParams(ctx context.Context, destConnection *resourcev1alpha1.PulsarCo
 					if value != nil {
 						paramsJSON.PrivateKey = "data:application/json;base64," + base64.StdEncoding.EncodeToString([]byte(*value))
 						clusterParam.AuthPlugin = resourcev1alpha1.AuthPluginOAuth2
+						// #nosec G117 -- Pulsar OAuth2 auth parameters intentionally embed the private key payload.
 						paramsJSONString, err := json.Marshal(paramsJSON)
 						if err != nil {
 							return nil, err
