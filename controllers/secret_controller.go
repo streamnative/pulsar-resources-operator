@@ -154,7 +154,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 
 	finalizerName := cloudapi.SecretFinalizer
 	// Handle deletion
-	if !secretCR.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !secretCR.DeletionTimestamp.IsZero() {
 		if controllerutil.ContainsFinalizer(secretCR, finalizerName) {
 			if err := secretClient.DeleteSecret(ctx, secretCR); err != nil {
 				if !ignoreDeleteNotFound(logger, err, "Remote Secret already deleted or not found", "secret", secretCR.Name) {
