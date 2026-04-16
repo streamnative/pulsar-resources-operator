@@ -40,7 +40,7 @@ type PulsarTopicSpec struct {
 	// Defaults to true if not specified.
 	// +kubebuilder:default=true
 	// +optional
-	Persistent *bool `json:"persistent,omitempty"`
+	Persistent *bool `json:"persistent"`
 
 	// Partitions specifies the number of partitions for a partitioned topic.
 	// Set to 0 for a non-partitioned topic.
@@ -141,7 +141,7 @@ type PulsarTopicSpec struct {
 
 	// Deduplication controls whether to enable message deduplication for the topic.
 	// +optional
-	Deduplication *bool `json:"deduplication,omitempty"`
+	Deduplication *bool `json:"deduplication"`
 
 	// CompactionThreshold specifies the size threshold in bytes for automatic topic compaction.
 	// When the topic reaches this size, compaction will be triggered automatically.
@@ -194,7 +194,7 @@ type PulsarTopicSpec struct {
 	// SchemaValidationEnforced determines whether schema validation is enforced for the topic.
 	// When enabled, only messages that conform to the topic's schema will be accepted.
 	// +optional
-	SchemaValidationEnforced *bool `json:"schemaValidationEnforced,omitempty"`
+	SchemaValidationEnforced *bool `json:"schemaValidationEnforced"`
 
 	// SubscriptionDispatchRate defines the message dispatch rate limiting policy for subscriptions.
 	// This controls the rate at which messages are delivered to consumers per subscription.
@@ -237,7 +237,7 @@ type PulsarTopicSpec struct {
 type DelayedDeliveryData struct {
 	// Active determines whether delayed delivery is enabled for the topic
 	// +optional
-	Active *bool `json:"active,omitempty"`
+	Active *bool `json:"active"`
 
 	// TickTimeMillis specifies the tick time for delayed message delivery in milliseconds
 	// +optional
@@ -288,7 +288,7 @@ type OffloadPolicies struct {
 // This is a local type definition that mirrors the external library's AutoSubscriptionCreationOverride
 // to ensure proper Kubernetes deep copy generation.
 type AutoSubscriptionCreationOverride struct {
-	AllowAutoSubscriptionCreation bool `json:"allowAutoSubscriptionCreation,omitempty"`
+	AllowAutoSubscriptionCreation bool `json:"allowAutoSubscriptionCreation"`
 }
 
 // SchemaCompatibilityStrategy defines the schema compatibility strategy for a topic.
@@ -321,7 +321,7 @@ type PulsarTopicStatus struct {
 	// GeoReplicationEnabled indicates whether geo-replication is enabled for this topic.
 	// This is set to true when GeoReplicationRefs are configured in the spec and successfully applied.
 	// +optional
-	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled"`
 }
 
 //+kubebuilder:object:root=true

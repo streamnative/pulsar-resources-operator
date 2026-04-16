@@ -50,7 +50,7 @@ type APIKeySpec struct {
 
 	// Revoke indicates whether this API key should be revoked
 	// +optional
-	Revoke bool `json:"revoke,omitempty"`
+	Revoke bool `json:"revoke"`
 
 	// EncryptionKey contains the public key used to encrypt the token
 	// +optional
@@ -58,7 +58,7 @@ type APIKeySpec struct {
 
 	// ExportPlaintextToken indicates whether the token should be exported in plaintext
 	// +optional
-	ExportPlaintextToken *bool `json:"exportPlaintextToken,omitempty"`
+	ExportPlaintextToken *bool `json:"exportPlaintextToken"`
 }
 
 // EncryptionKey contains a public key used for encryption

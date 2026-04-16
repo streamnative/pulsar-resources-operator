@@ -26,7 +26,7 @@ import (
 // TopicAutoCreationConfig defines the configuration for automatic topic creation
 type TopicAutoCreationConfig struct {
 	// Allow specifies whether to allow automatic topic creation
-	Allow bool `json:"allow,omitempty"`
+	Allow bool `json:"allow"`
 
 	// Type specifies the type of automatically created topics
 	// +kubebuilder:validation:Enum=partitioned;non-partitioned
@@ -125,7 +125,7 @@ type InactiveTopicPolicies struct {
 
 	// DeleteWhileInactive specifies whether to delete topics while they are inactive
 	// +optional
-	DeleteWhileInactive *bool `json:"deleteWhileInactive,omitempty"`
+	DeleteWhileInactive *bool `json:"deleteWhileInactive"`
 }
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -167,7 +167,7 @@ type PulsarNamespaceSpec struct {
 	// When enabled, producers must provide a schema when publishing messages.
 	// If not specified, the cluster's default schema validation enforcement setting will be used.
 	// +optional
-	SchemaValidationEnforced *bool `json:"schemaValidationEnforced,omitempty"`
+	SchemaValidationEnforced *bool `json:"schemaValidationEnforced"`
 
 	// MaxProducersPerTopic sets the maximum number of producers allowed on a single topic in the namespace.
 	// +optional
@@ -246,7 +246,7 @@ type PulsarNamespaceSpec struct {
 
 	// Deduplication controls whether to enable message deduplication for the namespace.
 	// +optional
-	Deduplication *bool `json:"deduplication,omitempty"`
+	Deduplication *bool `json:"deduplication"`
 
 	// BookieAffinityGroup is the name of the namespace isolation policy to apply to the namespace.
 	BookieAffinityGroup *BookieAffinityGroupData `json:"bookieAffinityGroup,omitempty"`
@@ -309,17 +309,17 @@ type PulsarNamespaceSpec struct {
 	// IsAllowAutoUpdateSchema specifies whether to allow automatic schema updates.
 	// When enabled, producers can automatically update schemas without manual approval.
 	// +optional
-	IsAllowAutoUpdateSchema *bool `json:"isAllowAutoUpdateSchema,omitempty"`
+	IsAllowAutoUpdateSchema *bool `json:"isAllowAutoUpdateSchema"`
 
 	// ValidateProducerName specifies whether to validate producer names.
 	// When enabled, producer names must follow specific naming conventions.
 	// +optional
-	ValidateProducerName *bool `json:"validateProducerName,omitempty"`
+	ValidateProducerName *bool `json:"validateProducerName"`
 
 	// EncryptionRequired specifies whether message encryption is required for this namespace.
 	// When enabled, all messages published to topics in this namespace must be encrypted.
 	// +optional
-	EncryptionRequired *bool `json:"encryptionRequired,omitempty"`
+	EncryptionRequired *bool `json:"encryptionRequired"`
 
 	// SubscriptionAuthMode specifies the subscription authentication mode for this namespace.
 	// Valid values are "None" and "Prefix".
@@ -370,7 +370,7 @@ type PulsarNamespaceStatus struct {
 	// GeoReplicationEnabled indicates whether geo-replication between two Pulsar instances (via PulsarGeoReplication)
 	// is enabled for the namespace
 	// +optional
-	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled"`
 }
 
 //+kubebuilder:object:root=true
