@@ -44,6 +44,9 @@ type Secret struct {
 	// the value should be base64 encoded
 	Data map[string]string `json:"data,omitempty" protobuf:"bytes,6,opt,name=data"`
 
+	// BinaryData contains binary secret data. Values must be base64-encoded raw bytes.
+	BinaryData map[string]string `json:"binaryData,omitempty" protobuf:"bytes,10,opt,name=binaryData"`
+
 	// PoolMemberRef is the pool member to deploy the secret.
 	// admission controller will infer this information automatically
 	// +optional

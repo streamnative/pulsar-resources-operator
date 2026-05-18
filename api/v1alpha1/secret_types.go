@@ -43,13 +43,17 @@ type SecretSpec struct {
 	// +optional
 	Location string `json:"location"`
 
-	// the value should be base64 encoded
+	// Data contains text secret data.
 	// +optional
 	Data map[string]string `json:"data,omitempty"`
 
-	// SecretRef is the reference to the kubernetes secret
+	// BinaryData contains binary secret data. Values must be base64-encoded raw bytes.
+	// +optional
+	BinaryData map[string]string `json:"binaryData,omitempty"`
+
+	// SecretRef is the reference to the kubernetes secret.
 	// When SecretRef is set, it will be used to fetch the secret data.
-	// Data will be ignored.
+	// Data and BinaryData values set directly on this resource take precedence.
 	// +optional
 	SecretRef *KubernetesSecretReference `json:"secretRef,omitempty"`
 
@@ -110,6 +114,12 @@ func (r PoolMemberReference) ToNamespacedName() types.NamespacedName {
 type KubernetesSecretReference struct {
 	Namespace string `json:"namespace" protobuf:"bytes,1,opt,name=namespace"`
 	Name      string `json:"name" protobuf:"bytes,2,opt,name=name"`
+
+	// BinaryDataKeys are keys from the referenced Kubernetes Secret data that should be sent
+	// to StreamNative Cloud as binaryData. Other keys keep the existing text data behavior.
+	// +optional
+	// +listType=set
+	BinaryDataKeys []string `json:"binaryDataKeys,omitempty" protobuf:"bytes,3,rep,name=binaryDataKeys"`
 }
 
 func (r KubernetesSecretReference) ToNamespacedName() types.NamespacedName {

@@ -841,6 +841,13 @@ func (in *Secret) DeepCopyInto(out *Secret) {
 			(*out)[key] = val
 		}
 	}
+	if in.BinaryData != nil {
+		in, out := &in.BinaryData, &out.BinaryData
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	if in.PoolMemberRef != nil {
 		in, out := &in.PoolMemberRef, &out.PoolMemberRef
 		*out = new(PoolMemberReference)
