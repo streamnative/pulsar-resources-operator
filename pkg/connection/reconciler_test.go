@@ -24,6 +24,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
@@ -31,6 +32,34 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 )
+
+type countingConnectionClient struct {
+	client.Client
+	updateCalls       int
+	statusUpdateCalls int
+}
+
+func (c *countingConnectionClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
+	c.updateCalls++
+	return c.Client.Update(ctx, obj, opts...)
+}
+
+func (c *countingConnectionClient) Status() client.SubResourceWriter {
+	return &countingConnectionStatusWriter{
+		SubResourceWriter: c.Client.Status(),
+		updateCalls:       &c.statusUpdateCalls,
+	}
+}
+
+type countingConnectionStatusWriter struct {
+	client.SubResourceWriter
+	updateCalls *int
+}
+
+func (w *countingConnectionStatusWriter) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+	(*w.updateCalls)++
+	return w.SubResourceWriter.Update(ctx, obj, opts...)
+}
 
 type countingConnectionChildReconciler struct {
 	reconcileCalls int
@@ -85,6 +114,36 @@ func TestPulsarConnectionReconcileReadyChildrenWhenAlwaysUpdateEnabled(t *testin
 	}
 	if !containsString(updated.Finalizers, resourcev1alpha1.FinalizerName) {
 		t.Fatalf("expected connection finalizer %q, got %v", resourcev1alpha1.FinalizerName, updated.Finalizers)
+	}
+}
+
+func TestPulsarConnectionReconcileReadyChildrenSkipsNoopConnectionUpdatesWhenAlwaysUpdateEnabled(t *testing.T) {
+	setAlwaysUpdatePulsarResourceForTest(t, true)
+
+	connection := newReadyTestConnection()
+	connection.Finalizers = []string{resourcev1alpha1.FinalizerName}
+	connection.Status.ObservedGeneration = connection.Generation
+	connection.Status.Conditions = []metav1.Condition{*NewReadyCondition(connection.Generation)}
+
+	reconciler, childReconciler, adminCreateCalls := newConnectionReconcilerForReadyChildrenTest(t, connection)
+	countingClient := &countingConnectionClient{Client: reconciler.client}
+	reconciler.client = countingClient
+	reconciler.tenants = []resourcev1alpha1.PulsarTenant{newReadyTestTenant()}
+
+	if err := reconciler.Reconcile(context.Background()); err != nil {
+		t.Fatalf("reconcile connection: %v", err)
+	}
+	if *adminCreateCalls != 2 {
+		t.Fatalf("expected two pulsar admin creations, got %d", *adminCreateCalls)
+	}
+	if childReconciler.reconcileCalls != 1 {
+		t.Fatalf("expected one child reconcile, got %d", childReconciler.reconcileCalls)
+	}
+	if countingClient.updateCalls != 0 {
+		t.Fatalf("expected no no-op connection update, got %d", countingClient.updateCalls)
+	}
+	if countingClient.statusUpdateCalls != 0 {
+		t.Fatalf("expected no no-op connection status update, got %d", countingClient.statusUpdateCalls)
 	}
 }
 
