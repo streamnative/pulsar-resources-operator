@@ -89,13 +89,56 @@ func (r *SecretReconciler) resolveSecretRefData(
 	return stringData, binaryData, &k8sSecret.Type, nil
 }
 
-func validateSecretDataKeys(secretCR *resourcev1alpha1.Secret) error {
+func validateSecretData(secretCR *resourcev1alpha1.Secret) error {
 	for key := range secretCR.Spec.Data {
 		if _, ok := secretCR.Spec.BinaryData[key]; ok {
 			return fmt.Errorf("secret data key %q is set in both spec.data and spec.binaryData", key)
 		}
 	}
+	for key, value := range secretCR.Spec.BinaryData {
+		if _, err := base64.StdEncoding.DecodeString(value); err != nil {
+			return fmt.Errorf("secret binaryData key %q must contain valid base64: %w", key, err)
+		}
+	}
 	return nil
+}
+
+func copyStringMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
+}
+
+func applyResolvedSecretRefData(
+	secretCR *resourcev1alpha1.Secret,
+	resolvedData map[string]string,
+	resolvedBinaryData map[string]string,
+	resolvedType *corev1.SecretType,
+) {
+	directData := copyStringMap(secretCR.Spec.Data)
+	directBinaryData := copyStringMap(secretCR.Spec.BinaryData)
+	mergedData := copyStringMap(resolvedData)
+	mergedBinaryData := copyStringMap(resolvedBinaryData)
+
+	for key, value := range directData {
+		mergedData[key] = value
+		delete(mergedBinaryData, key)
+	}
+	for key, value := range directBinaryData {
+		mergedBinaryData[key] = value
+		delete(mergedData, key)
+	}
+
+	secretCR.Spec.Data = mergedData
+	secretCR.Spec.BinaryData = mergedBinaryData
+	if (secretCR.Spec.Type == nil || *secretCR.Spec.Type == "") && resolvedType != nil {
+		secretCR.Spec.Type = resolvedType
+	}
 }
 
 // Reconcile handles the reconciliation of Secret objects
@@ -126,7 +169,7 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{}, err // No requeue for permanent misconfiguration
 	}
 
-	if err := validateSecretDataKeys(secretCR); err != nil {
+	if err := validateSecretData(secretCR); err != nil {
 		r.updateSecretStatus(ctx, secretCR, err, "ValidationFailed", err.Error())
 		return ctrl.Result{}, err
 	}
@@ -212,20 +255,9 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Resolve secret data from Spec.Data, Spec.BinaryData, or Spec.SecretRef.
-	// The secretCR passed to cloud client methods should have its Spec.Data, Spec.BinaryData, and Spec.Type populated.
-	currentSpecData := make(map[string]string)
-	for k, v := range secretCR.Spec.Data {
-		currentSpecData[k] = v
-	}
-	currentSpecBinaryData := make(map[string]string)
-	for k, v := range secretCR.Spec.BinaryData {
-		currentSpecBinaryData[k] = v
-	}
-	currentSpecType := secretCR.Spec.Type
-
-	// If SecretRef is used, we resolve it and update the CR if necessary.
-	// This ensures that the CR in etcd reflects the data being sent to the cloud API.
+	// Resolve data from SecretRef into an effective copy used for cloud sync.
+	// Do not persist resolved data back to the local CR; referenced Secret rotations must be reflected every reconcile.
+	effectiveSecretCR := secretCR
 	if secretCR.Spec.SecretRef != nil {
 		resolvedData, resolvedBinaryData, resolvedType, err := r.resolveSecretRefData(ctx, secretCR)
 		if err != nil {
@@ -233,34 +265,8 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 			return ctrl.Result{}, err
 		}
 
-		// Check if an update to the local CR is needed
-		updateLocalCR := false
-		if len(secretCR.Spec.Data) == 0 && len(resolvedData) > 0 { // Only populate from SecretRef if direct data is not set
-			secretCR.Spec.Data = resolvedData
-			updateLocalCR = true
-		}
-		if len(secretCR.Spec.BinaryData) == 0 && len(resolvedBinaryData) > 0 { // Only populate from SecretRef if direct binaryData is not set
-			secretCR.Spec.BinaryData = resolvedBinaryData
-			updateLocalCR = true
-		}
-		// Only update type if original spec type was nil or empty, and resolvedType is not nil
-		if (secretCR.Spec.Type == nil || *secretCR.Spec.Type == "") && resolvedType != nil {
-			secretCR.Spec.Type = resolvedType
-			updateLocalCR = true
-		}
-
-		if updateLocalCR {
-			if err := r.Update(ctx, secretCR); err != nil {
-				// Restore original spec data before status update to avoid inconsistent state reporting
-				secretCR.Spec.Data = currentSpecData
-				secretCR.Spec.BinaryData = currentSpecBinaryData
-				secretCR.Spec.Type = currentSpecType
-				r.updateSecretStatus(ctx, secretCR, err, "UpdateLocalSecretFailed",
-					fmt.Sprintf("Failed to update local Secret CR with resolved data: %v", err))
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{Requeue: true}, nil // Requeue to use the updated CR
-		}
+		effectiveSecretCR = secretCR.DeepCopy()
+		applyResolvedSecretRefData(effectiveSecretCR, resolvedData, resolvedBinaryData, resolvedType)
 	}
 
 	existingRemoteSecret, err := secretClient.GetSecret(ctx, secretCR.Name)
@@ -273,13 +279,13 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if existingRemoteSecret == nil {
-		if _, err := secretClient.CreateSecret(ctx, secretCR); err != nil {
+		if _, err := secretClient.CreateSecret(ctx, effectiveSecretCR); err != nil {
 			r.updateSecretStatus(ctx, secretCR, err, "CreateRemoteSecretFailed", fmt.Sprintf("Failed to create remote Secret: %v", err))
 			return ctrl.Result{}, err
 		}
 		r.updateSecretStatus(ctx, secretCR, nil, "Ready", "Secret created and synced successfully")
 	} else {
-		if _, err := secretClient.UpdateSecret(ctx, secretCR); err != nil { // Pass the K8s CR
+		if _, err := secretClient.UpdateSecret(ctx, effectiveSecretCR); err != nil { // Pass the effective K8s CR
 			r.updateSecretStatus(ctx, secretCR, err, "UpdateRemoteSecretFailed", fmt.Sprintf("Failed to update remote Secret: %v", err))
 			return ctrl.Result{}, err
 		}

@@ -19,7 +19,7 @@ The `Secret` resource defines a secret in StreamNative Cloud. It allows you to c
 | `tolerations` | Tolerations for the secret | No |
 | `type` | Used to facilitate programmatic handling of secret data | No |
 
-*Note: Specify at least one of `data`, `binaryData`, or `secretRef`.
+*Note: Specify at least one of `data`, `binaryData`, or `secretRef`.*
 
 ### KubernetesSecretReference Structure
 

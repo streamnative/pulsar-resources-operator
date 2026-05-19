@@ -110,7 +110,7 @@ func TestResolveSecretRefDataErrorsForMissingBinaryDataKey(t *testing.T) {
 	}
 }
 
-func TestValidateSecretDataKeysRejectsDuplicates(t *testing.T) {
+func TestValidateSecretDataRejectsDuplicates(t *testing.T) {
 	secretCR := &resourcev1alpha1.Secret{
 		Spec: resourcev1alpha1.SecretSpec{
 			Data:       map[string]string{"shared": "text"},
@@ -118,7 +118,70 @@ func TestValidateSecretDataKeysRejectsDuplicates(t *testing.T) {
 		},
 	}
 
-	if err := validateSecretDataKeys(secretCR); err == nil {
+	if err := validateSecretData(secretCR); err == nil {
 		t.Fatal("expected duplicate key validation error")
+	}
+}
+
+func TestValidateSecretDataRejectsInvalidBinaryData(t *testing.T) {
+	secretCR := &resourcev1alpha1.Secret{
+		Spec: resourcev1alpha1.SecretSpec{
+			BinaryData: map[string]string{"keystore.p12": "not base64"},
+		},
+	}
+
+	if err := validateSecretData(secretCR); err == nil {
+		t.Fatal("expected invalid base64 validation error")
+	}
+}
+
+func TestApplyResolvedSecretRefDataDirectValuesTakePrecedence(t *testing.T) {
+	secretType := corev1.SecretTypeOpaque
+	secretCR := &resourcev1alpha1.Secret{
+		Spec: resourcev1alpha1.SecretSpec{
+			Data: map[string]string{
+				"direct-data":              "direct",
+				"resolved-binary-conflict": "direct-text",
+			},
+			BinaryData: map[string]string{
+				"direct-binary":          "AAEC/w==",
+				"resolved-data-conflict": "AQIDBA==",
+			},
+		},
+	}
+
+	applyResolvedSecretRefData(
+		secretCR,
+		map[string]string{
+			"resolved-data":          "from-ref",
+			"resolved-data-conflict": "from-ref-text",
+		},
+		map[string]string{
+			"resolved-binary":          "BQYHCA==",
+			"resolved-binary-conflict": "CQoLDA==",
+		},
+		&secretType,
+	)
+
+	if got := secretCR.Spec.Data["resolved-data"]; got != "from-ref" {
+		t.Fatalf("resolved data = %q, want from-ref", got)
+	}
+	if got := secretCR.Spec.BinaryData["resolved-binary"]; got != "BQYHCA==" {
+		t.Fatalf("resolved binaryData = %q, want BQYHCA==", got)
+	}
+	if got := secretCR.Spec.Data["resolved-binary-conflict"]; got != "direct-text" {
+		t.Fatalf("direct data override = %q, want direct-text", got)
+	}
+	if _, ok := secretCR.Spec.BinaryData["resolved-binary-conflict"]; ok {
+		t.Fatal("direct data key should remove resolved binaryData key")
+	}
+	if got := secretCR.Spec.BinaryData["resolved-data-conflict"]; got != "AQIDBA==" {
+		t.Fatalf("direct binaryData override = %q, want AQIDBA==", got)
+	}
+	if _, ok := secretCR.Spec.Data["resolved-data-conflict"]; ok {
+		t.Fatal("direct binaryData key should remove resolved data key")
+	}
+	if secretCR.Spec.Type == nil || *secretCR.Spec.Type != corev1.SecretTypeOpaque {
+		t.Fatalf("type = %v, want Opaque", secretCR.Spec.Type)
 	}
 }

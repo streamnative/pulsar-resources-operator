@@ -48,6 +48,7 @@ type SecretSpec struct {
 	Data map[string]string `json:"data,omitempty"`
 
 	// BinaryData contains binary secret data. Values must be base64-encoded raw bytes.
+	// +kubebuilder:validation:XValidation:rule="self.all(k, self[k].matches('^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$'))",message="binaryData values must be valid base64"
 	// +optional
 	BinaryData map[string]string `json:"binaryData,omitempty"`
 
