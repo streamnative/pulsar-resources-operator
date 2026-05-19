@@ -107,6 +107,18 @@ When you need to delete the actual Pulsar resource (tenant, namespace, or topic)
 
 Always ensure you have the necessary permissions and have considered the implications of deleting resources before proceeding with any deletion operation.
 
+## Reconciliation Skip Behavior
+
+For normal steady-state operation, the operator skips applying Pulsar API changes for a managed child resource when its Kubernetes status already has `Ready=True` and `status.observedGeneration` matches `metadata.generation`. This avoids unnecessary Pulsar admin requests during resyncs.
+
+After upgrading the operator, a new spec field may be introduced while existing custom resources remain `Ready=True` at the same generation. In that case, the new field is not applied to Pulsar until the resource is reconciled again. Recovery options are:
+
+1. Update the custom resource spec or metadata so Kubernetes increments the resource generation, then wait for `Ready=True` again.
+2. Temporarily enable `ALWAYS_UPDATE_PULSAR_RESOURCE=true` (Helm: `features.alwaysUpdatePulsarResource=true`) so the operator re-applies observed managed child resources even when they are already Ready.
+3. Disable `ALWAYS_UPDATE_PULSAR_RESOURCE` after remediation unless continuous re-application is intentionally required.
+
+Use the always-update option carefully. It can apply all observed managed resources on every reconciliation or resync and may increase Pulsar broker/admin API load. The `PulsarConnection` deletion guard is still preserved: a deleting connection is kept until its remaining managed child resources are removed.
+
 ## Changing the Policy
 
 You can change the policy of a Pulsar resource by updating the `lifecyclePolicy` field in the corresponding Kubernetes custom resource. However, there are important considerations to keep in mind when changing the policy:

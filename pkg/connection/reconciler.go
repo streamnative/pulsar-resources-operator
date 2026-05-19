@@ -22,6 +22,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -138,8 +139,11 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 			}
 			return nil
 		}
-		log.Info("Doesn't have associated unready resource, reconcile completed")
-		return nil
+		if !r.shouldReconcileReadyResources() {
+			log.Info("Doesn't have associated unready resource, reconcile completed")
+			return nil
+		}
+		log.Info("AlwaysUpdatePulsarResource is enabled; reconciling ready pulsar resources")
 	}
 	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
@@ -246,6 +250,23 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 
 func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
 	return len(r.unreadyResources) > 0
+}
+
+func (r *PulsarConnectionReconciler) shouldReconcileReadyResources() bool {
+	return feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) && r.hasObservedResource()
+}
+
+func (r *PulsarConnectionReconciler) hasObservedResource() bool {
+	return len(r.tenants) > 0 ||
+		len(r.namespaces) > 0 ||
+		len(r.topics) > 0 ||
+		len(r.permissions) > 0 ||
+		len(r.geoReplications) > 0 ||
+		len(r.packages) > 0 ||
+		len(r.sinks) > 0 ||
+		len(r.sources) > 0 ||
+		len(r.functions) > 0 ||
+		len(r.nsIsolationPolicies) > 0
 }
 
 func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {
