@@ -540,6 +540,8 @@ test-pulsar-namespace   test-tenant/testns   1            1                     
 
 You can update the namespace policies by editing the `namespace.yaml` file and then applying it again using `kubectl apply -f namespace.yaml`. This allows you to modify various settings of the Pulsar namespace.
 
+If a namespace was already `Ready=True` before an operator upgrade introduced a new spec field, that new field may not be applied until the resource is reconciled again. See [Pulsar resource lifecycle reconciliation skip behavior](pulsar_resource_lifecycle.md#reconciliation-skip-behavior) for the skip contract and recovery options, including temporary use of `ALWAYS_UPDATE_PULSAR_RESOURCE`.
+
 Please note the following important points:
 
 1. The fields `name` and `bundles` cannot be updated after the namespace is created. These are immutable properties of the namespace.

@@ -22,8 +22,10 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/admin/config"
 
 	"github.com/go-logr/logr"
+	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"github.com/streamnative/pulsar-resources-operator/pkg/utils"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -130,27 +132,34 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 					len(r.namespaces), "topics", len(r.topics), "geo", len(r.geoReplications))
 				msg := fmt.Sprintf("remaining resources: tenants [%d], namespaces [%d], topics [%d], geoReplications [%d]",
 					len(r.tenants), len(r.namespaces), len(r.topics), len(r.geoReplications))
+				originalStatus := r.connection.Status.DeepCopy()
 				meta.SetStatusCondition(&r.connection.Status.Conditions, *NewErrorCondition(r.connection.Generation, msg))
-				if err := r.client.Status().Update(ctx, r.connection); err != nil {
-					return err
-				}
-				return nil
+				return r.updateConnectionStatusIfChanged(ctx, originalStatus)
 			}
 			return nil
 		}
-		log.Info("Doesn't have associated unready resource, reconcile completed")
-		return nil
+		if !r.shouldReconcileReadyResources() {
+			log.Info("Doesn't have associated unready resource, reconcile completed")
+			return nil
+		}
+		log.Info("AlwaysUpdatePulsarResource is enabled; reconciling ready pulsar resources")
 	}
 	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
+	connectionChanged := false
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
+		connectionChanged = true
 	}
 
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName)
-	if err := r.client.Update(ctx, r.connection); err != nil {
-		return err
+	if controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
+		connectionChanged = true
+	}
+	if connectionChanged {
+		if err := r.client.Update(ctx, r.connection); err != nil {
+			return err
+		}
 	}
 
 	pulsarConfig, err := r.MakePulsarAdminConfig(ctx)
@@ -204,6 +213,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		return fmt.Errorf("PulsarConnectionReconciler Reconcile errors: %v", errs)
 	}
 
+	originalStatus := r.connection.Status.DeepCopy()
 	auth := r.connection.Spec.Authentication
 	if auth != nil && auth.Token != nil && auth.Token.SecretRef != nil {
 		// calculate secret key hash
@@ -237,15 +247,39 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 	r.connection.Status.ObservedGeneration = r.connection.Generation
 	meta.SetStatusCondition(&r.connection.Status.Conditions, *NewReadyCondition(r.connection.Generation))
-	if err := r.client.Status().Update(ctx, r.connection); err != nil {
+	if err := r.updateConnectionStatusIfChanged(ctx, originalStatus); err != nil {
 		return err
 	}
 
 	return nil
 }
 
+func (r *PulsarConnectionReconciler) updateConnectionStatusIfChanged(ctx context.Context, originalStatus *resourcev1alpha1.PulsarConnectionStatus) error {
+	if equality.Semantic.DeepEqual(*originalStatus, r.connection.Status) {
+		return nil
+	}
+	return r.client.Status().Update(ctx, r.connection)
+}
+
 func (r *PulsarConnectionReconciler) hasUnreadyResource() bool {
 	return len(r.unreadyResources) > 0
+}
+
+func (r *PulsarConnectionReconciler) shouldReconcileReadyResources() bool {
+	return feature.DefaultFeatureGate.Enabled(feature.AlwaysUpdatePulsarResource) && r.hasObservedResource()
+}
+
+func (r *PulsarConnectionReconciler) hasObservedResource() bool {
+	return len(r.tenants) > 0 ||
+		len(r.namespaces) > 0 ||
+		len(r.topics) > 0 ||
+		len(r.permissions) > 0 ||
+		len(r.geoReplications) > 0 ||
+		len(r.packages) > 0 ||
+		len(r.sinks) > 0 ||
+		len(r.sources) > 0 ||
+		len(r.functions) > 0 ||
+		len(r.nsIsolationPolicies) > 0
 }
 
 func (r *PulsarConnectionReconciler) addUnreadyResource(obj reconciler.Object) {

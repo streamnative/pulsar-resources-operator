@@ -41,7 +41,7 @@ imagePullSecrets: []
 # - name: test
 
 features:
-  # Enable to force always sync k8s resource status to pulsar.
+  # -- Re-apply observed managed Pulsar resources even when their Kubernetes resources are already Ready. Prefer temporary use for upgrade remediation because it increases Pulsar admin API load on reconciliations and resyncs.
   alwaysUpdatePulsarResource: false
   # resyncPeriod  determines the minimum frequency at which watched resources are reconciled. The unit is hour, default value is 10 hours.
   resyncPeriod: 10
