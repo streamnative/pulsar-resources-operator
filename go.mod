@@ -3,7 +3,7 @@ module github.com/streamnative/pulsar-resources-operator
 go 1.25.11
 
 require (
-	github.com/apache/pulsar-client-go v0.18.0-candidate-1.0.20260129140028-203dcf1cd22d
+	github.com/apache/pulsar-client-go v0.20.1-0.20260618131813-b787489fab29
 	github.com/go-logr/logr v1.4.3
 	github.com/lestrrat-go/jwx/v2 v2.1.4
 	github.com/onsi/ginkgo v1.16.5

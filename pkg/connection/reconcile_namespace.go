@@ -162,6 +162,7 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		BacklogQuotaType:                      namespace.Spec.BacklogQuotaType,
 		OffloadThresholdTime:                  namespace.Spec.OffloadThresholdTime,
 		OffloadThresholdSize:                  namespace.Spec.OffloadThresholdSize,
+		OffloadPolicies:                       namespace.Spec.OffloadPolicies,
 		Deduplication:                         namespace.Spec.Deduplication,
 		BookieAffinityGroup:                   namespace.Spec.BookieAffinityGroup,
 		TopicAutoCreationConfig:               namespace.Spec.TopicAutoCreationConfig,

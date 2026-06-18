@@ -229,6 +229,11 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	OffloadThresholdSize *resource.Quantity `json:"offloadThresholdSize,omitempty"`
 
+	// OffloadPolicies defines the namespace-level offload policies.
+	// Use this to configure tiered storage driver, bucket, region, endpoint, and thresholds.
+	// +optional
+	OffloadPolicies *OffloadPolicies `json:"offloadPolicies,omitempty"`
+
 	// GeoReplicationRefs is a list of references to PulsarGeoReplication resources,
 	// used to configure geo-replication for this namespace.
 	// This is **ONLY** used when you are using PulsarGeoReplication for setting up geo-replication

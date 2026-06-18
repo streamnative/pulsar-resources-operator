@@ -1078,8 +1078,8 @@ var _ = Describe("Resources", func() {
 				// Verify OffloadPolicies
 				Expect(topic.Spec.OffloadPolicies).ShouldNot(BeNil())
 				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadDriver).Should(Equal("aws-s3"))
-				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads).Should(Equal(5))
-				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes).Should(Equal(int64(1073741824)))
+				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads).Should(Equal(pointer.Int(5)))
+				Expect(topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes).Should(Equal(pointer.Int64(1073741824)))
 			})
 
 			It("should update offload policies successfully", func() {
@@ -1088,8 +1088,8 @@ var _ = Describe("Resources", func() {
 				Expect(k8sClient.Get(ctx, tns, topic)).Should(Succeed())
 
 				// Update offload policies
-				topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads = 10
-				topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes = 2147483648 // 2GB
+				topic.Spec.OffloadPolicies.ManagedLedgerOffloadMaxThreads = pointer.Int(10)
+				topic.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes = pointer.Int64(2147483648) // 2GB
 				err := k8sClient.Update(ctx, topic)
 				Expect(err).Should(Succeed())
 			})
@@ -1110,6 +1110,79 @@ var _ = Describe("Resources", func() {
 						tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesTopicName}
 						g.Expect(k8sClient.Get(ctx, tns, t)).Should(Succeed())
 						g.Expect(k8sClient.Delete(ctx, t)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
+		Context("PulsarNamespace Offload Policies", Ordered, func() {
+			var (
+				offloadPoliciesNamespace     *v1alphav1.PulsarNamespace
+				offloadPoliciesNamespaceName string = "test-offload-policies-namespace"
+			)
+
+			BeforeAll(func() {
+				offloadPoliciesNamespace = utils.MakePulsarNamespaceWithOffloadPolicies(
+					namespaceName,
+					offloadPoliciesNamespaceName,
+					"cloud/offload-policies",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create namespace with offload policies successfully", func() {
+				err := k8sClient.Create(ctx, offloadPoliciesNamespace)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct offload policies configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				Expect(ns.Spec.OffloadPolicies).ShouldNot(BeNil())
+				Expect(ns.Spec.OffloadPolicies.ManagedLedgerOffloadDriver).Should(Equal("aws-s3"))
+				Expect(ns.Spec.OffloadPolicies.ManagedLedgerOffloadBucket).Should(Equal("test-bucket"))
+				Expect(ns.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes).Should(Equal(pointer.Int64(0)))
+			})
+
+			It("should update offload policies successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				ns.Spec.OffloadPolicies.ManagedLedgerOffloadBucket = "test-bucket-updated"
+				ns.Spec.OffloadPolicies.ManagedLedgerOffloadThresholdInBytes = pointer.Int64(1024)
+				err := k8sClient.Update(ctx, ns)
+				Expect(err).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if offloadPoliciesNamespace != nil {
+					Eventually(func(g Gomega) {
+						ns := &v1alphav1.PulsarNamespace{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: offloadPoliciesNamespaceName}
+						g.Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
 					}).Should(Succeed())
 				}
 			})
