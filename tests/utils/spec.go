@@ -79,6 +79,7 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
+			LifecyclePolicy:             policy,
 			BacklogQuotaLimitTime:       limitTime,
 			BacklogQuotaLimitSize:       &backlogSize,
 			BacklogQuotaRetentionPolicy: backlogPolicy,
