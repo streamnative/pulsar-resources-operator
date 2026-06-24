@@ -21,6 +21,9 @@ header:
   paths-ignore:
     - 'dist'
     - 'licenses'
+    - 'node_modules/**'
+    - '**/node_modules/**'
+    - '.claude/worktrees/**'
     - '**/*.md'
     - 'LICENSE'
     - 'NOTICE'

@@ -53,22 +53,71 @@ func convertOffloadPolicies(local *v1alpha1.OffloadPolicies) *utils.OffloadPolic
 	if local == nil {
 		return nil
 	}
-	return &utils.OffloadPolicies{
-		ManagedLedgerOffloadDriver:                        local.ManagedLedgerOffloadDriver,
-		ManagedLedgerOffloadMaxThreads:                    local.ManagedLedgerOffloadMaxThreads,
-		ManagedLedgerOffloadThresholdInBytes:              local.ManagedLedgerOffloadThresholdInBytes,
-		ManagedLedgerOffloadDeletionLagInMillis:           local.ManagedLedgerOffloadDeletionLagInMillis,
-		ManagedLedgerOffloadAutoTriggerSizeThresholdBytes: local.ManagedLedgerOffloadAutoTriggerSizeThresholdBytes,
-		S3ManagedLedgerOffloadBucket:                      local.S3ManagedLedgerOffloadBucket,
-		S3ManagedLedgerOffloadRegion:                      local.S3ManagedLedgerOffloadRegion,
-		S3ManagedLedgerOffloadServiceEndpoint:             local.S3ManagedLedgerOffloadServiceEndpoint,
-		S3ManagedLedgerOffloadCredentialID:                local.S3ManagedLedgerOffloadCredentialID,
-		S3ManagedLedgerOffloadCredentialSecret:            local.S3ManagedLedgerOffloadCredentialSecret,
-		S3ManagedLedgerOffloadRole:                        local.S3ManagedLedgerOffloadRole,
-		S3ManagedLedgerOffloadRoleSessionName:             local.S3ManagedLedgerOffloadRoleSessionName,
-		OffloadersDirectory:                               local.OffloadersDirectory,
-		ManagedLedgerOffloadDriverMetadata:                local.ManagedLedgerOffloadDriverMetadata,
+
+	external := &utils.OffloadPolicies{
+		OffloadersDirectory:                          local.OffloadersDirectory,
+		ManagedLedgerOffloadDriver:                   local.ManagedLedgerOffloadDriver,
+		ManagedLedgerOffloadedReadPriority:           local.ManagedLedgerOffloadedReadPriority,
+		ManagedLedgerExtraConfigurations:             local.ManagedLedgerExtraConfigurations,
+		S3ManagedLedgerOffloadRegion:                 local.S3ManagedLedgerOffloadRegion,
+		S3ManagedLedgerOffloadBucket:                 local.S3ManagedLedgerOffloadBucket,
+		S3ManagedLedgerOffloadServiceEndpoint:        local.S3ManagedLedgerOffloadServiceEndpoint,
+		S3ManagedLedgerOffloadCredentialID:           local.S3ManagedLedgerOffloadCredentialID,
+		S3ManagedLedgerOffloadCredentialSecret:       local.S3ManagedLedgerOffloadCredentialSecret,
+		S3ManagedLedgerOffloadRole:                   local.S3ManagedLedgerOffloadRole,
+		S3ManagedLedgerOffloadRoleSessionName:        local.S3ManagedLedgerOffloadRoleSessionName,
+		GCSManagedLedgerOffloadRegion:                local.GCSManagedLedgerOffloadRegion,
+		GCSManagedLedgerOffloadBucket:                local.GCSManagedLedgerOffloadBucket,
+		GCSManagedLedgerOffloadServiceAccountKeyFile: local.GCSManagedLedgerOffloadServiceAccountKeyFile,
+		FileSystemProfilePath:                        local.FileSystemProfilePath,
+		FileSystemURI:                                local.FileSystemURI,
+		ManagedLedgerOffloadBucket:                   local.ManagedLedgerOffloadBucket,
+		ManagedLedgerOffloadRegion:                   local.ManagedLedgerOffloadRegion,
+		ManagedLedgerOffloadServiceEndpoint:          local.ManagedLedgerOffloadServiceEndpoint,
+		ManagedLedgerOffloadDriverMetadata:           local.ManagedLedgerOffloadDriverMetadata,
 	}
+
+	if local.ManagedLedgerOffloadMaxThreads != nil {
+		external.ManagedLedgerOffloadMaxThreads = *local.ManagedLedgerOffloadMaxThreads
+	}
+	if local.ManagedLedgerOffloadReadThreads != nil {
+		external.ManagedLedgerOffloadReadThreads = *local.ManagedLedgerOffloadReadThreads
+	}
+	if local.ManagedLedgerOffloadPrefetchRounds != nil {
+		external.ManagedLedgerOffloadPrefetchRounds = *local.ManagedLedgerOffloadPrefetchRounds
+	}
+	if local.ManagedLedgerOffloadThresholdInSeconds != nil {
+		external.SetManagedLedgerOffloadThresholdInSeconds(*local.ManagedLedgerOffloadThresholdInSeconds)
+	}
+	if local.ManagedLedgerOffloadThresholdInBytes != nil {
+		external.SetManagedLedgerOffloadThresholdInBytes(*local.ManagedLedgerOffloadThresholdInBytes)
+	}
+	if local.ManagedLedgerOffloadDeletionLagInMillis != nil {
+		external.SetManagedLedgerOffloadDeletionLagInMillis(*local.ManagedLedgerOffloadDeletionLagInMillis)
+	}
+	if local.ManagedLedgerOffloadAutoTriggerSizeThresholdBytes != nil {
+		external.ManagedLedgerOffloadAutoTriggerSizeThresholdBytes = *local.ManagedLedgerOffloadAutoTriggerSizeThresholdBytes
+	}
+	if local.S3ManagedLedgerOffloadMaxBlockSizeInBytes != nil {
+		external.S3ManagedLedgerOffloadMaxBlockSizeInBytes = *local.S3ManagedLedgerOffloadMaxBlockSizeInBytes
+	}
+	if local.S3ManagedLedgerOffloadReadBufferSizeInBytes != nil {
+		external.S3ManagedLedgerOffloadReadBufferSizeInBytes = *local.S3ManagedLedgerOffloadReadBufferSizeInBytes
+	}
+	if local.GCSManagedLedgerOffloadMaxBlockSizeInBytes != nil {
+		external.GCSManagedLedgerOffloadMaxBlockSizeInBytes = *local.GCSManagedLedgerOffloadMaxBlockSizeInBytes
+	}
+	if local.GCSManagedLedgerOffloadReadBufferSizeInBytes != nil {
+		external.GCSManagedLedgerOffloadReadBufferSizeInBytes = *local.GCSManagedLedgerOffloadReadBufferSizeInBytes
+	}
+	if local.ManagedLedgerOffloadMaxBlockSizeInBytes != nil {
+		external.ManagedLedgerOffloadMaxBlockSizeInBytes = *local.ManagedLedgerOffloadMaxBlockSizeInBytes
+	}
+	if local.ManagedLedgerOffloadReadBufferSizeInBytes != nil {
+		external.ManagedLedgerOffloadReadBufferSizeInBytes = *local.ManagedLedgerOffloadReadBufferSizeInBytes
+	}
+
+	return external
 }
 
 // convertAutoSubscriptionCreation converts our local AutoSubscriptionCreationOverride to the external library type
@@ -1182,6 +1231,14 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	if params.OffloadThresholdSize != nil {
 		s := params.OffloadThresholdSize.Value()
 		err = p.adminClient.Namespaces().SetOffloadThreshold(*naName, s)
+		if err != nil {
+			return err
+		}
+	}
+
+	if params.OffloadPolicies != nil {
+		externalOffloadPolicies := convertOffloadPolicies(params.OffloadPolicies)
+		err = p.adminClient.Namespaces().SetOffloadPolicies(*naName, *externalOffloadPolicies)
 		if err != nil {
 			return err
 		}
