@@ -79,6 +79,7 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			ConnectionRef: corev1.LocalObjectReference{
 				Name: connectionName,
 			},
+			LifecyclePolicy:             policy,
 			BacklogQuotaLimitTime:       limitTime,
 			BacklogQuotaLimitSize:       &backlogSize,
 			BacklogQuotaRetentionPolicy: backlogPolicy,
@@ -92,6 +93,23 @@ func MakePulsarNamespace(namespace, name, namespaceName, connectionName string, 
 			},
 		},
 	}
+}
+
+// MakePulsarNamespaceWithOffloadPolicies will generate a PulsarNamespace with offload policies configuration
+func MakePulsarNamespaceWithOffloadPolicies(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
+	ns := MakePulsarNamespace(namespace, name, namespaceName, connectionName, policy)
+	ns.Spec.OffloadPolicies = &v1alpha1.OffloadPolicies{
+		ManagedLedgerOffloadDriver:              "aws-s3",
+		ManagedLedgerOffloadBucket:              "test-bucket",
+		ManagedLedgerOffloadRegion:              "us-west-2",
+		ManagedLedgerOffloadServiceEndpoint:     "https://s3.us-west-2.amazonaws.com",
+		ManagedLedgerOffloadThresholdInBytes:    ptr.To[int64](0),
+		ManagedLedgerOffloadDeletionLagInMillis: ptr.To[int64](60000),
+		S3ManagedLedgerOffloadBucket:            "test-bucket",
+		S3ManagedLedgerOffloadRegion:            "us-west-2",
+		S3ManagedLedgerOffloadServiceEndpoint:   "https://s3.us-west-2.amazonaws.com",
+	}
+	return ns
 }
 
 // MakePulsarNamespaceWithRateLimiting will generate a PulsarNamespace with rate limiting configurations
@@ -711,8 +729,8 @@ func MakePulsarTopicWithOffloadPolicies(namespace, name, topicName, connectionNa
 			LifecyclePolicy: policy,
 			OffloadPolicies: &v1alpha1.OffloadPolicies{
 				ManagedLedgerOffloadDriver:           "aws-s3",
-				ManagedLedgerOffloadMaxThreads:       5,
-				ManagedLedgerOffloadThresholdInBytes: 1073741824, // 1GB
+				ManagedLedgerOffloadMaxThreads:       ptr.To(5),
+				ManagedLedgerOffloadThresholdInBytes: ptr.To[int64](1073741824), // 1GB
 			},
 		},
 	}

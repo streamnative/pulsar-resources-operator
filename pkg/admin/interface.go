@@ -54,6 +54,7 @@ type NamespaceParams struct {
 	BacklogQuotaType                      *string
 	OffloadThresholdTime                  *utils.Duration
 	OffloadThresholdSize                  *resource.Quantity
+	OffloadPolicies                       *v1alpha1.OffloadPolicies
 	ReplicationClusters                   []string
 	Deduplication                         *bool
 	BookieAffinityGroup                   *v1alpha1.BookieAffinityGroupData
