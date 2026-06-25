@@ -123,9 +123,11 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 				// keep the connection until all resources has been removed
 
 				// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-				controllerutil.RemoveFinalizer(r.connection, resourcev1alpha1.FinalizerName)
-				if err := r.client.Update(ctx, r.connection); err != nil {
-					return err
+				patch := client.MergeFrom(r.connection.DeepCopy())
+				if controllerutil.RemoveFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
+					if err := r.client.Patch(ctx, r.connection, patch); err != nil {
+						return err
+					}
 				}
 			} else {
 				r.log.Info("There are still remaining resources before deleting the connection", "tenants", len(r.tenants), "namespaces",
@@ -147,17 +149,18 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
 	connectionChanged := false
+	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
+	patch := client.MergeFrom(r.connection.DeepCopy())
 	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
 		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
 		connectionChanged = true
 	}
 
-	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
 	if controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
 		connectionChanged = true
 	}
 	if connectionChanged {
-		if err := r.client.Update(ctx, r.connection); err != nil {
+		if err := r.client.Patch(ctx, r.connection, patch); err != nil {
 			return err
 		}
 	}

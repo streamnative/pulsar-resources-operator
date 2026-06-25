@@ -137,20 +137,24 @@ func (r *PulsarTopicReconciler) ReconcileTopic(ctx context.Context, pulsarAdmin 
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(topic, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, topic); err != nil {
-			log.Error(err, "Failed to remove finalizer")
-			return err
+		patch := client.MergeFrom(topic.DeepCopy())
+		if controllerutil.RemoveFinalizer(topic, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, topic, patch); err != nil {
+				log.Error(err, "Failed to remove finalizer")
+				return err
+			}
 		}
 		return nil
 	}
 
 	if topic.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.AddFinalizer(topic, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, topic); err != nil {
-			log.Error(err, "Failed to add finalizer")
-			return err
+		patch := client.MergeFrom(topic.DeepCopy())
+		if controllerutil.AddFinalizer(topic, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, topic, patch); err != nil {
+				log.Error(err, "Failed to add finalizer")
+				return err
+			}
 		}
 	}
 

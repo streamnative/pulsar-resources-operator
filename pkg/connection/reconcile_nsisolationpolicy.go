@@ -105,20 +105,24 @@ func (r *PulsarNSIsolationPolicyReconciler) ReconcilePolicy(ctx context.Context,
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(policy, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, policy); err != nil {
-			log.Error(err, "Failed to remove finalizer")
-			return err
+		patch := client.MergeFrom(policy.DeepCopy())
+		if controllerutil.RemoveFinalizer(policy, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, policy, patch); err != nil {
+				log.Error(err, "Failed to remove finalizer")
+				return err
+			}
 		}
 
 		return nil
 	}
 
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	controllerutil.AddFinalizer(policy, resourcev1alpha1.FinalizerName)
-	if err := r.conn.client.Update(ctx, policy); err != nil {
-		log.Error(err, "Failed to add finalizer")
-		return err
+	patch := client.MergeFrom(policy.DeepCopy())
+	if controllerutil.AddFinalizer(policy, resourcev1alpha1.FinalizerName) {
+		if err := r.conn.client.Patch(ctx, policy, patch); err != nil {
+			log.Error(err, "Failed to add finalizer")
+			return err
+		}
 	}
 
 	if resourcev1alpha1.IsPulsarResourceReady(policy) &&

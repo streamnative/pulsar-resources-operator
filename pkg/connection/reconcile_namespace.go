@@ -124,10 +124,12 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(namespace, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, namespace); err != nil {
-			log.Error(err, "Failed to remove finalizer")
-			return err
+		patch := client.MergeFrom(namespace.DeepCopy())
+		if controllerutil.RemoveFinalizer(namespace, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, namespace, patch); err != nil {
+				log.Error(err, "Failed to remove finalizer")
+				return err
+			}
 		}
 
 		return nil
@@ -135,10 +137,12 @@ func (r *PulsarNamespaceReconciler) ReconcileNamespace(ctx context.Context, puls
 
 	if namespace.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.AddFinalizer(namespace, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, namespace); err != nil {
-			log.Error(err, "Failed to add finalizer")
-			return err
+		patch := client.MergeFrom(namespace.DeepCopy())
+		if controllerutil.AddFinalizer(namespace, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, namespace, patch); err != nil {
+				log.Error(err, "Failed to add finalizer")
+				return err
+			}
 		}
 	}
 

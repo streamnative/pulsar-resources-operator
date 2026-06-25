@@ -168,17 +168,21 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 					}
 				}
 			}
-			controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
-			if err := r.conn.client.Update(ctx, geoReplication); err != nil {
-				log.Error(err, "Failed to remove finalizer")
-				return err
+			patch := client.MergeFrom(geoReplication.DeepCopy())
+			if controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName) {
+				if err := r.conn.client.Patch(ctx, geoReplication, patch); err != nil {
+					log.Error(err, "Failed to remove finalizer")
+					return err
+				}
 			}
 		}
 	}
-	controllerutil.AddFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
-	if err := r.conn.client.Update(ctx, geoReplication); err != nil {
-		log.Error(err, "Failed to add finalizer")
-		return err
+	patch := client.MergeFrom(geoReplication.DeepCopy())
+	if controllerutil.AddFinalizer(geoReplication, resourcev1alpha1.FinalizerName) {
+		if err := r.conn.client.Patch(ctx, geoReplication, patch); err != nil {
+			log.Error(err, "Failed to add finalizer")
+			return err
+		}
 	}
 
 	secretUpdated, err := r.checkSecretRefUpdate(*destConnection, geoReplication.Spec.ClusterParamsOverride)

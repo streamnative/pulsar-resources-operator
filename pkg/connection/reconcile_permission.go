@@ -102,20 +102,24 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(permission, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, permission); err != nil {
-			log.Error(err, "Failed to remove finalizer")
-			return err
+		patch := client.MergeFrom(permission.DeepCopy())
+		if controllerutil.RemoveFinalizer(permission, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, permission, patch); err != nil {
+				log.Error(err, "Failed to remove finalizer")
+				return err
+			}
 		}
 		return nil
 	}
 
 	if permission.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, permission); err != nil {
-			log.Error(err, "Failed to add finalizer")
-			return err
+		patch := client.MergeFrom(permission.DeepCopy())
+		if controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName) {
+			if err := r.conn.client.Patch(ctx, permission, patch); err != nil {
+				log.Error(err, "Failed to add finalizer")
+				return err
+			}
 		}
 	}
 
