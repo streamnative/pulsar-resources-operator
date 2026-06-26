@@ -167,13 +167,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 					}
 				}
 			}
-			if err := removeFinalizer(ctx, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
+			if err := removeFinalizer(ctx, r.conn.apiReader, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
 				log.Error(err, "Failed to remove finalizer")
 				return err
 			}
 		}
 	}
-	if err := ensureFinalizer(ctx, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
+	if err := ensureFinalizer(ctx, r.conn.apiReader, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
 		log.Error(err, "Failed to add finalizer")
 		return err
 	}

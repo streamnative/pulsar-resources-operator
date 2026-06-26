@@ -120,6 +120,7 @@ func main() {
 
 	if err = (&controllers.PulsarConnectionReconciler{
 		Client:             mgr.GetClient(),
+		APIReader:          mgr.GetAPIReader(),
 		Scheme:             mgr.GetScheme(),
 		Log:                ctrl.Log.WithName("controllers").WithName("PulsarConnection"),
 		Recorder:           mgr.GetEventRecorderFor("pulsarconnection-controller"),

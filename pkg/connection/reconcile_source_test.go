@@ -76,6 +76,7 @@ func newSourceReconciler(t *testing.T, k8sClient client.Client) *PulsarSourceRec
 			connection: newReadyTestConnection(),
 			log:        logr.Discard(),
 			client:     k8sClient,
+			apiReader:  k8sClient,
 		},
 		log: logr.Discard(),
 	}

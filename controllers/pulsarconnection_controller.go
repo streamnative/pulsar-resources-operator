@@ -43,6 +43,9 @@ import (
 // PulsarConnectionReconciler reconciles a PulsarConnection object
 type PulsarConnectionReconciler struct {
 	client.Client
+	// APIReader is an uncached reader (mgr.GetAPIReader()) used for finalizer reads that must
+	// observe a fresh resourceVersion, so deletion is not wedged by informer-cache lag.
+	APIReader          client.Reader
 	Scheme             *runtime.Scheme
 	Log                logr.Logger
 	Recorder           record.EventRecorder
@@ -112,7 +115,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	r.Log.Info("Reconciling PulsarConnection", "name", pulsarConnection.Name, "namespace", pulsarConnection.Namespace)
 
-	reconciler := connection.MakeReconciler(r.Log, r.Client, r.PulsarAdminCreator, pulsarConnection, r.Retryer)
+	reconciler := connection.MakeReconciler(r.Log, r.Client, r.APIReader, r.PulsarAdminCreator, pulsarConnection, r.Retryer)
 	if err := reconciler.Observe(ctx); err != nil {
 		return ctrl.Result{}, err
 	}

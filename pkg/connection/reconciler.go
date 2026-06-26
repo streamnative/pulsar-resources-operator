@@ -44,6 +44,7 @@ type PulsarConnectionReconciler struct {
 	connection          *resourcev1alpha1.PulsarConnection
 	log                 logr.Logger
 	client              client.Client
+	apiReader           client.Reader
 	creator             admin.PulsarAdminCreator
 	tenants             []resourcev1alpha1.PulsarTenant
 	namespaces          []resourcev1alpha1.PulsarNamespace
@@ -67,13 +68,14 @@ type PulsarConnectionReconciler struct {
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
-func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
+func MakeReconciler(log logr.Logger, k8sClient client.Client, apiReader client.Reader, creator admin.PulsarAdminCreator,
 	connection *resourcev1alpha1.PulsarConnection, retryer *utils.ReconcileRetryer) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:        log,
 		connection: connection,
 		creator:    creator,
 		client:     k8sClient,
+		apiReader:  apiReader,
 		retryer:    retryer,
 	}
 	r.reconcilers = []reconciler.Interface{
@@ -124,7 +126,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 				// keep the connection until all resources has been removed
 
 				// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-				if err := removeFinalizer(ctx, r.client, r.connection, resourcev1alpha1.FinalizerName); err != nil {
+				if err := removeFinalizer(ctx, r.apiReader, r.client, r.connection, resourcev1alpha1.FinalizerName); err != nil {
 					return err
 				}
 			} else {
@@ -154,7 +156,9 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 		!controllerutil.ContainsFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
 		connectionKey := client.ObjectKeyFromObject(r.connection)
 		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
-			if err := r.client.Get(ctx, connectionKey, r.connection); err != nil {
+			// Read the live object (uncached) so the retry always starts from a fresh
+			// resourceVersion; the write below still uses the normal cached client.
+			if err := r.apiReader.Get(ctx, connectionKey, r.connection); err != nil {
 				return err
 			}
 			connectionChanged := false

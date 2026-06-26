@@ -101,7 +101,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		if err := removeFinalizer(ctx, r.conn.client, tenant, resourcev1alpha1.FinalizerName); err != nil {
+		if err := removeFinalizer(ctx, r.conn.apiReader, r.conn.client, tenant, resourcev1alpha1.FinalizerName); err != nil {
 			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
@@ -110,7 +110,7 @@ func (r *PulsarTenantReconciler) ReconcileTenant(ctx context.Context, pulsarAdmi
 	}
 
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	if err := ensureFinalizer(ctx, r.conn.client, tenant, resourcev1alpha1.FinalizerName); err != nil {
+	if err := ensureFinalizer(ctx, r.conn.apiReader, r.conn.client, tenant, resourcev1alpha1.FinalizerName); err != nil {
 		log.Error(err, "Failed to add finalizer")
 		return err
 	}

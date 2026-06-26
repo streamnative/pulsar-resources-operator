@@ -153,7 +153,7 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 			}
 		}
 
-		if err := removeFinalizer(ctx, r.conn.client, pkg, resourcev1alpha1.FinalizerName); err != nil {
+		if err := removeFinalizer(ctx, r.conn.apiReader, r.conn.client, pkg, resourcev1alpha1.FinalizerName); err != nil {
 			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
@@ -161,7 +161,7 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 	}
 
 	if pkg.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
-		if err := ensureFinalizer(ctx, r.conn.client, pkg, resourcev1alpha1.FinalizerName); err != nil {
+		if err := ensureFinalizer(ctx, r.conn.apiReader, r.conn.client, pkg, resourcev1alpha1.FinalizerName); err != nil {
 			log.Error(err, "Failed to add finalizer")
 			return err
 		}

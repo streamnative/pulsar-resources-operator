@@ -241,6 +241,7 @@ func newConnectionReconcilerForReadyChildrenTest(t *testing.T, connection *resou
 		connection: connection,
 		log:        logr.Discard(),
 		client:     k8sClient,
+		apiReader:  k8sClient,
 		creator: func(admin.PulsarAdminConfig) (admin.PulsarAdmin, error) {
 			adminCreateCalls++
 			return &admin.DummyPulsarAdmin{}, nil
