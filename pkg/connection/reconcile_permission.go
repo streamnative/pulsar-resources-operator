@@ -24,7 +24,6 @@ import (
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -102,24 +101,18 @@ func (r *PulsarPermissionReconciler) ReconcilePermission(ctx context.Context, pu
 			}
 		}
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		patch := client.MergeFrom(permission.DeepCopy())
-		if controllerutil.RemoveFinalizer(permission, resourcev1alpha1.FinalizerName) {
-			if err := r.conn.client.Patch(ctx, permission, patch); err != nil {
-				log.Error(err, "Failed to remove finalizer")
-				return err
-			}
+		if err := removeFinalizer(ctx, r.conn.client, permission, resourcev1alpha1.FinalizerName); err != nil {
+			log.Error(err, "Failed to remove finalizer")
+			return err
 		}
 		return nil
 	}
 
 	if permission.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		patch := client.MergeFrom(permission.DeepCopy())
-		if controllerutil.AddFinalizer(permission, resourcev1alpha1.FinalizerName) {
-			if err := r.conn.client.Patch(ctx, permission, patch); err != nil {
-				log.Error(err, "Failed to add finalizer")
-				return err
-			}
+		if err := ensureFinalizer(ctx, r.conn.client, permission, resourcev1alpha1.FinalizerName); err != nil {
+			log.Error(err, "Failed to add finalizer")
+			return err
 		}
 	}
 

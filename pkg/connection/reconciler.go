@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -123,11 +124,8 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 				// keep the connection until all resources has been removed
 
 				// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-				patch := client.MergeFrom(r.connection.DeepCopy())
-				if controllerutil.RemoveFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
-					if err := r.client.Patch(ctx, r.connection, patch); err != nil {
-						return err
-					}
+				if err := removeFinalizer(ctx, r.client, r.connection, resourcev1alpha1.FinalizerName); err != nil {
+					return err
 				}
 			} else {
 				r.log.Info("There are still remaining resources before deleting the connection", "tenants", len(r.tenants), "namespaces",
@@ -148,19 +146,30 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
-	connectionChanged := false
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	patch := client.MergeFrom(r.connection.DeepCopy())
-	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
-		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
-		connectionChanged = true
-	}
-
-	if controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
-		connectionChanged = true
-	}
-	if connectionChanged {
-		if err := r.client.Patch(ctx, r.connection, patch); err != nil {
+	// Default the admin service URL and add the finalizer against the live object under
+	// optimistic-lock retry. Reading the latest object first ensures a stale cached copy
+	// cannot overwrite a concurrent spec edit or drop a finalizer owned by another writer.
+	if (r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "") ||
+		!controllerutil.ContainsFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
+		connectionKey := client.ObjectKeyFromObject(r.connection)
+		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			if err := r.client.Get(ctx, connectionKey, r.connection); err != nil {
+				return err
+			}
+			connectionChanged := false
+			if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
+				r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
+				connectionChanged = true
+			}
+			if controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
+				connectionChanged = true
+			}
+			if !connectionChanged {
+				return nil
+			}
+			return r.client.Update(ctx, r.connection)
+		}); err != nil {
 			return err
 		}
 	}

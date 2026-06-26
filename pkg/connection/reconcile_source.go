@@ -26,7 +26,6 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // PulsarSourceReconciler reconciles a PulsarSource object
@@ -100,24 +99,18 @@ func (r *PulsarSourceReconciler) ReconcileSource(ctx context.Context, pulsarAdmi
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		patch := client.MergeFrom(source.DeepCopy())
-		if controllerutil.RemoveFinalizer(source, resourcev1alpha1.FinalizerName) {
-			if err := r.conn.client.Patch(ctx, source, patch); err != nil {
-				log.Error(err, "Failed to remove finalizer")
-				return err
-			}
+		if err := removeFinalizer(ctx, r.conn.client, source, resourcev1alpha1.FinalizerName); err != nil {
+			log.Error(err, "Failed to remove finalizer")
+			return err
 		}
 		return nil
 	}
 
 	if source.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		patch := client.MergeFrom(source.DeepCopy())
-		if controllerutil.AddFinalizer(source, resourcev1alpha1.FinalizerName) {
-			if err := r.conn.client.Patch(ctx, source, patch); err != nil {
-				log.Error(err, "Failed to add finalizer")
-				return err
-			}
+		if err := ensureFinalizer(ctx, r.conn.client, source, resourcev1alpha1.FinalizerName); err != nil {
+			log.Error(err, "Failed to add finalizer")
+			return err
 		}
 	}
 

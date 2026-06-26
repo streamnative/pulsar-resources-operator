@@ -32,24 +32,11 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
 )
 
-// finalizerCountingClient wraps a client.Client and counts full-object Update and Patch
-// calls, so a test can assert that finalizer changes are persisted via a MergeFrom Patch
-// (which carries no resourceVersion precondition) and never via a full-object Update.
-type finalizerCountingClient struct {
-	client.Client
-	updateCalls int
-	patchCalls  int
-}
+// foreignFinalizer stands in for a finalizer owned by another controller (e.g. the
+// Kubernetes foregroundDeletion finalizer, or a GitOps tool's finalizer).
+const foreignFinalizer = "other.io/protect"
 
-func (c *finalizerCountingClient) Update(ctx context.Context, obj client.Object, opts ...client.UpdateOption) error {
-	c.updateCalls++
-	return c.Client.Update(ctx, obj, opts...)
-}
-
-func (c *finalizerCountingClient) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.PatchOption) error {
-	c.patchCalls++
-	return c.Client.Patch(ctx, obj, patch, opts...)
-}
+var sourceKey = types.NamespacedName{Namespace: "test-ns", Name: "source"}
 
 func newSourceTestScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
@@ -82,34 +69,42 @@ func newDeletingTestSource() *resourcev1alpha1.PulsarSource {
 	}
 }
 
-// staleSourceCopyAfterConcurrentWrite returns the source as the reconciler would have
-// cached it, then advances the server-side resourceVersion out of band (simulating a
+func newSourceReconciler(t *testing.T, k8sClient client.Client) *PulsarSourceReconciler {
+	t.Helper()
+	return &PulsarSourceReconciler{
+		conn: &PulsarConnectionReconciler{
+			connection: newReadyTestConnection(),
+			log:        logr.Discard(),
+			client:     k8sClient,
+		},
+		log: logr.Discard(),
+	}
+}
+
+// cachedSourceAfterConcurrentWrite returns the source as the reconciler would have cached
+// it, then advances the server-side object out of band (simulating informer-cache lag or a
 // concurrent writer such as ArgoCD) so the returned copy is stale relative to the server.
-// This is the exact condition under which a full-object Update fails with a 409 conflict.
-func staleSourceCopyAfterConcurrentWrite(t *testing.T, k8sClient client.Client) *resourcev1alpha1.PulsarSource {
+func cachedSourceAfterConcurrentWrite(t *testing.T, k8sClient client.Client, mutateLive func(*resourcev1alpha1.PulsarSource)) *resourcev1alpha1.PulsarSource {
 	t.Helper()
 	cached := &resourcev1alpha1.PulsarSource{}
-	if err := k8sClient.Get(context.Background(),
-		types.NamespacedName{Namespace: "test-ns", Name: "source"}, cached); err != nil {
+	if err := k8sClient.Get(context.Background(), sourceKey, cached); err != nil {
 		t.Fatalf("get cached source: %v", err)
 	}
 
 	live := cached.DeepCopy()
-	live.Annotations = map[string]string{"out-of-band": "bump"}
+	mutateLive(live)
 	if err := k8sClient.Update(context.Background(), live); err != nil {
-		t.Fatalf("out-of-band update to bump resourceVersion: %v", err)
+		t.Fatalf("out-of-band update to advance server state: %v", err)
 	}
 	return cached
 }
 
 // TestReconcileSourceDeletionRemovesFinalizerWithStaleResourceVersion is the regression
-// test for the finalizer-conflict fix. When a PulsarSource is being deleted, the operator
-// must remove its finalizer via a MergeFrom Patch (no resourceVersion precondition) even
-// when the in-memory copy is stale, so the object is garbage-collected promptly without a
-// 409 conflict — regardless of informer-cache lag or concurrent writers (e.g. GitOps).
-//
-// Against the pre-fix implementation (a full-object Update) this test fails: the Update
-// carries the stale resourceVersion and the fake API server rejects it with a 409.
+// test for the original stuck-Terminating bug: deleting a PulsarSource must remove the
+// operator finalizer and let the object be garbage-collected promptly, even when the
+// reconciler's in-memory copy is stale relative to the server (informer-cache lag or a
+// concurrent writer). The reconcile reads the live object under conflict-retry, so it does
+// not get wedged on a 409.
 func TestReconcileSourceDeletionRemovesFinalizerWithStaleResourceVersion(t *testing.T) {
 	scheme := newSourceTestScheme(t)
 	fakeClient := fake.NewClientBuilder().
@@ -118,51 +113,32 @@ func TestReconcileSourceDeletionRemovesFinalizerWithStaleResourceVersion(t *test
 		WithObjects(newDeletingTestSource()).
 		Build()
 
-	// Capture the cached copy, then move the server resourceVersion ahead of it.
-	stale := staleSourceCopyAfterConcurrentWrite(t, fakeClient)
+	// Capture the cached copy, then advance the live object so the cached copy is stale.
+	stale := cachedSourceAfterConcurrentWrite(t, fakeClient, func(live *resourcev1alpha1.PulsarSource) {
+		live.Annotations = map[string]string{"out-of-band": "bump"}
+	})
 
-	countingClient := &finalizerCountingClient{Client: fakeClient}
-	r := &PulsarSourceReconciler{
-		conn: &PulsarConnectionReconciler{
-			connection: newReadyTestConnection(),
-			log:        logr.Discard(),
-			client:     countingClient,
-		},
-		log: logr.Discard(),
-	}
-
+	r := newSourceReconciler(t, fakeClient)
 	// DummyPulsarAdmin.DeletePulsarSource is a no-op; the assertion targets the finalizer path.
 	if err := r.ReconcileSource(context.Background(), &admin.DummyPulsarAdmin{}, stale); err != nil {
 		t.Fatalf("ReconcileSource on a deleting source with a stale resourceVersion returned an error "+
 			"(want nil, no 409 conflict): %v", err)
 	}
 
-	if countingClient.updateCalls != 0 {
-		t.Fatalf("finalizer removal must not use a full-object Update (it carries a resourceVersion "+
-			"precondition); got %d Update call(s)", countingClient.updateCalls)
-	}
-	if countingClient.patchCalls == 0 {
-		t.Fatal("expected finalizer removal to persist via a MergeFrom Patch, got 0 Patch calls")
-	}
-
-	got := &resourcev1alpha1.PulsarSource{}
-	err := fakeClient.Get(context.Background(),
-		types.NamespacedName{Namespace: "test-ns", Name: "source"}, got)
-	if err == nil {
-		t.Fatalf("expected source to be garbage-collected after finalizer removal, "+
-			"but it still exists with finalizers %v", got.Finalizers)
-	}
+	err := fakeClient.Get(context.Background(), sourceKey, &resourcev1alpha1.PulsarSource{})
 	if !apierrors.IsNotFound(err) {
-		t.Fatalf("expected NotFound after finalizer removal, got: %v", err)
+		t.Fatalf("expected source to be garbage-collected after finalizer removal, got err: %v", err)
 	}
 }
 
-// TestSourceStaleFinalizerUpdateConflicts documents the pre-fix failure mode and proves the
-// test harness genuinely surfaces it: removing the finalizer with a full-object Update from a
-// stale-resourceVersion copy returns a 409 conflict. This is precisely the conflict that the
-// MergeFrom Patch fix avoids, and it guards against any regression back to Update-based
-// finalizer writes.
-func TestSourceStaleFinalizerUpdateConflicts(t *testing.T) {
+// TestReconcileSourceDeletionPreservesForeignFinalizer is the regression test for the
+// finalizer-clobbering hazard. The reconciler's cached copy only knows about the operator
+// finalizer, while another controller has concurrently added its own finalizer to the live
+// object. Removing the operator finalizer must remove ONLY the operator finalizer — it must
+// not clobber the foreign finalizer (a JSON merge patch from a stale base would replace the
+// whole list and drop it) and must not delete the object while the foreign finalizer is
+// still pending.
+func TestReconcileSourceDeletionPreservesForeignFinalizer(t *testing.T) {
 	scheme := newSourceTestScheme(t)
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(scheme).
@@ -170,11 +146,25 @@ func TestSourceStaleFinalizerUpdateConflicts(t *testing.T) {
 		WithObjects(newDeletingTestSource()).
 		Build()
 
-	stale := staleSourceCopyAfterConcurrentWrite(t, fakeClient)
+	// The reconciler's cached copy has only the operator finalizer; a concurrent controller
+	// adds a foreign finalizer to the live object, so the cached copy is now stale.
+	stale := cachedSourceAfterConcurrentWrite(t, fakeClient, func(live *resourcev1alpha1.PulsarSource) {
+		controllerutil.AddFinalizer(live, foreignFinalizer)
+	})
 
-	controllerutil.RemoveFinalizer(stale, resourcev1alpha1.FinalizerName)
-	err := fakeClient.Update(context.Background(), stale)
-	if err == nil || !apierrors.IsConflict(err) {
-		t.Fatalf("expected a 409 conflict from a stale full-object Update, got: %v", err)
+	r := newSourceReconciler(t, fakeClient)
+	if err := r.ReconcileSource(context.Background(), &admin.DummyPulsarAdmin{}, stale); err != nil {
+		t.Fatalf("ReconcileSource on a deleting source returned an error: %v", err)
+	}
+
+	got := &resourcev1alpha1.PulsarSource{}
+	if err := fakeClient.Get(context.Background(), sourceKey, got); err != nil {
+		t.Fatalf("source must survive while the foreign finalizer is pending, but Get failed: %v", err)
+	}
+	if containsString(got.Finalizers, resourcev1alpha1.FinalizerName) {
+		t.Fatalf("operator finalizer should have been removed, got %v", got.Finalizers)
+	}
+	if !containsString(got.Finalizers, foreignFinalizer) {
+		t.Fatalf("foreign finalizer must be preserved, got %v", got.Finalizers)
 	}
 }

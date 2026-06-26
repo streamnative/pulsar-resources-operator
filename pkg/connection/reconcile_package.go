@@ -27,7 +27,6 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/feature"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -154,23 +153,17 @@ func (r *PulsarPackageReconciler) ReconcilePackage(ctx context.Context, pulsarAd
 			}
 		}
 
-		patch := client.MergeFrom(pkg.DeepCopy())
-		if controllerutil.RemoveFinalizer(pkg, resourcev1alpha1.FinalizerName) {
-			if err := r.conn.client.Patch(ctx, pkg, patch); err != nil {
-				log.Error(err, "Failed to remove finalizer")
-				return err
-			}
+		if err := removeFinalizer(ctx, r.conn.client, pkg, resourcev1alpha1.FinalizerName); err != nil {
+			log.Error(err, "Failed to remove finalizer")
+			return err
 		}
 		return nil
 	}
 
 	if pkg.Spec.LifecyclePolicy != resourcev1alpha1.KeepAfterDeletion {
-		patch := client.MergeFrom(pkg.DeepCopy())
-		if controllerutil.AddFinalizer(pkg, resourcev1alpha1.FinalizerName) {
-			if err := r.conn.client.Patch(ctx, pkg, patch); err != nil {
-				log.Error(err, "Failed to add finalizer")
-				return err
-			}
+		if err := ensureFinalizer(ctx, r.conn.client, pkg, resourcev1alpha1.FinalizerName); err != nil {
+			log.Error(err, "Failed to add finalizer")
+			return err
 		}
 	}
 

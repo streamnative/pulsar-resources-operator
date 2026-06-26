@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -168,21 +167,15 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 					}
 				}
 			}
-			patch := client.MergeFrom(geoReplication.DeepCopy())
-			if controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName) {
-				if err := r.conn.client.Patch(ctx, geoReplication, patch); err != nil {
-					log.Error(err, "Failed to remove finalizer")
-					return err
-				}
+			if err := removeFinalizer(ctx, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
+				log.Error(err, "Failed to remove finalizer")
+				return err
 			}
 		}
 	}
-	patch := client.MergeFrom(geoReplication.DeepCopy())
-	if controllerutil.AddFinalizer(geoReplication, resourcev1alpha1.FinalizerName) {
-		if err := r.conn.client.Patch(ctx, geoReplication, patch); err != nil {
-			log.Error(err, "Failed to add finalizer")
-			return err
-		}
+	if err := ensureFinalizer(ctx, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
+		log.Error(err, "Failed to add finalizer")
+		return err
 	}
 
 	secretUpdated, err := r.checkSecretRefUpdate(*destConnection, geoReplication.Spec.ClusterParamsOverride)
