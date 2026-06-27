@@ -50,7 +50,7 @@ type APIKeySpec struct {
 
 	// Revoke indicates whether this API key should be revoked
 	// +optional
-	Revoke bool `json:"revoke,omitempty"`
+	Revoke bool `json:"revoke"`
 
 	// EncryptionKey contains the public key used to encrypt the token
 	// +optional
