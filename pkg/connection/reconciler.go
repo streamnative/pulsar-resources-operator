@@ -29,6 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/util/retry"
 	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -43,6 +44,7 @@ type PulsarConnectionReconciler struct {
 	connection          *resourcev1alpha1.PulsarConnection
 	log                 logr.Logger
 	client              client.Client
+	apiReader           client.Reader
 	creator             admin.PulsarAdminCreator
 	tenants             []resourcev1alpha1.PulsarTenant
 	namespaces          []resourcev1alpha1.PulsarNamespace
@@ -66,13 +68,14 @@ type PulsarConnectionReconciler struct {
 var _ reconciler.Interface = &PulsarConnectionReconciler{}
 
 // MakeReconciler creates resource reconcilers
-func MakeReconciler(log logr.Logger, k8sClient client.Client, creator admin.PulsarAdminCreator,
+func MakeReconciler(log logr.Logger, k8sClient client.Client, apiReader client.Reader, creator admin.PulsarAdminCreator,
 	connection *resourcev1alpha1.PulsarConnection, retryer *utils.ReconcileRetryer) reconciler.Interface {
 	r := &PulsarConnectionReconciler{
 		log:        log,
 		connection: connection,
 		creator:    creator,
 		client:     k8sClient,
+		apiReader:  apiReader,
 		retryer:    retryer,
 	}
 	r.reconcilers = []reconciler.Interface{
@@ -123,8 +126,7 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 				// keep the connection until all resources has been removed
 
 				// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-				controllerutil.RemoveFinalizer(r.connection, resourcev1alpha1.FinalizerName)
-				if err := r.client.Update(ctx, r.connection); err != nil {
+				if err := removeFinalizer(ctx, r.apiReader, r.client, r.connection, resourcev1alpha1.FinalizerName); err != nil {
 					return err
 				}
 			} else {
@@ -146,18 +148,32 @@ func (r *PulsarConnectionReconciler) Reconcile(ctx context.Context) error {
 	}
 	log.Info("Reconciling pulsar resources", "resources", r.unreadyResources)
 
-	connectionChanged := false
-	if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
-		r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
-		connectionChanged = true
-	}
-
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	if controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
-		connectionChanged = true
-	}
-	if connectionChanged {
-		if err := r.client.Update(ctx, r.connection); err != nil {
+	// Default the admin service URL and add the finalizer against the live object under
+	// optimistic-lock retry. Reading the latest object first ensures a stale cached copy
+	// cannot overwrite a concurrent spec edit or drop a finalizer owned by another writer.
+	if (r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "") ||
+		!controllerutil.ContainsFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
+		connectionKey := client.ObjectKeyFromObject(r.connection)
+		if err := retry.RetryOnConflict(retry.DefaultRetry, func() error {
+			// Read the live object (uncached) so the retry always starts from a fresh
+			// resourceVersion; the write below still uses the normal cached client.
+			if err := r.apiReader.Get(ctx, connectionKey, r.connection); err != nil {
+				return err
+			}
+			connectionChanged := false
+			if r.connection.Spec.AdminServiceURL == "" && r.connection.Spec.AdminServiceSecureURL != "" {
+				r.connection.Spec.AdminServiceURL = r.connection.Spec.AdminServiceSecureURL
+				connectionChanged = true
+			}
+			if controllerutil.AddFinalizer(r.connection, resourcev1alpha1.FinalizerName) {
+				connectionChanged = true
+			}
+			if !connectionChanged {
+				return nil
+			}
+			return r.client.Update(ctx, r.connection)
+		}); err != nil {
 			return err
 		}
 	}

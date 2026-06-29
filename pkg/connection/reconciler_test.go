@@ -177,6 +177,50 @@ func TestPulsarConnectionDeletionKeepsRemainingResourceGuardWhenAlwaysUpdateEnab
 	}
 }
 
+// TestPulsarConnectionReconcilePreservesConcurrentAdminURLEdit verifies that defaulting
+// spec.AdminServiceURL from the secure URL never overwrites a value written concurrently by
+// another writer. The reconciler reads the live object under conflict-retry before
+// defaulting, so a stale cached copy (AdminServiceURL still empty) cannot clobber a
+// concurrent spec edit.
+func TestPulsarConnectionReconcilePreservesConcurrentAdminURLEdit(t *testing.T) {
+	setAlwaysUpdatePulsarResourceForTest(t, true)
+
+	connection := newReadyTestConnection()
+	connection.Spec.AdminServiceURL = ""
+	connection.Spec.AdminServiceSecureURL = "https://secure:6651"
+
+	reconciler, _, _ := newConnectionReconcilerForReadyChildrenTest(t, connection)
+	reconciler.tenants = []resourcev1alpha1.PulsarTenant{newReadyTestTenant()}
+
+	// A concurrent writer sets AdminServiceURL on the live object after the reconciler
+	// captured its now-stale copy (which still has AdminServiceURL == "").
+	key := types.NamespacedName{Namespace: connection.Namespace, Name: connection.Name}
+	live := &resourcev1alpha1.PulsarConnection{}
+	if err := reconciler.client.Get(context.Background(), key, live); err != nil {
+		t.Fatalf("get live connection: %v", err)
+	}
+	live.Spec.AdminServiceURL = "http://user-edit:8080"
+	if err := reconciler.client.Update(context.Background(), live); err != nil {
+		t.Fatalf("concurrent admin URL edit: %v", err)
+	}
+
+	if err := reconciler.Reconcile(context.Background()); err != nil {
+		t.Fatalf("reconcile connection: %v", err)
+	}
+
+	got := &resourcev1alpha1.PulsarConnection{}
+	if err := reconciler.client.Get(context.Background(), key, got); err != nil {
+		t.Fatalf("get updated connection: %v", err)
+	}
+	if got.Spec.AdminServiceURL != "http://user-edit:8080" {
+		t.Fatalf("concurrent AdminServiceURL edit was overwritten: got %q, want %q",
+			got.Spec.AdminServiceURL, "http://user-edit:8080")
+	}
+	if !containsString(got.Finalizers, resourcev1alpha1.FinalizerName) {
+		t.Fatalf("expected finalizer %q to be added, got %v", resourcev1alpha1.FinalizerName, got.Finalizers)
+	}
+}
+
 func newConnectionReconcilerForReadyChildrenTest(t *testing.T, connection *resourcev1alpha1.PulsarConnection) (*PulsarConnectionReconciler, *countingConnectionChildReconciler, *int) {
 	t.Helper()
 
@@ -197,6 +241,7 @@ func newConnectionReconcilerForReadyChildrenTest(t *testing.T, connection *resou
 		connection: connection,
 		log:        logr.Discard(),
 		client:     k8sClient,
+		apiReader:  k8sClient,
 		creator: func(admin.PulsarAdminConfig) (admin.PulsarAdmin, error) {
 			adminCreateCalls++
 			return &admin.DummyPulsarAdmin{}, nil

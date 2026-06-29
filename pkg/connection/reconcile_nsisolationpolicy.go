@@ -26,7 +26,6 @@ import (
 	"github.com/streamnative/pulsar-resources-operator/pkg/reconciler"
 	"k8s.io/apimachinery/pkg/api/meta"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 // PulsarNSIsolationPolicyReconciler reconciles a PulsarNSIsolationPolicy object
@@ -105,8 +104,7 @@ func (r *PulsarNSIsolationPolicyReconciler) ReconcilePolicy(ctx context.Context,
 		}
 
 		// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-		controllerutil.RemoveFinalizer(policy, resourcev1alpha1.FinalizerName)
-		if err := r.conn.client.Update(ctx, policy); err != nil {
+		if err := removeFinalizer(ctx, r.conn.apiReader, r.conn.client, policy, resourcev1alpha1.FinalizerName); err != nil {
 			log.Error(err, "Failed to remove finalizer")
 			return err
 		}
@@ -115,8 +113,7 @@ func (r *PulsarNSIsolationPolicyReconciler) ReconcilePolicy(ctx context.Context,
 	}
 
 	// TODO use otelcontroller until kube-instrumentation upgrade controller-runtime version to newer
-	controllerutil.AddFinalizer(policy, resourcev1alpha1.FinalizerName)
-	if err := r.conn.client.Update(ctx, policy); err != nil {
+	if err := ensureFinalizer(ctx, r.conn.apiReader, r.conn.client, policy, resourcev1alpha1.FinalizerName); err != nil {
 		log.Error(err, "Failed to add finalizer")
 		return err
 	}

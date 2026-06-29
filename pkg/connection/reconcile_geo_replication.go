@@ -27,7 +27,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	resourcev1alpha1 "github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	"github.com/streamnative/pulsar-resources-operator/pkg/admin"
@@ -168,15 +167,13 @@ func (r *PulsarGeoReplicationReconciler) ReconcileGeoReplication(ctx context.Con
 					}
 				}
 			}
-			controllerutil.RemoveFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
-			if err := r.conn.client.Update(ctx, geoReplication); err != nil {
+			if err := removeFinalizer(ctx, r.conn.apiReader, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
 				log.Error(err, "Failed to remove finalizer")
 				return err
 			}
 		}
 	}
-	controllerutil.AddFinalizer(geoReplication, resourcev1alpha1.FinalizerName)
-	if err := r.conn.client.Update(ctx, geoReplication); err != nil {
+	if err := ensureFinalizer(ctx, r.conn.apiReader, r.conn.client, geoReplication, resourcev1alpha1.FinalizerName); err != nil {
 		log.Error(err, "Failed to add finalizer")
 		return err
 	}
