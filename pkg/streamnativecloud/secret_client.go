@@ -93,6 +93,9 @@ func convertToCloudSecret(secret *resourcev1alpha1.Secret) *cloudapi.Secret {
 	if secret.Spec.Data != nil {
 		cloudSecret.Data = secret.Spec.Data
 	}
+	if secret.Spec.BinaryData != nil {
+		cloudSecret.BinaryData = secret.Spec.BinaryData
+	}
 	if secret.Spec.InstanceName != "" {
 		cloudSecret.InstanceName = secret.Spec.InstanceName
 	}

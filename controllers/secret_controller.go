@@ -16,6 +16,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -49,29 +50,95 @@ type SecretReconciler struct {
 //+kubebuilder:rbac:groups=resource.streamnative.io,resources=streamnativecloudconnections,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch
 
-// getSecretData obtains the Secret data either from direct Data field or from SecretRef
-func (r *SecretReconciler) getSecretData(ctx context.Context, secretCR *resourcev1alpha1.Secret) (map[string]string, *corev1.SecretType, error) {
-	// If direct data is provided, use it
-	if len(secretCR.Spec.Data) > 0 {
-		return secretCR.Spec.Data, secretCR.Spec.Type, nil
+// resolveSecretRefData obtains Secret data from a referenced Kubernetes Secret.
+func (r *SecretReconciler) resolveSecretRefData(
+	ctx context.Context,
+	secretCR *resourcev1alpha1.Secret,
+) (map[string]string, map[string]string, *corev1.SecretType, error) {
+	if secretCR.Spec.SecretRef == nil {
+		return nil, nil, nil, fmt.Errorf("SecretRef is not specified in the Secret spec")
 	}
 
-	// If SecretRef is provided, fetch from the referenced Kubernetes Secret
-	if secretCR.Spec.SecretRef != nil {
-		nsName := secretCR.Spec.SecretRef.ToNamespacedName()
-		k8sSecret := &corev1.Secret{}
-		if err := r.Get(ctx, nsName, k8sSecret); err != nil {
-			return nil, nil, fmt.Errorf("failed to get referenced Secret %s/%s: %w", nsName.Namespace, nsName.Name, err)
-		}
-
-		stringData := make(map[string]string)
-		for k, v := range k8sSecret.Data {
-			stringData[k] = string(v)
-		}
-		return stringData, &k8sSecret.Type, nil
+	nsName := secretCR.Spec.SecretRef.ToNamespacedName()
+	k8sSecret := &corev1.Secret{}
+	if err := r.Get(ctx, nsName, k8sSecret); err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to get referenced Secret %s/%s: %w", nsName.Namespace, nsName.Name, err)
 	}
 
-	return nil, nil, fmt.Errorf("neither Data nor SecretRef is specified in the Secret spec")
+	binaryDataKeys := make(map[string]struct{}, len(secretCR.Spec.SecretRef.BinaryDataKeys))
+	for _, key := range secretCR.Spec.SecretRef.BinaryDataKeys {
+		binaryDataKeys[key] = struct{}{}
+	}
+
+	stringData := make(map[string]string)
+	binaryData := make(map[string]string)
+	for key, value := range k8sSecret.Data {
+		if _, ok := binaryDataKeys[key]; ok {
+			binaryData[key] = base64.StdEncoding.EncodeToString(value)
+			continue
+		}
+		stringData[key] = string(value)
+	}
+
+	for key := range binaryDataKeys {
+		if _, ok := k8sSecret.Data[key]; !ok {
+			return nil, nil, nil, fmt.Errorf("binaryData key %q not found in referenced Secret %s/%s", key, nsName.Namespace, nsName.Name)
+		}
+	}
+
+	return stringData, binaryData, &k8sSecret.Type, nil
+}
+
+func validateSecretData(secretCR *resourcev1alpha1.Secret) error {
+	for key := range secretCR.Spec.Data {
+		if _, ok := secretCR.Spec.BinaryData[key]; ok {
+			return fmt.Errorf("secret data key %q is set in both spec.data and spec.binaryData", key)
+		}
+	}
+	for key, value := range secretCR.Spec.BinaryData {
+		if _, err := base64.StdEncoding.DecodeString(value); err != nil {
+			return fmt.Errorf("secret binaryData key %q must contain valid base64: %w", key, err)
+		}
+	}
+	return nil
+}
+
+func copyStringMap(in map[string]string) map[string]string {
+	if len(in) == 0 {
+		return nil
+	}
+	out := make(map[string]string, len(in))
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
+}
+
+func applyResolvedSecretRefData(
+	secretCR *resourcev1alpha1.Secret,
+	resolvedData map[string]string,
+	resolvedBinaryData map[string]string,
+	resolvedType *corev1.SecretType,
+) {
+	directData := copyStringMap(secretCR.Spec.Data)
+	directBinaryData := copyStringMap(secretCR.Spec.BinaryData)
+	mergedData := copyStringMap(resolvedData)
+	mergedBinaryData := copyStringMap(resolvedBinaryData)
+
+	for key, value := range directData {
+		mergedData[key] = value
+		delete(mergedBinaryData, key)
+	}
+	for key, value := range directBinaryData {
+		mergedBinaryData[key] = value
+		delete(mergedData, key)
+	}
+
+	secretCR.Spec.Data = mergedData
+	secretCR.Spec.BinaryData = mergedBinaryData
+	if (secretCR.Spec.Type == nil || *secretCR.Spec.Type == "") && resolvedType != nil {
+		secretCR.Spec.Type = resolvedType
+	}
 }
 
 // Reconcile handles the reconciliation of Secret objects
@@ -100,6 +167,11 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		err := fmt.Errorf("APIServerRef.Name is required in Secret spec but not specified")
 		r.updateSecretStatus(ctx, secretCR, err, "ValidationFailed", err.Error())
 		return ctrl.Result{}, err // No requeue for permanent misconfiguration
+	}
+
+	if err := validateSecretData(secretCR); err != nil {
+		r.updateSecretStatus(ctx, secretCR, err, "ValidationFailed", err.Error())
+		return ctrl.Result{}, err
 	}
 
 	// Get StreamNativeCloudConnection
@@ -183,46 +255,18 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Resolve secret data from Spec.Data or Spec.SecretRef
-	// The secretCR passed to cloud client methods should have its Spec.Data and Spec.Type populated.
-	currentSpecData := make(map[string]string)
-	for k, v := range secretCR.Spec.Data {
-		currentSpecData[k] = v
-	}
-	currentSpecType := secretCR.Spec.Type
-
-	// If SecretRef is used, we resolve it and update the CR if necessary.
-	// This ensures that the CR in etcd reflects the data being sent to the cloud API.
+	// Resolve data from SecretRef into an effective copy used for cloud sync.
+	// Do not persist resolved data back to the local CR; referenced Secret rotations must be reflected every reconcile.
+	effectiveSecretCR := secretCR
 	if secretCR.Spec.SecretRef != nil {
-		resolvedData, resolvedType, err := r.getSecretData(ctx, secretCR)
+		resolvedData, resolvedBinaryData, resolvedType, err := r.resolveSecretRefData(ctx, secretCR)
 		if err != nil {
 			r.updateSecretStatus(ctx, secretCR, err, "GetSecretDataFailed", fmt.Sprintf("Failed to get secret data from SecretRef: %v", err))
 			return ctrl.Result{}, err
 		}
 
-		// Check if an update to the local CR is needed
-		updateLocalCR := false
-		if len(secretCR.Spec.Data) == 0 { // Only populate from SecretRef if direct data is not set
-			secretCR.Spec.Data = resolvedData
-			updateLocalCR = true
-		}
-		// Only update type if original spec type was nil or empty, and resolvedType is not nil
-		if (secretCR.Spec.Type == nil || *secretCR.Spec.Type == "") && resolvedType != nil {
-			secretCR.Spec.Type = resolvedType
-			updateLocalCR = true
-		}
-
-		if updateLocalCR {
-			if err := r.Update(ctx, secretCR); err != nil {
-				// Restore original spec data before status update to avoid inconsistent state reporting
-				secretCR.Spec.Data = currentSpecData
-				secretCR.Spec.Type = currentSpecType
-				r.updateSecretStatus(ctx, secretCR, err, "UpdateLocalSecretFailed",
-					fmt.Sprintf("Failed to update local Secret CR with resolved data: %v", err))
-				return ctrl.Result{}, err
-			}
-			return ctrl.Result{Requeue: true}, nil // Requeue to use the updated CR
-		}
+		effectiveSecretCR = secretCR.DeepCopy()
+		applyResolvedSecretRefData(effectiveSecretCR, resolvedData, resolvedBinaryData, resolvedType)
 	}
 
 	existingRemoteSecret, err := secretClient.GetSecret(ctx, secretCR.Name)
@@ -235,13 +279,13 @@ func (r *SecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctr
 	}
 
 	if existingRemoteSecret == nil {
-		if _, err := secretClient.CreateSecret(ctx, secretCR); err != nil {
+		if _, err := secretClient.CreateSecret(ctx, effectiveSecretCR); err != nil {
 			r.updateSecretStatus(ctx, secretCR, err, "CreateRemoteSecretFailed", fmt.Sprintf("Failed to create remote Secret: %v", err))
 			return ctrl.Result{}, err
 		}
 		r.updateSecretStatus(ctx, secretCR, nil, "Ready", "Secret created and synced successfully")
 	} else {
-		if _, err := secretClient.UpdateSecret(ctx, secretCR); err != nil { // Pass the K8s CR
+		if _, err := secretClient.UpdateSecret(ctx, effectiveSecretCR); err != nil { // Pass the effective K8s CR
 			r.updateSecretStatus(ctx, secretCR, err, "UpdateRemoteSecretFailed", fmt.Sprintf("Failed to update remote Secret: %v", err))
 			return ctrl.Result{}, err
 		}

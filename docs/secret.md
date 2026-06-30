@@ -12,13 +12,14 @@ The `Secret` resource defines a secret in StreamNative Cloud. It allows you to c
 | `lifecyclePolicy` | Whether to delete the remote secret or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `instanceName` | Name of the instance this secret is for (e.g. pulsar-instance) | No |
 | `location` | Location of the secret | No |
-| `data` | Secret data, values should be base64 encoded | No* |
-| `secretRef` | Reference to a Kubernetes secret. When secretRef is set, it will be used to fetch the secret data, and data field will be ignored | No* |
+| `data` | Text secret data | No* |
+| `binaryData` | Binary secret data. Values must be base64-encoded raw bytes | No* |
+| `secretRef` | Reference to a Kubernetes secret. When secretRef is set, it will be used to fetch secret data. Direct `data` and `binaryData` values take precedence | No* |
 | `poolMemberName` | Pool member to deploy the secret | No |
 | `tolerations` | Tolerations for the secret | No |
 | `type` | Used to facilitate programmatic handling of secret data | No |
 
-*Note: Either `data` or `secretRef` must be specified.
+*Note: Specify at least one of `data`, `binaryData`, or `secretRef`.*
 
 ### KubernetesSecretReference Structure
 
@@ -26,6 +27,7 @@ The `Secret` resource defines a secret in StreamNative Cloud. It allows you to c
 |-------|-------------|----------|
 | `namespace` | Namespace of the Kubernetes secret | Yes |
 | `name` | Name of the Kubernetes secret | Yes |
+| `binaryDataKeys` | Keys from the referenced Kubernetes Secret `.data` map that should be sent as Cloud `binaryData`. All other referenced keys keep the existing text `data` behavior | No |
 
 ### Toleration Structure
 
@@ -62,7 +64,24 @@ spec:
   location: us-central1
 ```
 
-2. Create a Secret resource with Kubernetes Secret reference:
+2. Create a Secret resource with binary data. The value is base64-encoded raw bytes:
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: Secret
+metadata:
+  name: resource-operator-secret-binary
+  namespace: default
+spec:
+  apiServerRef:
+    name: test-connection
+  binaryData:
+    keystore.p12: AAEC/w==
+  instanceName: wstest
+  location: us-central1
+```
+
+3. Create a Secret resource with Kubernetes Secret reference:
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -80,13 +99,33 @@ spec:
   location: us-central1
 ```
 
-3. Apply the YAML file:
+4. Create a Secret resource that sends selected referenced Kubernetes Secret bytes as binary data:
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: Secret
+metadata:
+  name: resource-operator-secret-binary-ref
+  namespace: default
+spec:
+  apiServerRef:
+    name: test-connection
+  secretRef:
+    name: certificate-secret
+    namespace: default
+    binaryDataKeys:
+      - keystore.p12
+  instanceName: wstest
+  location: us-central1
+```
+
+5. Apply the YAML file:
 
 ```shell
 kubectl apply -f secret.yaml
 ```
 
-4. Check the secret status:
+6. Check the secret status:
 
 ```shell
 kubectl get secret.resource.streamnative.io resource-operator-secret
@@ -102,7 +141,8 @@ resource-operator-secret True    1m
 ## Update Secret
 
 You can update the secret by modifying the YAML file and reapplying it. Most fields can be updated, including:
-- Secret data
+- Secret text data
+- Secret binary data
 - Kubernetes secret reference
 - Tolerations
 
