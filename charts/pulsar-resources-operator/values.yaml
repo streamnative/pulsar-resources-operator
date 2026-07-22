@@ -23,6 +23,9 @@ namespace: ""
 # -- The replicas of pod
 replicaCount: 1
 
+# -- Name of the operator container
+containerName: manager
+
 image:
   # -- Image pull policy for the container.
   pullPolicy: IfNotPresent

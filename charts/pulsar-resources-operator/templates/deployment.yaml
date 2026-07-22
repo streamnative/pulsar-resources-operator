@@ -107,7 +107,7 @@ spec:
               key: sas-token
         {{- end }}
         {{- end }}
-        name: manager
+        name: {{ .Values.containerName | quote }}
         securityContext:
           {{- toYaml .Values.securityContext | nindent 10 }}
         image: "{{ .Values.image.manager.registry }}/{{ .Values.image.manager.repository }}:{{ .Values.image.manager.tag | default .Chart.AppVersion }}"
