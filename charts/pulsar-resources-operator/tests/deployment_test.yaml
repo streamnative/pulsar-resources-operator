@@ -31,7 +31,7 @@ tests:
           value: IfNotPresent
       - equal:
           path: spec.template.spec.containers[0].name
-          value: pulsar-resources-operator
+          value: manager
       - equal:
           path: spec.replicas
           value: 1
