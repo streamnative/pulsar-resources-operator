@@ -30,6 +30,9 @@ tests:
           path: spec.template.spec.containers[0].imagePullPolicy
           value: IfNotPresent
       - equal:
+          path: spec.template.spec.containers[0].name
+          value: manager
+      - equal:
           path: spec.replicas
           value: 1
       - isNull:
@@ -48,6 +51,22 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].image
           value: docker.io/streamnative/pulsar-resources-operator:v0.8.1
+
+  - it: should update the container name successfully
+    set:
+      containerName: custom-operator
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: custom-operator
+
+  - it: should preserve the legacy container name when the value is unset
+    set:
+      containerName: null
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: manager
 
   - it: should update the replicas successfully
     set:

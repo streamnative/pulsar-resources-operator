@@ -58,6 +58,7 @@ kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources
 |-----|------|---------|-------------|
 | affinity | object | `{}` | Add affinity for pod |
 | annotations | object | `{}` | Add annotations for the deployment |
+| containerName | string | `"manager"` | Name of the operator container |
 | features.alwaysUpdatePulsarResource | bool | `false` | Re-apply observed managed Pulsar resources even when their Kubernetes resources are already Ready. Prefer temporary use for upgrade remediation because it increases Pulsar admin API load on reconciliations and resyncs. |
 | fullnameOverride | string | `""` | It will override the name of deployment |
 | image.manager.registry | string | `"docker.io"` | Specififies the registry of images, especially when user want to use a different image hub |
