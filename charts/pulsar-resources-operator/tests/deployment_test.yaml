@@ -60,6 +60,14 @@ tests:
           path: spec.template.spec.containers[0].name
           value: custom-operator
 
+  - it: should preserve the legacy container name when the value is unset
+    set:
+      containerName: null
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].name
+          value: manager
+
   - it: should update the replicas successfully
     set:
       replicaCount: 2
