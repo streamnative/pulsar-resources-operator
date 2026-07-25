@@ -704,6 +704,17 @@ func buildBacklogQuota(limitTime *rutils.Duration, limitSize *resource.Quantity,
 	return &backlogQuota, backlogQuotaType, nil
 }
 
+func oppositeBacklogQuotaType(backlogQuotaType utils.BacklogQuotaType) (utils.BacklogQuotaType, error) {
+	switch backlogQuotaType {
+	case utils.DestinationStorage:
+		return utils.MessageAge, nil
+	case utils.MessageAge:
+		return utils.DestinationStorage, nil
+	default:
+		return "", fmt.Errorf("unsupported backlog quota type %s", backlogQuotaType)
+	}
+}
+
 // GetTopicClusters get the assigned clusters of the topic to the local default cluster
 func (p *PulsarAdminClient) GetTopicClusters(name string, persistent *bool) ([]string, error) {
 	completeTopicName := MakeCompleteTopicName(name, persistent)
@@ -1212,8 +1223,24 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		return err
 	}
 	if backlogQuotaPolicy != nil {
+		staleBacklogQuotaType, err := oppositeBacklogQuotaType(backlogQuotaType)
+		if err != nil {
+			return err
+		}
+		// Pulsar stores backlog quotas in a map keyed by type. Setting one type does not replace the other.
+		backlogQuotaMap, err := p.adminClient.Namespaces().GetBacklogQuotaMap(completeNSName)
+		if err != nil {
+			return err
+		}
+
 		if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlogQuotaPolicy, backlogQuotaType); err != nil {
 			return err
+		}
+
+		if _, exists := backlogQuotaMap[staleBacklogQuotaType]; exists {
+			if err := p.adminClient.Namespaces().RemoveBacklogQuotaByType(completeNSName, staleBacklogQuotaType); err != nil {
+				return err
+			}
 		}
 	}
 
