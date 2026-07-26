@@ -110,6 +110,18 @@ func validateTopicPermissionsContain(topicName string, expectedRoles []string) {
 	}, "20s", "100ms").Should(Succeed())
 }
 
+func parseBacklogQuotaTypes(output string) map[string]struct{} {
+	// Pulsar 2.10 prints map entries as "<type>    <quota>" lines rather than JSON.
+	quotaTypes := make(map[string]struct{})
+	for _, line := range strings.Split(output, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			quotaTypes[fields[0]] = struct{}{}
+		}
+	}
+	return quotaTypes
+}
+
 var _ = Describe("Resources", func() {
 
 	var (
@@ -1838,10 +1850,9 @@ var _ = Describe("Resources", func() {
 						"./bin/pulsar-admin namespaces get-backlog-quotas "+storagePoliciesPulsarNSName)
 					g.Expect(err).Should(Succeed())
 
-					var quotas map[string]json.RawMessage
-					g.Expect(json.Unmarshal([]byte(stdout), &quotas)).Should(Succeed())
-					g.Expect(quotas).Should(HaveKey("message_age"))
-					g.Expect(quotas).ShouldNot(HaveKey("destination_storage"))
+					quotaTypes := parseBacklogQuotaTypes(stdout)
+					g.Expect(quotaTypes).Should(HaveKey("message_age"))
+					g.Expect(quotaTypes).ShouldNot(HaveKey("destination_storage"))
 				}, "30s", "200ms").Should(Succeed())
 			})
 
@@ -1867,10 +1878,9 @@ var _ = Describe("Resources", func() {
 						"./bin/pulsar-admin namespaces get-backlog-quotas "+storagePoliciesPulsarNSName)
 					g.Expect(err).Should(Succeed())
 
-					var quotas map[string]json.RawMessage
-					g.Expect(json.Unmarshal([]byte(stdout), &quotas)).Should(Succeed())
-					g.Expect(quotas).Should(HaveKey("destination_storage"))
-					g.Expect(quotas).ShouldNot(HaveKey("message_age"))
+					quotaTypes := parseBacklogQuotaTypes(stdout)
+					g.Expect(quotaTypes).Should(HaveKey("destination_storage"))
+					g.Expect(quotaTypes).ShouldNot(HaveKey("message_age"))
 				}, "30s", "200ms").Should(Succeed())
 			})
 
