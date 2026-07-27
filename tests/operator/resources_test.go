@@ -1826,13 +1826,15 @@ var _ = Describe("Resources", func() {
 				Expect(*ns.Spec.BacklogQuotaType).Should(Equal("destination_storage"))
 			})
 
-			It("should replace destination storage backlog quota with message age", func() {
+			It("should replace destination storage backlog quota with message age while lowering retention", func() {
 				ns := &v1alphav1.PulsarNamespace{}
 				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
 				messageAge := rutils.Duration("24h")
+				retentionSize := resource.MustParse("10Gi") // Lower than the existing 20Gi destination quota.
 				unlimitedSize := resource.MustParse("-1")
+				ns.Spec.RetentionSize = &retentionSize
 				ns.Spec.BacklogQuotaLimitTime = &messageAge
 				ns.Spec.BacklogQuotaLimitSize = &unlimitedSize
 				ns.Spec.BacklogQuotaRetentionPolicy = pointer.String("consumer_backlog_eviction")
@@ -1861,7 +1863,7 @@ var _ = Describe("Resources", func() {
 				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
 				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
 
-				backlogSize := resource.MustParse("20Gi")
+				backlogSize := resource.MustParse("5Gi") // Keep below the 10Gi retention set above.
 				ns.Spec.BacklogQuotaLimitSize = &backlogSize
 				ns.Spec.BacklogQuotaRetentionPolicy = pointer.String("producer_request_hold")
 				ns.Spec.BacklogQuotaType = pointer.String("destination_storage")
