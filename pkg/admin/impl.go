@@ -644,13 +644,25 @@ func (p *PulsarAdminClient) applyRetentionAndBacklogPolicies(topicName *utils.To
 }
 
 func (p *PulsarAdminClient) applyNamespaceRetentionAndBacklogPolicies(completeNSName string,
-	retention *utils.RetentionPolicies, backlog *utils.BacklogQuota, backlogType utils.BacklogQuotaType) error {
+	retention *utils.RetentionPolicies, backlog *utils.BacklogQuota, backlogType utils.BacklogQuotaType,
+	staleBacklogQuotaType utils.BacklogQuotaType, staleBacklogQuotaExists bool) error {
+	removeStaleBacklogQuota := func() error {
+		if !staleBacklogQuotaExists {
+			return nil
+		}
+		return p.adminClient.Namespaces().RemoveBacklogQuotaByType(completeNSName, staleBacklogQuotaType)
+	}
+
 	if err := p.adminClient.Namespaces().SetRetention(completeNSName, *retention); err != nil {
 		if !isRetentionBacklogOrderingError(err) {
 			return err
 		}
 
 		if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlog, backlogType); err != nil {
+			return err
+		}
+		// Keep the stale quota until its replacement is installed so failed updates retain backlog enforcement.
+		if err := removeStaleBacklogQuota(); err != nil {
 			return err
 		}
 
@@ -662,6 +674,9 @@ func (p *PulsarAdminClient) applyNamespaceRetentionAndBacklogPolicies(completeNS
 	}
 
 	if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlog, backlogType); err != nil {
+		return err
+	}
+	if err := removeStaleBacklogQuota(); err != nil {
 		return err
 	}
 
@@ -1263,14 +1278,9 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 
 	switch {
 	case retentionPolicy != nil && backlogQuotaPolicy != nil:
-		if staleBacklogQuotaExists {
-			// Pulsar validates retention against every configured quota, including a stale opposite type.
-			if err := p.adminClient.Namespaces().RemoveBacklogQuotaByType(completeNSName, staleBacklogQuotaType); err != nil {
-				return err
-			}
-		}
 		if err := p.applyNamespaceRetentionAndBacklogPolicies(
-			completeNSName, retentionPolicy, backlogQuotaPolicy, backlogQuotaType); err != nil {
+			completeNSName, retentionPolicy, backlogQuotaPolicy, backlogQuotaType,
+			staleBacklogQuotaType, staleBacklogQuotaExists); err != nil {
 			return err
 		}
 	case retentionPolicy != nil:

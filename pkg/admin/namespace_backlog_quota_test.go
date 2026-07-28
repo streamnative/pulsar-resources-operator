@@ -139,13 +139,6 @@ func TestApplyNamespacePoliciesReplacesBacklogQuotaType(t *testing.T) {
 					path:   "/admin/v2/namespaces/public/default/backlogQuotaMap",
 				},
 			}
-			if tt.retentionSize != "" && tt.wantDelete {
-				want = append(want, request{
-					method:    http.MethodDelete,
-					path:      "/admin/v2/namespaces/public/default/backlogQuota",
-					quotaType: string(tt.staleType),
-				})
-			}
 			if tt.retentionSize != "" {
 				want = append(want, request{
 					method: http.MethodPost,
@@ -157,11 +150,17 @@ func TestApplyNamespacePoliciesReplacesBacklogQuotaType(t *testing.T) {
 				path:      "/admin/v2/namespaces/public/default/backlogQuota",
 				quotaType: string(tt.desiredType),
 			})
-			if tt.retentionSize == "" && tt.wantDelete {
+			if tt.wantDelete {
 				want = append(want, request{
 					method:    http.MethodDelete,
 					path:      "/admin/v2/namespaces/public/default/backlogQuota",
 					quotaType: string(tt.staleType),
+				})
+			}
+			if tt.retentionSize != "" && tt.wantDelete {
+				want = append(want, request{
+					method: http.MethodPost,
+					path:   "/admin/v2/namespaces/public/default/retention",
 				})
 			}
 			if len(requests) != len(want) {
@@ -173,5 +172,96 @@ func TestApplyNamespacePoliciesReplacesBacklogQuotaType(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestApplyNamespacePoliciesKeepsStaleBacklogQuotaWhenReplacementFails(t *testing.T) {
+	type request struct {
+		method    string
+		path      string
+		quotaType string
+	}
+
+	var requests []request
+	staleQuotaExists := true
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.EscapedPath() {
+		case "/admin/v2/namespaces/public/default/backlogQuotaMap":
+			requests = append(requests, request{
+				method: r.Method,
+				path:   r.URL.EscapedPath(),
+			})
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, `{"message_age":{}}`)
+			return
+		case "/admin/v2/namespaces/public/default/backlogQuota":
+			adminRequest := request{
+				method:    r.Method,
+				path:      r.URL.EscapedPath(),
+				quotaType: r.URL.Query().Get("backlogQuotaType"),
+			}
+			requests = append(requests, adminRequest)
+			if r.Method == http.MethodPost && adminRequest.quotaType == string(pulsarutils.DestinationStorage) {
+				http.Error(w, "Backlog quota exceeds retention", http.StatusPreconditionFailed)
+				return
+			}
+			if r.Method == http.MethodDelete && adminRequest.quotaType == string(pulsarutils.MessageAge) {
+				staleQuotaExists = false
+			}
+		case "/admin/v2/namespaces/public/default/retention":
+			requests = append(requests, request{
+				method: r.Method,
+				path:   r.URL.EscapedPath(),
+			})
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := pulsaradmin.New(&config.Config{WebServiceURL: server.URL})
+	if err != nil {
+		t.Fatalf("create Pulsar admin client: %v", err)
+	}
+
+	retentionSize := resource.MustParse("10Gi")
+	limitSize := resource.MustParse("20Gi")
+	params := &NamespaceParams{
+		RetentionSize:               &retentionSize,
+		BacklogQuotaLimitSize:       &limitSize,
+		BacklogQuotaRetentionPolicy: ptr.To("consumer_backlog_eviction"),
+		BacklogQuotaType:            ptr.To(string(pulsarutils.DestinationStorage)),
+	}
+
+	adminClient := &PulsarAdminClient{adminClient: client}
+	err = adminClient.applyNamespacePolicies("public/default", params)
+	if err == nil {
+		t.Fatal("apply namespace policies succeeded, want replacement failure")
+	}
+	if !staleQuotaExists {
+		t.Fatal("stale backlog quota was removed after replacement failed")
+	}
+
+	want := []request{
+		{
+			method: http.MethodGet,
+			path:   "/admin/v2/namespaces/public/default/backlogQuotaMap",
+		},
+		{
+			method: http.MethodPost,
+			path:   "/admin/v2/namespaces/public/default/retention",
+		},
+		{
+			method:    http.MethodPost,
+			path:      "/admin/v2/namespaces/public/default/backlogQuota",
+			quotaType: string(pulsarutils.DestinationStorage),
+		},
+	}
+	if len(requests) != len(want) {
+		t.Fatalf("requests = %#v, want %#v", requests, want)
+	}
+	for i := range want {
+		if requests[i] != want[i] {
+			t.Fatalf("request[%d] = %#v, want %#v", i, requests[i], want[i])
+		}
 	}
 }
