@@ -643,6 +643,46 @@ func (p *PulsarAdminClient) applyRetentionAndBacklogPolicies(topicName *utils.To
 	return nil
 }
 
+func (p *PulsarAdminClient) applyNamespaceRetentionAndBacklogPolicies(completeNSName string,
+	retention *utils.RetentionPolicies, backlog *utils.BacklogQuota, backlogType utils.BacklogQuotaType,
+	staleBacklogQuotaType utils.BacklogQuotaType, staleBacklogQuotaExists bool) error {
+	removeStaleBacklogQuota := func() error {
+		if !staleBacklogQuotaExists {
+			return nil
+		}
+		return p.adminClient.Namespaces().RemoveBacklogQuotaByType(completeNSName, staleBacklogQuotaType)
+	}
+
+	if err := p.adminClient.Namespaces().SetRetention(completeNSName, *retention); err != nil {
+		if !isRetentionBacklogOrderingError(err) {
+			return err
+		}
+
+		if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlog, backlogType); err != nil {
+			return err
+		}
+		// Keep the stale quota until its replacement is installed so failed updates retain backlog enforcement.
+		if err := removeStaleBacklogQuota(); err != nil {
+			return err
+		}
+
+		if err := p.adminClient.Namespaces().SetRetention(completeNSName, *retention); err != nil {
+			return err
+		}
+
+		return nil
+	}
+
+	if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlog, backlogType); err != nil {
+		return err
+	}
+	if err := removeStaleBacklogQuota(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func isRetentionBacklogOrderingError(err error) bool {
 	if ErrorReason(err) != ReasonInvalidParameter {
 		return false
@@ -702,6 +742,17 @@ func buildBacklogQuota(limitTime *rutils.Duration, limitSize *resource.Quantity,
 	}
 
 	return &backlogQuota, backlogQuotaType, nil
+}
+
+func oppositeBacklogQuotaType(backlogQuotaType utils.BacklogQuotaType) (utils.BacklogQuotaType, error) {
+	switch backlogQuotaType {
+	case utils.DestinationStorage:
+		return utils.MessageAge, nil
+	case utils.MessageAge:
+		return utils.DestinationStorage, nil
+	default:
+		return "", fmt.Errorf("unsupported backlog quota type %s", backlogQuotaType)
+	}
 }
 
 // GetTopicClusters get the assigned clusters of the topic to the local default cluster
@@ -1174,6 +1225,7 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
+	var retentionPolicy *utils.RetentionPolicies
 	if params.RetentionTime != nil || params.RetentionSize != nil {
 		retentionTime := -1
 		retentionSize := -1
@@ -1195,11 +1247,8 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 				retentionSize = int(params.RetentionSize.ScaledValue(resource.Mega))
 			}
 		}
-		retentionPolicy := utils.NewRetentionPolicies(retentionTime, retentionSize)
-		err = p.adminClient.Namespaces().SetRetention(completeNSName, retentionPolicy)
-		if err != nil {
-			return err
-		}
+		policy := utils.NewRetentionPolicies(retentionTime, retentionSize)
+		retentionPolicy = &policy
 	}
 
 	backlogQuotaPolicy, backlogQuotaType, err := buildBacklogQuota(
@@ -1211,9 +1260,41 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	if err != nil {
 		return err
 	}
+
+	var staleBacklogQuotaType utils.BacklogQuotaType
+	var staleBacklogQuotaExists bool
 	if backlogQuotaPolicy != nil {
+		staleBacklogQuotaType, err = oppositeBacklogQuotaType(backlogQuotaType)
+		if err != nil {
+			return err
+		}
+		// Pulsar stores backlog quotas in a map keyed by type. Setting one type does not replace the other.
+		backlogQuotaMap, err := p.adminClient.Namespaces().GetBacklogQuotaMap(completeNSName)
+		if err != nil {
+			return err
+		}
+		_, staleBacklogQuotaExists = backlogQuotaMap[staleBacklogQuotaType]
+	}
+
+	switch {
+	case retentionPolicy != nil && backlogQuotaPolicy != nil:
+		if err := p.applyNamespaceRetentionAndBacklogPolicies(
+			completeNSName, retentionPolicy, backlogQuotaPolicy, backlogQuotaType,
+			staleBacklogQuotaType, staleBacklogQuotaExists); err != nil {
+			return err
+		}
+	case retentionPolicy != nil:
+		if err := p.adminClient.Namespaces().SetRetention(completeNSName, *retentionPolicy); err != nil {
+			return err
+		}
+	case backlogQuotaPolicy != nil:
 		if err := p.adminClient.Namespaces().SetBacklogQuota(completeNSName, *backlogQuotaPolicy, backlogQuotaType); err != nil {
 			return err
+		}
+		if staleBacklogQuotaExists {
+			if err := p.adminClient.Namespaces().RemoveBacklogQuotaByType(completeNSName, staleBacklogQuotaType); err != nil {
+				return err
+			}
 		}
 	}
 

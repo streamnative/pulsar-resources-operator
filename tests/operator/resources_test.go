@@ -110,6 +110,18 @@ func validateTopicPermissionsContain(topicName string, expectedRoles []string) {
 	}, "20s", "100ms").Should(Succeed())
 }
 
+func parseBacklogQuotaTypes(output string) map[string]struct{} {
+	// Pulsar 2.10 prints map entries as "<type>    <quota>" lines rather than JSON.
+	quotaTypes := make(map[string]struct{})
+	for _, line := range strings.Split(output, "\n") {
+		fields := strings.Fields(line)
+		if len(fields) > 0 {
+			quotaTypes[fields[0]] = struct{}{}
+		}
+	}
+	return quotaTypes
+}
+
 var _ = Describe("Resources", func() {
 
 	var (
@@ -1812,6 +1824,66 @@ var _ = Describe("Resources", func() {
 				Expect(*ns.Spec.BacklogQuotaRetentionPolicy).Should(Equal("producer_request_hold"))
 				Expect(ns.Spec.BacklogQuotaType).ShouldNot(BeNil())
 				Expect(*ns.Spec.BacklogQuotaType).Should(Equal("destination_storage"))
+			})
+
+			It("should replace destination storage backlog quota with message age while lowering retention", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				messageAge := rutils.Duration("24h")
+				retentionSize := resource.MustParse("10Gi") // Lower than the existing 20Gi destination quota.
+				unlimitedSize := resource.MustParse("-1")
+				ns.Spec.RetentionSize = &retentionSize
+				ns.Spec.BacklogQuotaLimitTime = &messageAge
+				ns.Spec.BacklogQuotaLimitSize = &unlimitedSize
+				ns.Spec.BacklogQuotaRetentionPolicy = pointer.String("consumer_backlog_eviction")
+				ns.Spec.BacklogQuotaType = pointer.String("message_age")
+				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
+
+				podName := fmt.Sprintf("%s-broker-0", brokerName)
+				containerName := fmt.Sprintf("%s-broker", brokerName)
+				Eventually(func(g Gomega) {
+					current := &v1alphav1.PulsarNamespace{}
+					g.Expect(k8sClient.Get(ctx, tns, current)).Should(Succeed())
+					g.Expect(v1alphav1.IsPulsarResourceReady(current)).Should(BeTrue())
+
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin namespaces get-backlog-quotas "+storagePoliciesPulsarNSName)
+					g.Expect(err).Should(Succeed())
+
+					quotaTypes := parseBacklogQuotaTypes(stdout)
+					g.Expect(quotaTypes).Should(HaveKey("message_age"))
+					g.Expect(quotaTypes).ShouldNot(HaveKey("destination_storage"))
+				}, "30s", "200ms").Should(Succeed())
+			})
+
+			It("should replace message age backlog quota with destination storage", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: storagePoliciesNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				backlogSize := resource.MustParse("5Gi") // Keep below the 10Gi retention set above.
+				ns.Spec.BacklogQuotaLimitSize = &backlogSize
+				ns.Spec.BacklogQuotaRetentionPolicy = pointer.String("producer_request_hold")
+				ns.Spec.BacklogQuotaType = pointer.String("destination_storage")
+				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
+
+				podName := fmt.Sprintf("%s-broker-0", brokerName)
+				containerName := fmt.Sprintf("%s-broker", brokerName)
+				Eventually(func(g Gomega) {
+					current := &v1alphav1.PulsarNamespace{}
+					g.Expect(k8sClient.Get(ctx, tns, current)).Should(Succeed())
+					g.Expect(v1alphav1.IsPulsarResourceReady(current)).Should(BeTrue())
+
+					stdout, _, err := utils.ExecInPod(k8sConfig, namespaceName, podName, containerName,
+						"./bin/pulsar-admin namespaces get-backlog-quotas "+storagePoliciesPulsarNSName)
+					g.Expect(err).Should(Succeed())
+
+					quotaTypes := parseBacklogQuotaTypes(stdout)
+					g.Expect(quotaTypes).Should(HaveKey("destination_storage"))
+					g.Expect(quotaTypes).ShouldNot(HaveKey("message_age"))
+				}, "30s", "200ms").Should(Succeed())
 			})
 
 			It("should have correct compaction threshold", func() {
