@@ -8,7 +8,7 @@ Key points about PulsarGeoReplication:
 
 1. It's used for configuring replication between separate Pulsar instances.
 2. The replication is unidirectional. To set up bidirectional replication, you need to create two PulsarGeoReplication resources, one for each direction.
-3. It creates a new cluster in the destination Pulsar instance for each PulsarGeoReplication resource.
+3. It creates or updates a cluster entry in the **source** Pulsar instance. That entry uses the destination connection's `clusterName` and service/authentication settings.
 4. It's different from configuring geo-replication between clusters within a single Pulsar instance. For that purpose, use the `replicationClusters` field in the `PulsarNamespace` resource instead.
 
 PulsarGeoReplication is particularly useful for scenarios where you need to replicate data across different Pulsar deployments, such as disaster recovery, data locality, or compliance with data residency requirements.
@@ -30,7 +30,7 @@ The `PulsarGeoReplication` resource has the following specifications:
 | `lifecyclePolicy` | Determines whether to keep or delete the geo-replication configuration when the Kubernetes resource is deleted. Options: `CleanUpAfterDeletion`, `KeepAfterDeletion`. Default is `CleanUpAfterDeletion`. | No |
 | `clusterParamsOverride` | Allows overriding specific cluster parameters when setting up geo-replication. This is useful when the destination cluster requires different configuration than what's defined in the `destinationConnectionRef`. See [Cluster Parameters Override](#cluster-parameters-override) for details. | No |
 
-The `PulsarGeoReplication` resource is designed to configure geo-replication between separate Pulsar instances. It creates a new "Cluster" in the destination Pulsar cluster identified by `destinationConnectionRef`. This setup allows configuring the replication of data from the source cluster (identified by `connectionRef`) to the destination cluster. By establishing this connection, the brokers in the source cluster can communicate with and replicate data to the brokers in the destination cluster, enabling geo-replication between the two separate Pulsar instances.
+The `PulsarGeoReplication` resource is designed to configure geo-replication between separate Pulsar instances. It creates a cluster entry in the source cluster identified by `connectionRef`, using connection data from `destinationConnectionRef`. Source brokers then use that entry to connect and replicate data to the destination cluster.
 
 ### Deletion Behavior
 
@@ -97,8 +97,8 @@ spec:
     name: us-east-to-west-connection
   clusterParamsOverride:
     # Override URLs for cross-cluster communication
-    serviceURL: "https://geo-replication-admin.us-west.example.com:8443"
-    brokerServiceURL: "pulsar://geo-replication-broker.us-west.example.com:6650"
+    serviceSecureURL: "https://geo-replication-admin.us-west.example.com:8443"
+    brokerServiceSecureURL: "pulsar+ssl://geo-replication-broker.us-west.example.com:6651"
     # Override authentication for geo-replication
     authentication:
       authPlugin: "org.apache.pulsar.client.impl.auth.AuthenticationToken"
@@ -115,8 +115,10 @@ spec:
 
 The `lifecyclePolicy` field determines what happens to the geo-replication configuration when the Kubernetes PulsarGeoReplication resource is deleted:
 
-- `CleanUpAfterDeletion` (default): The geo-replication configuration will be removed from both Pulsar clusters when the Kubernetes resource is deleted.
-- `KeepAfterDeletion`: The geo-replication configuration will remain in both Pulsar clusters even after the Kubernetes resource is deleted.
+- `CleanUpAfterDeletion` (default): The destination cluster entry is removed from the source Pulsar cluster when the Kubernetes resource is deleted.
+- `KeepAfterDeletion`: The destination cluster entry remains in the source Pulsar cluster after the Kubernetes resource is deleted.
+
+Remove references from `PulsarTenant`, `PulsarNamespace`, and `PulsarTopic` resources before deleting a geo-replication resource. Pulsar can reject cluster deletion while replication policies still reference it.
 
 For more information about lifecycle policies, refer to the [PulsarResourceLifeCyclePolicy documentation](pulsar_resource_lifecycle.md).
 
@@ -164,13 +166,12 @@ pulsar-admin clusters list --url http://<us-east-public-address>:8080
 
 ## Tutorial: How to configure Geo-replication
 
-This section describes how to configure Geo-replication between clusters `us-east-sn-platform` and `us-west-sn-platform` in different namespaces of the same Kubernetes cluster.
+This section configures one-way replication from `us-east-sn-platform` to `us-west-sn-platform`, with the two Pulsar instances deployed in different Kubernetes namespaces. Repeat the setup in the opposite direction for bidirectional replication.
 
 The relation is shown below.
 ```mermaid
 graph TD;
   us-east-->us-west;
-  us-west-->us-east;
 ```
 
 ### Prerequisites
@@ -204,8 +205,8 @@ The destination PulsarConnection has the information of the Pulsar cluster`us-we
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
 metadata:
-  name: us-west-dest-connection
-  namespace: us-west
+  name: us-east-to-west-connection
+  namespace: us-east
 spec:
   # The destination us-west cluster name
   clusterName: us-west-sn-platform
@@ -216,9 +217,9 @@ spec:
 
 #### Use tls connection
 
-When you want to use tls to connect remote cluster, you need to do some extra steps.
+When source brokers use TLS to connect to the remote cluster, the trust certificate path stored in cluster metadata must exist on those source brokers.
 
-1. For a selfsigning cert, you need to create a secret to store the cert file of connecting the `us-west` brokers.
+1. For a self-signed certificate, create a Secret containing the CA certificate in the source broker namespace.
 
 ```yaml
 apiVersion: v1
@@ -227,11 +228,11 @@ data:
 kind: Secret
 metadata:
   name: us-west-tls-broker
-  namespace: us-esat
+  namespace: us-east
 type: Opaque
 ```
 
-2. Mount the secret to `us-west` pulsarbroker by adding these line to the `pulsarbroker.spec.pod.secretRefs`. The mount path will be used in `us-west` pulsar connection.
+2. Mount the Secret into the **source** (`us-east`) brokers. The exact pod configuration depends on how Pulsar is deployed; the resulting mount path is referenced by `brokerClientTrustCertsFilePath`.
 ```yaml
 spec:
   pod:
@@ -240,7 +241,9 @@ spec:
       secretName: us-west-tls-broker
 ```
 
-3. Add `adminServiceSecureURL` and `brokerServiceSecureURL`  to the destination connection
+3. If the remote admin endpoint also uses that self-signed CA, make the CA available inside the operator container and set `tlsTrustCertsFilePath`. Kubernetes Secret volumes are namespace-scoped, so create an equivalent Secret in the operator release namespace and mount it with the chart's `extraVolumes` and `extraVolumeMounts` values.
+
+4. Add the secure URLs and trust paths to the destination connection.
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarConnection
@@ -256,14 +259,15 @@ spec:
   authentication:
     token:
       value: xxxx
-  adminServiceSecureURL: https://<us-west-public-address:8443 # the remote pulsar admin secure service
-  brokerServiceSecureURL: pulsar+ssl://<us-west-public-address:6651 # the remote pulsar broker secure service
-  brokerClientTrustCertsFilePath: /etc/tls/us-west/ca.crt # Optional. The cert path is the mountPath in the above step if you are using selfsigning cert. 
+  adminServiceSecureURL: https://<us-west-public-address>:8443 # remote Pulsar admin TLS service
+  brokerServiceSecureURL: pulsar+ssl://<us-west-public-address>:6651 # remote Pulsar broker TLS service
+  tlsTrustCertsFilePath: /etc/operator-tls/us-west/ca.crt # path inside operator container
+  brokerClientTrustCertsFilePath: /etc/tls/us-west/ca.crt # path mounted on source brokers
 ```
 
 ### Create a PulsarGeoReplication
 
-This section enabled Geo-replication on `us-east`, which replicates data from `us-east` to `us-west`. The operator will create a new cluster entry called `us-west-sn-platform` in `us-east` cluster.
+This section enables geo-replication on `us-east`, which replicates data from `us-east` to `us-west`. The operator creates a cluster entry named `us-west-sn-platform` in the `us-east` cluster.
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1

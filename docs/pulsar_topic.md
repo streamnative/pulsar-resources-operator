@@ -22,6 +22,7 @@ The `PulsarTopic` resource defines a topic in a Pulsar cluster. It allows you to
 | `backlogQuotaLimitTime`             | Time limit for message backlog. Messages older than this limit will be removed or handled according to the retention policy.                                                            | No       |
 | `backlogQuotaLimitSize`             | Size limit for message backlog. When the limit is reached, older messages will be removed or handled according to the retention policy. Use `"-1"` to allow an unlimited backlog (no producer throttling). | No       |
 | `backlogQuotaRetentionPolicy`       | Retention policy for messages when backlog quota is exceeded. Options: "producer_request_hold", "producer_exception", or "consumer_backlog_eviction". **Required whenever backlogQuotaLimitTime or backlogQuotaLimitSize is set.** | Conditional |
+| `backlogQuotaType`                  | Selects the quota dimension: `destination_storage` (default, requires `backlogQuotaLimitSize`) or `message_age` (requires `backlogQuotaLimitTime`). | No |
 | `lifecyclePolicy`                   | Determines whether to keep or delete the Pulsar topic when the Kubernetes resource is deleted. Options: `CleanUpAfterDeletion`, `KeepAfterDeletion`. Default is `CleanUpAfterDeletion`. | No       |
 | `schemaInfo`                        | Schema information for the topic. See [schemaInfo](#schemainfo) for more details.                                                                                                       | No       |
 | `geoReplicationRefs`                | List of references to PulsarGeoReplication resources, used to enable geo-replication at the topic level.                                                                                | No       |
@@ -106,6 +107,28 @@ spec:
 - Retention quota must exceed configured backlog quota for the topic
 - Consider the storage and cost implications before enabling infinite retention
 
+## Backlog Quota Selection
+
+`backlogQuotaRetentionPolicy` is required whenever a backlog quota is configured. The selected quota type determines which limit is used:
+
+```yaml
+# Size-based quota (default type)
+spec:
+  backlogQuotaType: destination_storage
+  backlogQuotaLimitSize: 1Gi
+  backlogQuotaRetentionPolicy: producer_request_hold
+```
+
+```yaml
+# Age-based quota
+spec:
+  backlogQuotaType: message_age
+  backlogQuotaLimitTime: 24h
+  backlogQuotaRetentionPolicy: consumer_backlog_eviction
+```
+
+When `backlogQuotaType` is omitted, the operator uses `destination_storage`. Do not set only `backlogQuotaLimitTime` without also setting `backlogQuotaType: message_age`.
+
 ## Create A Pulsar Topic
 
 1. Define a topic named `persistent://test-tenant/testns/topic123` by using the YAML file and save the YAML file `topic.yaml`.
@@ -128,7 +151,7 @@ spec:
 # maxUnAckedMessagesPerSubscription:
 # retentionTime: 20h    # or "-1" for infinite retention time
 # retentionSize: 2Gi    # or "-1" for infinite retention size
-# backlogQuotaLimitTime: 24h
+# backlogQuotaType: destination_storage
 # backlogQuotaLimitSize: 1Gi
 # backlogQuotaRetentionPolicy: producer_request_hold
 # lifecyclePolicy: CleanUpAfterDeletion
@@ -177,11 +200,13 @@ You can update the topic policies by editing the `topic.yaml` file and then appl
 
 Important notes when updating a Pulsar topic:
 
-1. The fields `name` and `persistent` are immutable and cannot be updated after the topic is created.
+1. Changing `name` or changing the effective topic domain (`persistent://` versus `non-persistent://`) targets a different remote topic; the operator does not rename or delete the old topic. The domain embedded in `name` takes precedence over `persistent`. Create a new custom resource for topic migrations instead of changing identity fields in place.
 
-2. Other fields such as `partitions`, `maxProducers`, `maxConsumers`, `messageTTL`, `retentionTime`, `retentionSize`, `backlogQuotaLimitTime`, `backlogQuotaLimitSize`, `backlogQuotaRetentionPolicy`, `backlogQuotaType`, `compactionThreshold`, `persistencePolicies`, `delayedDelivery`, `dispatchRate`, `publishRate`, `inactiveTopicPolicies`, `subscribeRate`, `subscriptionDispatchRate`, `replicatorDispatchRate`, `maxMessageSize`, `maxConsumersPerSubscription`, `maxSubscriptionsPerTopic`, `maxUnAckedMessagesPerConsumer`, `maxUnAckedMessagesPerSubscription`, `deduplication`, `deduplicationSnapshotInterval`, `offloadPolicies`, `autoSubscriptionCreation`, `schemaValidationEnforced`, `schemaCompatibilityStrategy`, and `properties` can be modified. Clearing an optional field (removing it from the spec or setting it to null) removes the corresponding topic-level policy and lets the namespace-level default take effect again.
+2. `partitions` can increase the partition count of an existing partitioned topic. Pulsar does not support decreasing partitions or converting between partitioned and non-partitioned topics.
 
-3. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
+3. Other fields such as `maxProducers`, `maxConsumers`, `messageTTL`, `retentionTime`, `retentionSize`, `backlogQuotaLimitTime`, `backlogQuotaLimitSize`, `backlogQuotaRetentionPolicy`, `backlogQuotaType`, `compactionThreshold`, `persistencePolicies`, `delayedDelivery`, `dispatchRate`, `publishRate`, `inactiveTopicPolicies`, `subscribeRate`, `subscriptionDispatchRate`, `replicatorDispatchRate`, `maxMessageSize`, `maxConsumersPerSubscription`, `maxSubscriptionsPerTopic`, `maxUnAckedMessagesPerConsumer`, `maxUnAckedMessagesPerSubscription`, `deduplication`, `deduplicationSnapshotInterval`, `offloadPolicies`, `autoSubscriptionCreation`, `schemaValidationEnforced`, `schemaCompatibilityStrategy`, `replicationClusters`, `geoReplicationRefs`, and `properties` can be modified. Clearing a managed optional policy removes the topic-level override and lets the namespace-level default take effect again.
+
+4. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
 
    - If the new PulsarConnection refers to the same Pulsar cluster (i.e., the admin and broker URLs are the same), the topic will remain in its original location. The operator will simply use the new connection details to manage the existing topic.
 
@@ -189,17 +214,17 @@ Important notes when updating a Pulsar topic:
 
    Be cautious when changing the `connectionRef`, especially if it points to a new cluster, as this can lead to topic duplication across clusters. Always verify the intended behavior and manage any cleanup of the old topic if necessary.
 
-4. Changes to `lifecyclePolicy` will only affect what happens when the PulsarTopic resource is deleted, not the current state of the topic.
+5. Changes to `lifecyclePolicy` will only affect what happens when the PulsarTopic resource is deleted, not the current state of the topic.
 
-5. Be cautious when updating topic policies, as changes may affect existing producers and consumers. It's recommended to test changes in a non-production environment first.
+6. Be cautious when updating topic policies, as changes may affect existing producers and consumers. It's recommended to test changes in a non-production environment first.
 
-6. After applying changes, you can check the status of the update using:
+7. After applying changes, you can check the status of the update using:
    ```shell
    kubectl -n test get pulsartopic.resource.streamnative.io test-pulsar-topic123
    ```
    The `OBSERVED_GENERATION` should increment, and `READY` should become `True` when the update is complete.
 
-7. Updating the `schemaInfo` field may have implications for existing producers and consumers. Ensure that any schema changes adhere to Pulsar's schema compatibility strategies. For more information on schema evolution and compatibility, refer to the [Pulsar Schema Evolution and Compatibility](https://pulsar.apache.org/docs/schema-understand#schema-evolution) documentation.
+8. Updating the `schemaInfo` field may have implications for existing producers and consumers. Ensure that any schema changes adhere to Pulsar's schema compatibility strategies. For more information on schema evolution and compatibility, refer to the [Pulsar Schema Evolution and Compatibility](https://pulsar.apache.org/docs/schema-understand#schema-evolution) documentation.
 
 ## Delete A PulsarTopic
 
@@ -372,22 +397,41 @@ The `offloadPolicies` field configures topic-level tiered storage offload, overr
 
 | Field | Description | Type |
 |-------|-------------|------|
-| `managedLedgerOffloadDriver` | Offload driver name. Supported values include `aws-s3`, `gcs`, `azureblob`, `filesystem`. | string |
-| `managedLedgerOffloadMaxThreads` | Maximum number of threads used by the offloader for this topic. | int |
+| `offloadersDirectory` | Directory in the broker container from which offloader implementations are loaded. | string |
+| `managedLedgerOffloadDriver` | Offload driver name understood by the Pulsar broker. | string |
+| `managedLedgerOffloadMaxThreads` | Maximum offload worker threads. | int |
+| `managedLedgerOffloadReadThreads` | Maximum threads used for reading offloaded data. | int |
+| `managedLedgerOffloadPrefetchRounds` | Number of read-ahead/prefetch rounds for offloaded data. | int |
+| `managedLedgerOffloadThresholdInSeconds` | Age threshold in seconds after which closed ledgers are eligible for offload. | int64 |
 | `managedLedgerOffloadThresholdInBytes` | Size threshold in bytes after which closed ledgers are offloaded to tiered storage. Use `0` to trigger offload as soon as a ledger is closed (i.e. immediately). Use `-1` to disable size-based auto-offload. | int64 |
 | `managedLedgerOffloadDeletionLagInMillis` | Time in milliseconds to wait after a ledger is successfully offloaded before deleting it from BookKeeper. For example, `60000` keeps the BookKeeper copy for 1 minute after offload completes. | int64 |
+| `managedLedgerOffloadedReadPriority` | Read priority between BookKeeper and tiered storage, interpreted by the broker. | string |
+| `managedLedgerExtraConfigurations` | Free-form managed-ledger/offloader configuration. | map[string]string |
 | `managedLedgerOffloadAutoTriggerSizeThresholdBytes` | Legacy alias for the auto-trigger size threshold. Prefer `managedLedgerOffloadThresholdInBytes`. | int64 |
-| `s3ManagedLedgerOffloadBucket` | S3 bucket name for the `aws-s3` driver. | string |
 | `s3ManagedLedgerOffloadRegion` | S3 region for the `aws-s3` driver. | string |
+| `s3ManagedLedgerOffloadBucket` | S3 bucket name for the `aws-s3` driver. | string |
 | `s3ManagedLedgerOffloadServiceEndpoint` | S3 service endpoint URL (optional, e.g. for S3-compatible storage). | string |
+| `s3ManagedLedgerOffloadMaxBlockSizeInBytes` | Maximum S3 multipart-upload block size. | int |
+| `s3ManagedLedgerOffloadReadBufferSizeInBytes` | S3 offloaded-read buffer size. | int |
 | `s3ManagedLedgerOffloadCredentialId` | Access key ID for the `aws-s3` driver. Prefer IAM roles in production. | string |
 | `s3ManagedLedgerOffloadCredentialSecret` | Secret access key for the `aws-s3` driver. Prefer IAM roles in production. | string |
 | `s3ManagedLedgerOffloadRole` | IAM role ARN to assume when offloading. | string |
 | `s3ManagedLedgerOffloadRoleSessionName` | Session name used when assuming the IAM role. | string |
-| `offloadersDirectory` | Directory inside the broker container where offloader jars are loaded from. | string |
+| `gcsManagedLedgerOffloadRegion` | GCS region. | string |
+| `gcsManagedLedgerOffloadBucket` | GCS bucket name. | string |
+| `gcsManagedLedgerOffloadMaxBlockSizeInBytes` | Maximum GCS write block size. | int |
+| `gcsManagedLedgerOffloadReadBufferSizeInBytes` | GCS offloaded-read buffer size. | int |
+| `gcsManagedLedgerOffloadServiceAccountKeyFile` | Service-account key file path available to brokers. | string |
+| `fileSystemProfilePath` | Filesystem offloader profile path. | string |
+| `fileSystemURI` | Filesystem offload destination URI. | string |
+| `managedLedgerOffloadBucket` | Provider-neutral offload bucket/container. | string |
+| `managedLedgerOffloadRegion` | Provider-neutral offload region. | string |
+| `managedLedgerOffloadServiceEndpoint` | Provider-neutral service endpoint. | string |
+| `managedLedgerOffloadMaxBlockSizeInBytes` | Provider-neutral maximum write block size. | int |
+| `managedLedgerOffloadReadBufferSizeInBytes` | Provider-neutral offloaded-read buffer size. | int |
 | `managedLedgerOffloadDriverMetadata` | Free-form driver-specific metadata as key/value pairs. | map[string]string |
 
-> **Note:** Bucket, region, credentials and driver configuration are normally provided at the broker / cluster level (for example via the `sn-platform` chart's `broker.offload` settings). At the topic level you usually only need the policy fields that change behavior — `managedLedgerOffloadThresholdInBytes` and `managedLedgerOffloadDeletionLagInMillis` — and can leave the driver/bucket fields empty so the broker defaults are inherited.
+> **Note:** Bucket, region, credentials and driver configuration are normally provided at the broker or cluster level. At topic level you usually only need fields that change policy behavior, such as `managedLedgerOffloadThresholdInBytes` and `managedLedgerOffloadDeletionLagInMillis`. Credential fields are stored directly in the custom resource; prefer broker-side workload identity, roles, or mounted credentials.
 
 **Example — aggressive immediate offload for a single topic:**
 
@@ -410,6 +454,7 @@ spec:
     managedLedgerOffloadDeletionLagInMillis: 60000 # equivalent to offloadDeletionLagSeconds=60
 
   # Allow unlimited backlog without throttling producers.
+  backlogQuotaType: destination_storage
   backlogQuotaLimitSize: "-1"                     # equivalent to backlogQuotaLimitBytes=-1
   backlogQuotaRetentionPolicy: producer_request_hold
 ```

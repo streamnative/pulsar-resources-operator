@@ -17,10 +17,10 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-# -- Specifies namespace for the release, it will override the `-n` parameter when it's not empty
+# -- Namespace for chart resources. When empty, use Helm release namespace.
 namespace: ""
 
-# -- The replicas of pod
+# -- Number of operator replicas.
 replicaCount: 1
 
 # -- Name of the operator container
@@ -31,14 +31,14 @@ image:
   pullPolicy: IfNotPresent
   # resource controller container
   manager:
-    # -- Specififies the registry of images, especially when user want to use a different image hub
+    # -- Container image registry.
     registry: docker.io
-    # -- The full repo name for image.
+    # -- Container image repository.
     repository: streamnative/pulsar-resources-operator
-    # -- Image tag, it can override the image tag whose default is the chart appVersion.
+    # -- Container image tag. Defaults to chart appVersion when empty.
     tag: ""
 
-# -- Specifies image pull secrets for private registry, the format is `- name: gcr`
+# -- Image pull secrets for private registries, for example `- name: gcr`.
 imagePullSecrets: []
 # If you want to specify secrets, follow this format
 # - name: test
@@ -46,11 +46,11 @@ imagePullSecrets: []
 features:
   # -- Re-apply observed managed Pulsar resources even when their Kubernetes resources are already Ready. Prefer temporary use for upgrade remediation because it increases Pulsar admin API load on reconciliations and resyncs.
   alwaysUpdatePulsarResource: false
-  # resyncPeriod  determines the minimum frequency at which watched resources are reconciled. The unit is hour, default value is 10 hours.
+  # -- Base informer resync period in hours.
   resyncPeriod: 10
-  # The number of retries in case of error.
+  # -- Number of retries used by the PulsarConnection-managed resource reconciler.
   retryCount: 5
-  # The maximum number of concurrent reconciles per controller.
+  # -- Maximum concurrent reconciles for the PulsarConnection and RoleBinding controllers. Values of 0 or 1 leave the flags unset and use the binary default.
   maxConcurrentReconciles: 1
 
 # -- It will override the value of label `app.kubernetes.io/name` on pod
@@ -62,10 +62,9 @@ fullnameOverride: ""
 serviceAccount:
   # -- Specifies whether a service account should be created
   create: true
-  # Annotations to add to the service account
+  # -- Annotations to add to the service account
   annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
+  # -- Name of the service account to use. When empty and create=true, the chart generates a name.
   name: ""
 
 # -- Add labels for the deployment
@@ -115,11 +114,10 @@ tolerations: []
 # -- Add affinity for pod
 affinity: {}
 
-# -- The period seconds that pod will be termiated gracefully
+# -- Graceful termination period in seconds.
 terminationGracePeriodSeconds: 10
 
-# -- Cloud storage providers configuration
-# -- Allow to sync files as Pulsar Packages to Pulsar Packages Management Service
+# -- Cloud storage configuration used when downloading files for PulsarPackage resources.
 cloudStorage:
   # -- AWS S3 configuration
   s3:
@@ -179,5 +177,7 @@ cloudStorage:
       # -- Use account key for authentication (if false, will use SAS token)
       useAccountKey: true
 
+# -- Additional volume mounts for the operator container. Paths are available to file-based PulsarConnection authentication.
 extraVolumeMounts: []
+# -- Additional pod volumes for the operator deployment.
 extraVolumes: []

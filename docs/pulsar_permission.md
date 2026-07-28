@@ -50,7 +50,7 @@ For more information about lifecycle policies, refer to the [PulsarResourceLifeC
 
 ## Create a Pulsar Permission
 
-1. Define a permission by using the YAML file and save the YAML file `permission.yaml`.t
+1. Define a permission by using the YAML file and save the YAML file as `permission.yaml`.
 This example grants the `ironman` with `consume`, `produce`, `functions`, and `sink` permissions on the namespace `test-tenant/testns`.
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1
@@ -102,7 +102,7 @@ Important notes about side effects of updating a Pulsar permission:
 
 3. Adding new permissions doesn't automatically grant access to existing data. Users may need to reconnect or refresh their sessions to utilize new permissions.
 
-4. Modifying the `resourceType` or `resourceName` effectively creates a new permission set rather than updating the existing one. The old permissions will remain unless explicitly removed.
+4. Modifying `resourceType` or `resourceName` changes the permission target. The controller uses its managed-state annotation to revoke roles that this `PulsarPermission` previously managed on the old target before granting them on the new target. Permissions owned by other resources are left untouched.
 
 5. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
 
@@ -165,4 +165,4 @@ pulsarpermission-sample-topic-error   test-tenant/testn1   namespace       ["iro
 kubectl -n test delete pulsarpermission.resource.streamnative.io test-pulsar-permission
 ```
 
-Please be noticed, when you delete the permission, the real permission will still exist if the `lifecyclePolicy` is `KeepAfterDeletion`.
+When `lifecyclePolicy` is `KeepAfterDeletion`, deleting the custom resource leaves the remote Pulsar permission in place.

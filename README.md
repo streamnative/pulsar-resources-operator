@@ -2,38 +2,34 @@
 
 Authored by [StreamNative](https://streamnative.io), this Pulsar Resources Operator is a controller that manages the Pulsar resources automatically using the manifest on Kubernetes. Therefore, you can manage the Pulsar resources without the help of `pulsar-admin` or `pulsarctl` CLI tool. It is useful for initializing basic resources when creating a new Pulsar cluster.
 
-Currently, the Pulsar Resources Operator provides full lifecycle management for the following Pulsar resources, including creation, update, and deletion. 
+The operator manages these resource groups:
 
-- [Tenants](docs/pulsar_tenant.md)
-- [Namespaces](docs/pulsar_namespace.md)
-- [Topics](docs/pulsar_topic.md)
-- [Permissions](docs/pulsar_permission.md)
-- [Packages](docs/pulsar_package.md)
-- [Functions](docs/pulsar_function.md)
-- [Sinks](docs/pulsar_sink.md)
-- [Sources](docs/pulsar_source.md)
-- [Geo-Replication](docs/pulsar_geo_replication.md)
-- [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
+- Pulsar connectivity: [PulsarConnection](docs/pulsar_connection.md)
+- Pulsar resources: [Tenants](docs/pulsar_tenant.md), [Namespaces](docs/pulsar_namespace.md), [Topics](docs/pulsar_topic.md), [Permissions](docs/pulsar_permission.md), [Packages](docs/pulsar_package.md), [Functions](docs/pulsar_function.md), [Sinks](docs/pulsar_sink.md), [Sources](docs/pulsar_source.md), [Geo-Replication](docs/pulsar_geo_replication.md), and [NS-Isolation-Policy](docs/pulsar_ns_isolation_policy.md)
+- StreamNative Cloud connectivity and resources: [StreamNativeCloudConnection](docs/streamnative_cloud_connection.md), [ComputeWorkspace](docs/compute_workspace.md), [ComputeFlinkDeployment](docs/compute_flink_deployment.md), [Secret](docs/secret.md), [ServiceAccount](docs/serviceaccount.md), [ServiceAccountBinding](docs/serviceaccountbinding.md), [APIKey](docs/apikey.md), and [RoleBinding](docs/rolebinding.md)
 
 ## Lifecycle Management
 
-The Pulsar Resources Operator provides a flexible approach to managing the lifecycle of Pulsar resources through the `PulsarResourceLifeCyclePolicy`. This policy determines how Pulsar resources are handled when their corresponding Kubernetes custom resources are deleted. For more details on lifecycle management, please refer to the [PulsarResourceLifeCyclePolicy documentation](docs/pulsar_resource_lifecycle.md).
+The Pulsar Resources Operator provides a flexible approach to managing remote-resource lifecycle through `PulsarResourceLifeCyclePolicy`. This policy determines how supported Pulsar and StreamNative Cloud resources are handled when their Kubernetes custom resources are deleted. For details and the supported-resource list, see [PulsarResourceLifeCyclePolicy](docs/pulsar_resource_lifecycle.md).
 
 There are two available options for the lifecycle policy:
 
-1. `CleanUpAfterDeletion`: When set, the Pulsar resource (such as a tenant, namespace, or topic) will be deleted from the Pulsar cluster when its corresponding Kubernetes custom resource is deleted. This is the default policy.
+1. `CleanUpAfterDeletion`: The remote resource is deleted when its Kubernetes custom resource is deleted. This is the default policy.
 
-2. `KeepAfterDeletion`: When set, the Pulsar resource will remain in the Pulsar cluster even after its corresponding Kubernetes custom resource is deleted.
+2. `KeepAfterDeletion`: The remote resource remains after its Kubernetes custom resource is deleted.
 
 You can specify the lifecycle policy in the custom resource definition:
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1beta1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarTenant
 metadata:
   name: my-tenant
 spec:
-  pulsarResourceLifeCyclePolicy: KeepAfterDeletion
+  name: my-tenant
+  connectionRef:
+    name: my-pulsar-connection
+  lifecyclePolicy: KeepAfterDeletion
 ```
 
 # Installation
@@ -44,10 +40,11 @@ You can install the Pulsar Resources Operator using the officially supported `pu
 
 ## Prerequisites
 
-- Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl) (v1.16 - v1.24), compatible with your cluster (+/- 1 minor release from your cluster).
-- Install [`Helm`](https://helm.sh/docs/intro/install/) (v3.0.2 or higher).
-- Prepare a Kubernetes cluster (v1.16 - v1.24).
-- Prepare a [Pulsar cluster](https://docs.streamnative.io/operators/pulsar-operator/tutorial/deploy-pulsar)
+- Install [`kubectl`](https://kubernetes.io/docs/tasks/tools/#kubectl), compatible with your cluster (+/- 1 minor release from your cluster).
+- Install [`Helm`](https://helm.sh/docs/intro/install/) v3.
+- Prepare a Kubernetes cluster v1.18 or newer, matching the Helm chart's `kubeVersion` constraint.
+- Prepare a [Pulsar cluster](https://docs.streamnative.io/operators/pulsar-operator/tutorial/deploy-pulsar) when managing Pulsar resources.
+- Prepare StreamNative Cloud service-account credentials and an organization name when managing StreamNative Cloud resources.
 
 
 ## Install Pulsar Resources Operator
@@ -60,21 +57,13 @@ To install the Pulsar Resources Operator, follow these steps.
     helm repo update
     ```
 
-2. Create a Kubernetes namespace.
+2. Install the operator using the `pulsar-resources-operator` Helm chart. Helm creates the namespace when needed.
     
     ```shell
-    kubectl create namespace <k8s-namespace>
+    helm -n <k8s-namespace> install <release-name> streamnative/pulsar-resources-operator \
+      --create-namespace
     ```
-    >**Note**
-    >
-    > You can skip this step if you specify a Kubernetes namespace via the `-- create-namespace <k8s-namespace>` option when you install the operator.
-
-3. Install the operator using the `pulsar-resources-operator` Helm chart.
-    
-    ```shell
-    helm -n <k8s-namespace> install <release-name> streamnative/pulsar-resources-operator
-    ```
-4. Verify that the operator is installed successfully
+3. Verify that the operator is installed successfully.
     
     ```shell
     kubectl -n <k8s-namespace> get pods
@@ -89,18 +78,17 @@ To install the Pulsar Resources Operator, follow these steps.
 
 ## Upgrade Pulsar Resources Operator
 
-To upgrade the operator, execute the following command.
+Helm does not upgrade CRDs from a chart's `crds/` directory. Pull the target chart, apply its CRDs, then upgrade the release:
 
 ```shell
 helm repo update
-helm -n <k8s-namespace> upgrade <release-name> streamnative/pulsar-resources-operator
+helm pull streamnative/pulsar-resources-operator --version <chart-version> --untar
+kubectl apply -f pulsar-resources-operator/crds
+helm -n <k8s-namespace> upgrade <release-name> streamnative/pulsar-resources-operator \
+  --version <chart-version>
 ```
 
->**Note**
->
-> Don not forget to apply the latest crd files. Because there is no support for upgrading or deleting CRDs using Helm
-> https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations
-> You can use `helm pull streamnative/pulsar-resources-operator` to download the chart and unpack it, then apply the crds
+See [Helm CRD caveats](https://helm.sh/docs/chart_best_practices/custom_resource_definitions/#some-caveats-and-explanations).
 
 ## Uninstall Pulsar Resources Operator
 
@@ -109,6 +97,8 @@ To uninstall the operator, execute the following command.
 ```shell
 helm -n <k8s-namespace> uninstall <release-name>
 ```
+
+Helm leaves CRDs and existing custom resources in place. Remove CRDs separately only after deleting or preserving all managed resources intentionally.
 
 # Tutorial
 
@@ -154,4 +144,3 @@ This library is licensed under the terms of the [Apache License 2.0](LICENSE) an
 ## About StreamNative
 
 Founded in 2019 by the original creators of Apache Pulsar, [StreamNative](https://streamnative.io) is one of the leading contributors to the open-source Apache Pulsar project. We have helped engineering teams worldwide make the move to Pulsar with [StreamNative Cloud](https://streamnative.io/product), a fully managed service to help teams accelerate time-to-production.
-

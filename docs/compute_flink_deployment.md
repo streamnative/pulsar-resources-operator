@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative Cloud. It supports both Ververica Platform (VVP) and Community deployment templates, allowing you to deploy and manage Flink applications.
+The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative Cloud. The current client conversion implements Ververica Platform (VVP) templates. `communityTemplate` remains in the CRD but is not sent to StreamNative Cloud.
 
 ## Specifications
 
@@ -11,15 +11,15 @@ The `ComputeFlinkDeployment` resource defines a Flink deployment in StreamNative
 | `apiServerRef`       | Reference to the StreamNativeCloudConnection resource for API server access. If not specified, the APIServerRef from the referenced ComputeWorkspace will be used. | No       |
 | `lifecyclePolicy`    | Whether to delete the remote Flink deployment or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `workspaceName`      | Name of the ComputeWorkspace where the Flink deployment will run                           | Yes      |
-| `labels`             | Labels to add to the deployment                                                             | No       |
-| `annotations`        | Annotations to add to the deployment                                                        | No       |
-| `template`           | VVP deployment template configuration                                                       | No*      |
-| `communityTemplate`  | Community deployment template configuration                                                 | No*      |
+| `labels`             | Present in the CRD but not propagated by the current client. Use `template.deployment.userMetadata.labels` instead. | No |
+| `annotations`        | Present in the CRD but not propagated by the current client. Use `template.deployment.userMetadata.annotations` instead. | No |
+| `template`           | VVP deployment template configuration. This is the only template type currently propagated. | Conditional |
+| `communityTemplate`  | Present in the CRD but ignored by the current create/update conversion. | No |
 | `defaultPulsarCluster`| Default Pulsar cluster to use for the deployment                                          | No       |
-| `configuration`      | Additional configuration for the Flink deployment, including environment variables and secrets | No       |
-| `imagePullSecrets`   | List of image pull secrets to use for the deployment                                       | No       |
+| `configuration`      | Environment variables and Secret references. Propagated during remote creation; current update conversion leaves existing remote configuration unchanged. | No |
+| `imagePullSecrets`   | Image pull secrets injected into VVP JobManager and TaskManager pod templates. | No |
 
-*Note: Either `template` or `communityTemplate` must be specified, but not both.
+Use `template` for managed deployments. A resource containing only `communityTemplate` is accepted by Kubernetes but reaches the remote API without a deployment template.
 
 ## APIServerRef Inheritance
 
@@ -53,7 +53,7 @@ This inheritance mechanism allows you to:
 | Field       | Description                                                                                | Required |
 |-------------|--------------------------------------------------------------------------------------------|----------|
 | `name`      | Name of the ENV variable                                                                   | Yes      |
-| `valueFrom` | References a secret in the same namespace                                                  | Yes      |
+| `valueFrom` | Secret key selector sent to the remote deployment. Optional in the CRD, but needed for a useful secret-backed value. | No |
 
 ### VVP Deployment Template
 
@@ -74,9 +74,12 @@ This inheritance mechanism allows you to:
 | Field                          | Description                                                                            | Required |
 |--------------------------------|----------------------------------------------------------------------------------------|----------|
 | `deploymentTargetName`         | Target name for the deployment                                                         | No       |
+| `jobFailureExpirationTime`     | Expiration setting for failed jobs                                                      | No       |
 | `state`                        | State of the deployment (RUNNING, SUSPENDED, CANCELLED)                                 | No       |
 | `maxJobCreationAttempts`       | Maximum number of job creation attempts (minimum: 1)                                   | No       |
 | `maxSavepointCreationAttempts` | Maximum number of savepoint creation attempts (minimum: 1)                             | No       |
+| `restoreStrategy`              | Restore strategy containing `kind` and `allowNonRestoredState`                          | No       |
+| `sessionClusterName`           | Session cluster used by the deployment                                                  | No       |
 | `template`                     | Deployment template configuration                                                       | Yes      |
 
 ##### Template Spec Fields
@@ -85,6 +88,8 @@ This inheritance mechanism allows you to:
 |----------------------|----------------------------------------------------------------------------------------|----------|
 | `artifact`           | Deployment artifact configuration                                                       | Yes      |
 | `flinkConfiguration` | Flink configuration key-value pairs                                                    | No       |
+| `kubernetes`         | VVP Kubernetes settings. The current local type propagates `labels`; top-level `imagePullSecrets` injects pod template image-pull secrets. | No |
+| `latestCheckpointFetchInterval` | Checkpoint status fetch interval                                                       | No       |
 | `parallelism`        | Parallelism of the Flink job                                                          | No       |
 | `numberOfTaskManagers`| Number of task managers                                                               | No       |
 | `resources`          | Resource requirements for jobmanager and taskmanager                                   | No       |
@@ -94,42 +99,34 @@ This inheritance mechanism allows you to:
 
 | Field                    | Description                                                                            | Required |
 |--------------------------|----------------------------------------------------------------------------------------|----------|
-| `kind`                   | Type of artifact (JAR, PYTHON, sqlscript)                                              | Yes      |
+| `kind`                   | Type of artifact (for example `JAR`, `PYTHON`, or `sqlscript`). The current checked-in CRD does not mark it required, but set it for a usable remote deployment. | No* |
 | `jarUri`                 | URI of the JAR file                                                                    | No*      |
 | `pythonArtifactUri`      | URI of the Python artifact                                                             | No*      |
 | `sqlScript`              | SQL script content                                                                      | No*      |
+| `additionalDependencies` | Additional artifact dependencies                                                        | No       |
 | `flinkVersion`           | Flink version to use                                                                   | No       |
+| `flinkImageRegistry`     | Flink image registry                                                                    | No       |
+| `flinkImageRepository`   | Flink image repository                                                                  | No       |
 | `flinkImageTag`          | Flink image tag to use                                                                 | No       |
 | `mainArgs`               | Arguments for the main class/method                                                     | No       |
 | `entryClass`             | Entry class for JAR artifacts                                                          | No       |
+| `uri`                    | Generic artifact URI                                                                    | No       |
+| `artifactImage`          | Container image containing the artifact                                                 | No       |
 
-*Note: One of `jarUri`, `pythonArtifactUri`, or `sqlScript` must be specified based on the `kind`.
+*The current CRD does not enforce the artifact kind/URI combination. Supply `kind` and the matching artifact field expected by StreamNative Cloud, such as `jarUri`, `pythonArtifactUri`, or `sqlScript`.
+
+`additionalPythonArchives`, `additionalPythonLibraries`, `artifactKind`, and `entryModule` exist in the CRD but are not copied by the current converter.
 
 ### Community Deployment Template
 
-| Field                    | Description                                                                            | Required |
-|--------------------------|----------------------------------------------------------------------------------------|----------|
-| `metadata`               | Metadata for the deployment (annotations, labels)                                       | No       |
-| `spec`                   | Community deployment specification                                                      | Yes      |
-
-#### Community Deployment Spec
-
-| Field                    | Description                                                                            | Required |
-|--------------------------|----------------------------------------------------------------------------------------|----------|
-| `image`                  | Flink image to use                                                                     | Yes      |
-| `jarUri`                 | URI of the JAR file                                                                    | Yes      |
-| `entryClass`             | Entry class of the JAR                                                                 | No       |
-| `mainArgs`               | Main arguments for the application                                                      | No       |
-| `flinkConfiguration`     | Flink configuration key-value pairs                                                    | No       |
-| `jobManagerPodTemplate`  | Pod template for the job manager                                                       | No       |
-| `taskManagerPodTemplate` | Pod template for the task manager                                                      | No       |
+`communityTemplate` is defined by the CRD, but `pkg/streamnativecloud/flinkdeployment_client.go` currently copies only `template`. Do not use `communityTemplate` until client conversion support is implemented.
 
 ## Status
 
 | Field                | Description                                                                                     |
 |----------------------|-------------------------------------------------------------------------------------------------|
 | `conditions`         | List of status conditions for the deployment                                                     |
-| `observedGeneration` | The last observed generation of the resource                                                     |
+| `observedGeneration` | Reserved field; the current controller records generation on the `Ready` condition but does not populate this top-level status field. |
 | `deploymentStatus`   | Raw deployment status from the API server                                                        |
 
 ## Example
@@ -343,15 +340,16 @@ spec:
 ## Update Deployment
 
 You can update the deployment by modifying the YAML file and reapplying it. Most fields can be updated, including:
-- Flink configuration
+- VVP template Flink configuration
 - Resources
 - Parallelism
 - Logging settings
 - Artifact configuration
-- Environment variables and secrets
 - Image pull secrets
 
-After applying changes, verify the status to ensure the deployment is updated properly.
+The current update client replaces the VVP template, workspace name, and default Pulsar cluster. It does not copy top-level `configuration`, `labels`, or `annotations` during update. Environment variables and Secret references supplied at creation therefore remain unchanged until update support is added or the remote deployment is recreated.
+
+After applying changes, verify the `Ready` condition and `status.deploymentStatus` to ensure the remote deployment accepted the update.
 
 ## Delete Deployment
 
@@ -362,3 +360,5 @@ kubectl delete computeflinkdeployment operator-test-v1
 ```
 
 This will stop the Flink job and clean up all associated resources in StreamNative Cloud.
+
+Set `spec.lifecyclePolicy: KeepAfterDeletion` to remove only the Kubernetes custom resource and retain the remote deployment.

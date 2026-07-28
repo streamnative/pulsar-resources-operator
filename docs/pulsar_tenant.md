@@ -122,7 +122,7 @@ The `OBSERVED_GENERATION` should increment, and `READY` should become `True` whe
 
 Please note the following important points when updating a Pulsar tenant:
 
-1. The `name` field is immutable and cannot be changed after the tenant is created. If you need to rename a tenant, you'll need to create a new one and migrate the resources.
+1. Changing `name` targets a different remote tenant; the operator does not rename or delete the tenant previously referenced by this custom resource. Create a new custom resource and migrate explicitly instead of changing `name` in place.
 
 2. Changes to `adminRoles` will affect who has administrative access to the tenant. Be cautious when modifying this field to avoid accidentally revoking necessary permissions.
 

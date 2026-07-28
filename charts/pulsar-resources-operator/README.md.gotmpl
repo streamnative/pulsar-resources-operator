@@ -10,11 +10,23 @@ To install the chart with the release name `my-release`:
 
 ```console
 $ helm repo add streamnative https://charts.streamnative.io
-$ helm -n <namespace> install my-release streamnative/{{ template "chart.name" . }}
+$ helm -n <namespace> install my-release streamnative/{{ template "chart.name" . }} --create-namespace
 ```
 
 {{ template "chart.requirementsSection" . }}
 
 Pulsar: `>= 2.9.0.x`
+
+## CRD Upgrade
+
+Helm installs files from `crds/` during `helm install`, but does not update them during `helm upgrade`. Pull the target chart and apply its CRDs explicitly:
+
+```console
+$ helm pull streamnative/pulsar-resources-operator --version <chart-version> --untar
+$ kubectl apply -f pulsar-resources-operator/crds
+$ helm -n <namespace> upgrade my-release streamnative/pulsar-resources-operator --version <chart-version>
+```
+
+Uninstalling the release does not remove CRDs or existing custom resources.
 
 {{ template "chart.valuesSection" . }}

@@ -19,7 +19,7 @@ spec:
 
 | Field | Type | Description | Required |
 | --- | --- | --- | --- |
-| `spec.apiServerRef` | [LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#localobjectreference-v1-core) | Reference to a StreamNativeCloudConnection in the same namespace | Yes |
+| `spec.apiServerRef` | `corev1.LocalObjectReference` | Reference to a StreamNativeCloudConnection in the same namespace | Yes |
 | `spec.lifecyclePolicy` | string | Whether to delete the remote service account or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 
 ## Status
@@ -54,7 +54,7 @@ Service accounts provide a way to manage access to StreamNative Cloud resources 
 To create a service account, you need:
 
 1. A StreamNativeCloudConnection resource configured with valid credentials
-2. An instance in which to create the service account
+2. `spec.organization` set on that connection; the remote service account is created in that organization
 
 ```yaml
 apiVersion: resource.streamnative.io/v1alpha1

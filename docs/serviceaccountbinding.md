@@ -104,4 +104,10 @@ For more detailed status information:
 kubectl describe serviceaccountbinding app-service-binding -n default
 ```
 
+### Update Limitation
+
+The current reconciler creates one remote binding per `poolMemberRefs` entry, named `<serviceAccountName>.<namespace>.<name>`. Existing remote bindings are treated as already correct: updates are not sent, and removing an entry from `poolMemberRefs` does not delete its previously created remote binding.
+
+Deletion cleans up only entries still present in the custom resource at deletion time. To change or remove pool-member bindings safely, delete the original resource before applying a replacement, or clean up stale remote bindings directly.
+
 Set `spec.lifecyclePolicy: KeepAfterDeletion` if you want the operator to stop managing the remote bindings without deleting them from StreamNative Cloud.

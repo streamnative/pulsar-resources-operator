@@ -12,13 +12,13 @@ The `Secret` resource defines a secret in StreamNative Cloud. It allows you to c
 | `lifecyclePolicy` | Whether to delete the remote secret or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `instanceName` | Name of the instance this secret is for (e.g. pulsar-instance) | No |
 | `location` | Location of the secret | No |
-| `data` | Secret data, values should be base64 encoded | No* |
-| `secretRef` | Reference to a Kubernetes secret. When secretRef is set, it will be used to fetch the secret data, and data field will be ignored | No* |
+| `data` | Secret data as plain string values passed to the StreamNative Cloud API. | No* |
+| `secretRef` | Reference to a Kubernetes Secret whose decoded `data` values are copied into this resource's `spec.data`. | No* |
 | `poolMemberName` | Pool member to deploy the secret | No |
 | `tolerations` | Tolerations for the secret | No |
 | `type` | Used to facilitate programmatic handling of secret data | No |
 
-*Note: Either `data` or `secretRef` must be specified.
+*Note: Either `data` or `secretRef` must be specified. When both are present, `data` takes precedence.
 
 ### KubernetesSecretReference Structure
 
@@ -34,7 +34,20 @@ The `Secret` resource defines a secret in StreamNative Cloud. It allows you to c
 | `key` | Taint key that the toleration applies to. Empty means match all taint keys | No |
 | `operator` | Represents a key's relationship to the value. Valid operators are Exists and Equal. Defaults to Equal | No |
 | `value` | Taint value the toleration matches to | No |
-| `effect` | Indicates the taint effect to match. Empty means match all taint effects | No |
+| `effect` | Taint effect to match. Supported controller values include `NoSchedule`, `PreferNoSchedule`, `NoCleanup`, and `NoConnect`; empty matches all effects. | No |
+
+### Kubernetes Secret Reference Behavior
+
+On the first reconciliation with an empty `spec.data`, the controller reads the referenced Kubernetes Secret, decodes each byte value to a string, copies the result and Secret type into the custom resource spec, then sends that copied data to StreamNative Cloud.
+
+This is a snapshot, not a live reference. After `spec.data` has been populated, later changes to the referenced Kubernetes Secret are not copied automatically because direct data takes precedence. Remove `spec.data` explicitly to import the reference again, for example with a JSON Patch:
+
+```shell
+kubectl -n default patch secret.resource.streamnative.io test-secret \
+  --type=json -p='[{"op":"remove","path":"/spec/data"}]'
+```
+
+Because copied values are stored in the custom resource, protect access to both the source Kubernetes Secret and the `Secret.resource.streamnative.io` object.
 
 ## Status
 
@@ -105,6 +118,8 @@ You can update the secret by modifying the YAML file and reapplying it. Most fie
 - Secret data
 - Kubernetes secret reference
 - Tolerations
+
+Changing `secretRef` alone does not refresh copied data. Remove `spec.data` as shown above so the next reconciliation reads the new reference.
 
 After applying changes, verify the status to ensure the secret is configured properly.
 

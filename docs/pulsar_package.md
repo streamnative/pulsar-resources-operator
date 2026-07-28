@@ -23,8 +23,8 @@ This table lists specifications available for the `PulsarPackage` resource.
 
 | Option | Description | Required or not |
 | ---|---|--- |
-| `packageURL` | The package URL. The information you provide creates a URL for a package, in the format <type>://<tenant>/<namespace>/<package name>/<version>. | Yes |
-| `fileURL` | The file URL that can be download from. | Yes |
+| `packageURL` | Pulsar package URL in the format `<type>://<tenant>/<namespace>/<package-name>@<version>`. | Yes |
+| `fileURL` | URL from which the package content is downloaded. | Yes |
 | `connectionRef` | The reference to a PulsarConnection. | Yes |
 | `description` | The description of the package. | Optional |
 | `contact` | The contact information of the package. | Optional |
@@ -75,8 +75,8 @@ Please note:
    - With `Always`: The operator will check the file content and update if changed
    - With `IfNotPresent` or `Never`: The operator will not update existing package content
 2. To ensure getting the latest content, either:
-   - Use `@latest` tag in packageURL
-   - Set `syncPolicy: Always`
+   - Set `syncPolicy: Always` explicitly
+   - Use `@latest` in `packageURL` together with explicit `syncPolicy: Always`
    - Create a new package with a different version
 
 ## Delete PulsarPackage
@@ -96,13 +96,15 @@ Please note that when you delete the package:
 
 The `syncPolicy` field determines how the operator handles package updates:
 
-- `Always`: The operator will check and update the package content on each reconciliation if the content has changed.
+- `Always`: The operator downloads the file and compares the managed checksum whenever this package is actively reconciled, including when its status is already Ready.
 - `IfNotPresent`: The operator will only upload the package if it doesn't exist in Pulsar.
-- `Never`: The operator will never upload the package if it already exists, and will fail if the package doesn't exist.
+- `Never`: The operator never uploads package content. The current implementation also marks the custom resource Ready when the remote package is absent; it does not enforce existence.
 
 If `syncPolicy` is not specified, the operator will:
 - Use `Always` if the packageURL contains `@latest` tag (e.g., `function://public/default/api-examples@latest`)
 - Use `IfNotPresent` for all other cases (e.g., `function://public/default/api-examples@v3.2.3.3`)
+
+The Ready-resource shortcut checks whether `syncPolicy` is explicitly `Always`. For periodic checksum checks after the resource becomes Ready, set `syncPolicy: Always` rather than relying only on the implicit `@latest` default.
 
 ## Managed Properties
 
@@ -121,10 +123,7 @@ The operator automatically manages several properties for each package under the
 
 These properties are automatically set and managed by the operator. When specifying custom properties in the `properties` field, any property with the prefix `pulsarpackages.resource.streamnative.io` will be ignored to prevent conflicts with the managed properties.
 
-Example of viewing managed properties:
-```shell
-kubectl get pulsarpackage test-pulsar-package -o jsonpath='{.status.properties}'
-```
+Managed properties are stored in Pulsar package metadata, not in `PulsarPackage.status`. Inspect them through the Pulsar package metadata API or CLI for the configured `packageURL`.
 
 ## Cloud Storage Support
 
@@ -133,8 +132,9 @@ The operator supports downloading package files from various cloud storage provi
 - `s3://` - Amazon S3 and S3-compatible storage
 - `gs://` - Google Cloud Storage
 - `azblob://` - Azure Blob Storage
-- `https://` - HTTPS URLs (default)
-- `file://` - Local file system (for testing)
+- `http://` - HTTP URLs
+- `https://` - HTTPS URLs
+- `file://` - Local path inside the operator container. The current reconciler removes the returned path after processing, so do not point it at a persistent source file.
 
 ### Amazon S3
 

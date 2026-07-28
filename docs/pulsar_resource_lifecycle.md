@@ -11,6 +11,10 @@ The `PulsarResourceLifeCyclePolicy` can be set to one of two values:
 1. `CleanUpAfterDeletion`
 2. `KeepAfterDeletion`
 
+The `lifecyclePolicy` field is implemented by `PulsarTenant`, `PulsarNamespace`, `PulsarTopic`, `PulsarPermission`, `PulsarGeoReplication`, `PulsarPackage`, `PulsarFunction`, `PulsarSink`, `PulsarSource`, `ComputeWorkspace`, `ComputeFlinkDeployment`, `Secret`, `ServiceAccount`, `ServiceAccountBinding`, `APIKey`, and `RoleBinding`.
+
+`PulsarConnection`, `PulsarNSIsolationPolicy`, and `StreamNativeCloudConnection` use their own deletion behavior and do not expose this field.
+
 ### CleanUpAfterDeletion
 
 When set to `CleanUpAfterDeletion`, the Pulsar resource (such as a tenant, namespace, or topic) will be deleted from the Pulsar cluster when its corresponding Kubernetes custom resource is deleted.
@@ -18,13 +22,16 @@ When set to `CleanUpAfterDeletion`, the Pulsar resource (such as a tenant, names
 Example:
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarTenant
 metadata:
-  name: my-tenant
+  name: my-tenant-resource
+  namespace: default
 spec:
+  name: my-tenant
+  connectionRef:
+    name: my-pulsar-connection
   lifecyclePolicy: CleanUpAfterDeletion
-  <...>
 ```
 
 In this example, when the Kubernetes custom resource for the Pulsar tenant is deleted, the corresponding Pulsar tenant will be deleted from the Pulsar cluster.
@@ -36,13 +43,16 @@ When set to `KeepAfterDeletion`, the Pulsar resource will not be deleted from th
 Example:
 
 ```yaml
-apiVersion: pulsar.streamnative.io/v1alpha1
+apiVersion: resource.streamnative.io/v1alpha1
 kind: PulsarNamespace
 metadata:
-  name: my-namespace
+  name: my-namespace-resource
+  namespace: default
 spec:
+  name: my-tenant/my-namespace
+  connectionRef:
+    name: my-pulsar-connection
   lifecyclePolicy: KeepAfterDeletion
-  <...>
 ```
 
 In this example, when the Kubernetes custom resource for the Pulsar namespace is deleted, the corresponding Pulsar namespace will not be deleted from the Pulsar cluster. The namespace will remain in the Pulsar cluster after the Kubernetes custom resource is deleted.
@@ -59,20 +69,23 @@ When you need to delete the actual Pulsar resource (tenant, namespace, or topic)
    Simply delete the Kubernetes custom resource, and the corresponding Pulsar resource will be automatically deleted from the Pulsar cluster.
 
    ```shell
-   kubectl delete pulsartenant my-tenant
+   kubectl -n default delete pulsartenant my-tenant-resource
    ```
 
 2. **For resources with `KeepAfterDeletion` policy:**
    a. First, update the custom resource to change the policy to `CleanUpAfterDeletion`:
 
    ```yaml
-   apiVersion: pulsar.streamnative.io/v1alpha1
+   apiVersion: resource.streamnative.io/v1alpha1
    kind: PulsarTenant
    metadata:
-     name: my-tenant
+     name: my-tenant-resource
+     namespace: default
    spec:
+     name: my-tenant
+     connectionRef:
+       name: my-pulsar-connection
      lifecyclePolicy: CleanUpAfterDeletion
-     # ... other fields ...
    ```
 
    Apply the updated resource:
@@ -84,7 +97,7 @@ When you need to delete the actual Pulsar resource (tenant, namespace, or topic)
    b. Then, delete the Kubernetes custom resource:
 
    ```shell
-   kubectl delete pulsartenant my-tenant
+   kubectl -n default delete pulsartenant my-tenant-resource
    ```
 
    This two-step process ensures that the Pulsar resource is deleted from both Kubernetes and the Pulsar cluster.
@@ -113,11 +126,11 @@ For normal steady-state operation, the operator skips applying Pulsar API change
 
 After upgrading the operator, a new spec field may be introduced while existing custom resources remain `Ready=True` at the same generation. In that case, the new field is not applied to Pulsar until the resource is reconciled again. Recovery options are:
 
-1. Update the custom resource spec or metadata so Kubernetes increments the resource generation, then wait for `Ready=True` again.
+1. Update the custom resource **spec** so Kubernetes increments `metadata.generation`, then wait for `Ready=True` again. Metadata-only changes do not increment generation and do not bypass the ready-resource shortcut.
 2. Temporarily enable `ALWAYS_UPDATE_PULSAR_RESOURCE=true` (Helm: `features.alwaysUpdatePulsarResource=true`) so the operator re-applies observed managed child resources even when they are already Ready.
 3. Disable `ALWAYS_UPDATE_PULSAR_RESOURCE` after remediation unless continuous re-application is intentionally required.
 
-Use the always-update option carefully. It can apply all observed managed resources on every reconciliation or resync and may increase Pulsar broker/admin API load. The `PulsarConnection` deletion guard is still preserved: a deleting connection is kept until its remaining managed child resources are removed.
+The always-update feature applies to Pulsar resources reconciled through `PulsarConnection`; it does not control the independent StreamNative Cloud controllers. Use it carefully: it can apply all observed managed Pulsar resources on every reconciliation or resync and may increase Pulsar broker/admin API load. The `PulsarConnection` deletion guard is still preserved.
 
 ## Changing the Policy
 

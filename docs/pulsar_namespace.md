@@ -24,6 +24,7 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `backlogQuotaType`            | Controls how the backlog quota is enforced. Options: "destination_storage" (limits backlog by size in bytes), "message_age" (limits by time).                                                                     | No       |
 | `offloadThresholdTime`        | Time limit for message offloading. Messages older than this limit will be offloaded to the tiered storage.                                                                                                        | No       |
 | `offloadThresholdSize`        | Size limit for message offloading. When the limit is reached, older messages will be offloaded to the tiered storage.                                                                                             | No       |
+| `offloadPolicies`             | Full namespace-level tiered-storage policy, including driver, bucket, endpoint, credentials, thread settings, and thresholds. Uses the same structure as [`PulsarTopic.spec.offloadPolicies`](pulsar_topic.md#offloadpolicies). | No |
 | `geoReplicationRefs`          | List of references to PulsarGeoReplication resources, used to configure geo-replication for this namespace. Use only when using PulsarGeoReplication for setting up geo-replication between two Pulsar instances. | No       |
 | `replicationClusters`         | List of clusters to which the namespace is replicated. Use only if replicating clusters within the same Pulsar instance.                                                                                          | No       |
 | `deduplication`               | Whether to enable message deduplication for the namespace.                                                                                                                                                        | No       |
@@ -49,6 +50,31 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `schemaAutoUpdateCompatibilityStrategy` | Specifies the compatibility strategy for automatic schema updates. This controls how schema evolution is handled when schemas are automatically updated. Options: `AutoUpdateDisabled`, `Backward`, `Forward`, `Full`, `AlwaysCompatible`, `BackwardTransitive`, `ForwardTransitive`, `FullTransitive`. | No       |
 
 Note: Valid time units are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
+
+## Backlog Quota Selection
+
+`backlogQuotaRetentionPolicy` is required whenever a backlog quota is configured. `backlogQuotaType` selects which limit the operator sends to Pulsar:
+
+- `destination_storage` (default) requires `backlogQuotaLimitSize`; `backlogQuotaLimitTime` is ignored for that quota.
+- `message_age` requires `backlogQuotaLimitTime`; `backlogQuotaLimitSize` is ignored for that quota.
+
+Configure one matching limit per quota type. Use `backlogQuotaLimitSize: "-1"` with `destination_storage` for an unlimited size quota.
+
+## Namespace Offload Policies
+
+`offloadThresholdTime` and `offloadThresholdSize` call the dedicated namespace threshold APIs. `offloadPolicies` sends the complete Pulsar offload-policy object and supports every field listed in [`PulsarTopic.spec.offloadPolicies`](pulsar_topic.md#offloadpolicies).
+
+When both forms configure the same threshold, the operator applies `offloadPolicies` after the dedicated threshold fields. Avoid conflicting values.
+
+```yaml
+spec:
+  offloadPolicies:
+    managedLedgerOffloadDriver: aws-s3
+    s3ManagedLedgerOffloadBucket: pulsar-offload
+    s3ManagedLedgerOffloadRegion: us-west-2
+    managedLedgerOffloadThresholdInBytes: 1073741824
+    managedLedgerOffloadDeletionLagInMillis: 300000
+```
 
 ## topicAutoCreationConfig
 
@@ -448,10 +474,9 @@ spec:
   name: test-tenant/testns
   connectionRef:
     name: test-pulsar-connection
+  backlogQuotaType: destination_storage
   backlogQuotaLimitSize: 1Gi
-  backlogQuotaLimitTime: 24h
   backlogQuotaRetentionPolicy: producer_request_hold
-  # backlogQuotaType: destination_storage
   bundles: 16
   messageTTL: 1h
   
@@ -544,16 +569,17 @@ If a namespace was already `Ready=True` before an operator upgrade introduced a 
 
 Please note the following important points:
 
-1. The fields `name` and `bundles` cannot be updated after the namespace is created. These are immutable properties of the namespace.
+1. `bundles` is used only when the remote namespace is first created; changing it later does not rebundle an existing namespace. Changing `name` targets a different remote namespace and does not rename or delete the previously managed namespace. Create a new custom resource for migrations instead of changing either field in place.
 
 2. Most fields can be modified after namespace creation, including:
-   - **Message and Quota Policies**: `backlogQuotaLimitSize`, `backlogQuotaLimitTime`, `messageTTL`, `retentionTime`, `retentionSize`
+   - **Message and Quota Policies**: `backlogQuotaLimitSize`, `backlogQuotaLimitTime`, `backlogQuotaRetentionPolicy`, `backlogQuotaType`, `messageTTL`, `retentionTime`, `retentionSize`
+   - **Tiered Storage**: `offloadThresholdTime`, `offloadThresholdSize`, `offloadPolicies`
    - **Consumer/Producer Limits**: `maxProducersPerTopic`, `maxConsumersPerTopic`, `maxConsumersPerSubscription`
    - **Rate Limiting**: `dispatchRate`, `subscriptionDispatchRate`, `replicatorDispatchRate`, `publishRate`, `subscribeRate`
    - **Schema Management**: `schemaCompatibilityStrategy`, `schemaValidationEnforced`, `isAllowAutoUpdateSchema`, `schemaAutoUpdateCompatibilityStrategy` (note: uses different enum values than `schemaCompatibilityStrategy`)
    - **Topic Management**: `topicAutoCreationConfig`, `compactionThreshold`, `inactiveTopicPolicies`, `subscriptionExpirationTime`
    - **Security**: `encryptionRequired`, `validateProducerName`, `subscriptionAuthMode`
-   - **Advanced Settings**: `persistencePolicies`, `antiAffinityGroup`, `properties`
+   - **Advanced Settings**: `persistencePolicies`, `deduplication`, `bookieAffinityGroup`, `replicationClusters`, `geoReplicationRefs`, `antiAffinityGroup`, `properties`
 
 3. If you want to change the `connectionRef`, ensure that the new PulsarConnection resource exists and is properly configured. Changing the `connectionRef` can have significant implications:
 
