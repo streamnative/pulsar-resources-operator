@@ -37,7 +37,7 @@ spec:
 | `spec.identityPools` | []string | A list of identity pools that will be granted the role. | No |
 | `spec.serviceAccounts` | []string | A list of service accounts that will be granted the role. | No |
 | `spec.cel` | string | An optional CEL (Common Expression Language) expression for conditional role binding. | No |
-| `spec.srnOrganization` | []string | Present in the CRD, but ignored by the current converter. Resource names always use `StreamNativeCloudConnection.spec.organization`. | No |
+| `spec.srnOrganization` | []string | Values are not copied into resource names; organization always comes from `StreamNativeCloudConnection.spec.organization`. Its array length still controls the number of entries, so unmatched indexes emit organization-only entries. | No |
 | `spec.srnInstance` | []string | The Pulsar instance scope for the SRN. | No |
 | `spec.srnCluster` | []string | The cluster scope for the SRN. | No |
 | `spec.srnTenant` | []string | The tenant scope for the SRN. | No |
@@ -91,7 +91,7 @@ spec:
   - "finance"
   - "marketing"
 ```
-This produces two resource-name entries: `(my-cloud-instance, finance)` and `(my-cloud-instance, marketing)`. `srnOrganization` does not participate; the connection's organization is used for both.
+This produces two resource-name entries: `(my-cloud-instance, finance)` and `(my-cloud-instance, marketing)`. `srnOrganization` values are not copied; the connection's organization is used for both. Its array length still participates in the entry count. Do not make it longer than the narrower SRN arrays: unmatched indexes become organization-only entries, and setting it alone creates only organization-wide entries.
 
 ### Using CEL Expressions
 
