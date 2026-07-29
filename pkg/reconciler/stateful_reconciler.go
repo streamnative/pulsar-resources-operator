@@ -67,7 +67,7 @@ type StateChangeOperations struct {
 
 	// ContextChanged indicates that the context (like resource type or name) has changed
 	// and requires special handling like cleanup of old context
-	ContextChanged bool `json:"contextChanged,omitempty"`
+	ContextChanged bool `json:"contextChanged"`
 
 	// PreviousContext contains the previous context information for cleanup
 	PreviousContext interface{} `json:"previousContext,omitempty"`

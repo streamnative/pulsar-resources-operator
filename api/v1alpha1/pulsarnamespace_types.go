@@ -26,7 +26,7 @@ import (
 // TopicAutoCreationConfig defines the configuration for automatic topic creation
 type TopicAutoCreationConfig struct {
 	// Allow specifies whether to allow automatic topic creation
-	Allow bool `json:"allow,omitempty"`
+	Allow bool `json:"allow"`
 
 	// Type specifies the type of automatically created topics
 	// +kubebuilder:validation:Enum=partitioned;non-partitioned
@@ -375,7 +375,7 @@ type PulsarNamespaceStatus struct {
 	// GeoReplicationEnabled indicates whether geo-replication between two Pulsar instances (via PulsarGeoReplication)
 	// is enabled for the namespace
 	// +optional
-	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled"`
 }
 
 //+kubebuilder:object:root=true

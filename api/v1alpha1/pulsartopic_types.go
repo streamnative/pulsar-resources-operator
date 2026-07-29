@@ -307,7 +307,7 @@ type OffloadPolicies struct {
 // This is a local type definition that mirrors the external library's AutoSubscriptionCreationOverride
 // to ensure proper Kubernetes deep copy generation.
 type AutoSubscriptionCreationOverride struct {
-	AllowAutoSubscriptionCreation bool `json:"allowAutoSubscriptionCreation,omitempty"`
+	AllowAutoSubscriptionCreation bool `json:"allowAutoSubscriptionCreation"`
 }
 
 // SchemaCompatibilityStrategy defines the schema compatibility strategy for a topic.
@@ -340,7 +340,7 @@ type PulsarTopicStatus struct {
 	// GeoReplicationEnabled indicates whether geo-replication is enabled for this topic.
 	// This is set to true when GeoReplicationRefs are configured in the spec and successfully applied.
 	// +optional
-	GeoReplicationEnabled bool `json:"geoReplicationEnabled,omitempty"`
+	GeoReplicationEnabled bool `json:"geoReplicationEnabled"`
 }
 
 //+kubebuilder:object:root=true
