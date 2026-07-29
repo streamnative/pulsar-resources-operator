@@ -54,16 +54,23 @@ Please read through below conventions before contributions.
 - All filenames should be lowercase.
 - Go source files and directories use underscores, not dashes.
   - Package directories should generally avoid using separators as much as possible. When package names are multiple words, they usually should be in nested subdirectories.
-- Document directories and filenames should use dashes rather than underscores.
+- Documentation filenames are lowercase and currently follow the existing `docs/*.md` underscore convention. Match neighboring files when adding new documents.
 - All source files should add a license at the beginning.
 
 
 ### How to work locally
 
-1. Clones this repo
-2. Create the cluster `minikube start --memory=8192 --cpus=4`
-3. [Deploy Apache Pulsar Standalone](https://pulsar.apache.org/docs/4.0.x/getting-started-helm/#step-1-install-pulsar-helm-chart)
-4. Open the minikube tunnel in another terminal `minikube tunnel -c`
-5. Apply operator's crds `make install`
-6. Executes `go run .` in order to run the operator locally rather than inside the cluster
-7. Run tests `~/go/bin/ginkgo ./operator`
+1. Install the Go version declared by `go.work` and clone this repository.
+2. Run unit and envtest coverage with `make test`.
+3. For end-to-end tests, create a cluster, for example `minikube start --memory=8192 --cpus=4`.
+4. [Deploy Apache Pulsar](https://pulsar.apache.org/docs/4.0.x/getting-started-helm/#step-1-install-pulsar-helm-chart).
+5. Apply the operator CRDs with `make install`.
+6. Run the operator locally with `make run`.
+7. In another terminal, run the integration suite:
+
+   ```shell
+   cd tests
+   go run github.com/onsi/ginkgo/v2/ginkgo --trace ./operator
+   ```
+
+   Set `ADMIN_SERVICE_URL`, `NAMESPACE`, `BROKER_NAME`, and `PROXY_URL` as described in [`tests/README.md`](tests/README.md) when defaults do not match the test cluster.

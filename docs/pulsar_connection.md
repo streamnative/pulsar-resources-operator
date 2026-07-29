@@ -8,18 +8,18 @@ The `PulsarConnection` resource defines the connection details for a Pulsar clus
 
 | Field | Description | Required | Version |
 |-------|-------------|----------|---------|
-| `adminServiceURL` | Admin service URL (e.g., `http://cluster-broker.test.svc.cluster.local:8080`). | No | All |
-| `adminServiceSecureURL` | HTTPS admin service URL. | No | ≥ 0.3.0 |
+| `adminServiceURL` | Admin service URL (e.g., `http://cluster-broker.test.svc.cluster.local:8080`). Required when `adminServiceSecureURL` is absent. | Conditional | All |
+| `adminServiceSecureURL` | HTTPS admin service URL. Required when `adminServiceURL` is absent and preferred when both are set. | Conditional | ≥ 0.3.0 |
 | `brokerServiceURL` | Broker service URL (e.g., `pulsar://pulsar-sn-platform-broker.test.svc.cluster.local:6650`). | No | ≥ 0.3.0 |
 | `brokerServiceSecureURL` | TLS broker service URL (e.g., `pulsar+ssl://pulsar-sn-platform-broker.test.svc.cluster.local:6651`). | No | ≥ 0.3.0 |
 | `clusterName` | Pulsar cluster name (used for Geo-Replication). | No | ≥ 0.3.0 |
 | `authentication` | Authentication configuration (`token`, `oauth2`, or `tls`). | No | All |
-| `brokerClientTrustCertsFilePath` | Path to trusted TLS cert for broker connections. | No | ≥ 0.3.0 |
+| `brokerClientTrustCertsFilePath` | Certificate path stored in Pulsar cluster metadata for broker-to-broker geo-replication connections. The path must be available to the source brokers. | No | ≥ 0.3.0 |
 | `tlsAllowInsecureConnection` | Allow insecure TLS connection to brokers. | No | ≥ 0.5.0 |
 | `tlsEnableHostnameVerification` | Enable hostname verification for TLS. | No | ≥ 0.5.0 |
-| `tlsTrustCertsFilePath` | CA certificate path for TLS verification. | No | ≥ 0.5.0 |
+| `tlsTrustCertsFilePath` | CA certificate path used by the operator when connecting to `adminServiceSecureURL`. | No | ≥ 0.5.0 |
 
-Fields with a listed version are available only from that version onward.
+At least one of `adminServiceURL` and `adminServiceSecureURL` must be set; reconciliation fails when both are empty. Fields with a listed version are available only from that version onward.
 
 ## Authentication Methods
 
@@ -102,7 +102,7 @@ spec:
 
 ```bash
 kubectl create secret generic pulsar-jwt-secret \
-  --from-literal=brokerClientAuthenticationParameters=<base64-encoded-JWT>
+  --from-literal=brokerClientAuthenticationParameters=<raw-JWT-token>
 ```
 
 ```yaml
@@ -134,7 +134,7 @@ spec:
   clusterName: pulsar-cluster
   authentication:
     token:
-      value: <base64-encoded-JWT-token>
+      value: <raw-JWT-token>
 ```
 
 ### OAuth2 with Secret
@@ -195,7 +195,7 @@ spec:
 
 ### OAuth2 with file-based `ValueOrSecretRef`
 
-When you want the controller to read OAuth2 credentials from a mounted file instead of embedding them in the CR or a Secret reference, mount the secret into the operator pod and point `key.file` at the mounted path.
+When you want the controller to read OAuth2 credentials from a mounted file instead of embedding them in the CR or a Secret reference, mount the secret into the operator pod and point `key.file` at the mounted path. The path is resolved inside the operator container.
 
 1) Create a secret from the credentials file:
 
@@ -267,4 +267,4 @@ spec:
 - Create: `kubectl apply -f connection.yaml`
 - Check status: `kubectl -n <namespace> get pulsarconnection.resource.streamnative.io`
 - Update: edit `connection.yaml` and re-apply (for example, remove `authentication` if the cluster is unauthenticated).
-- Delete: `kubectl -n <namespace> delete pulsarconnection.resource.streamnative.io <name>`; the CR is removed after dependent Pulsar resources are cleaned up.
+- Delete: remove dependent resources first, then run `kubectl -n <namespace> delete pulsarconnection.resource.streamnative.io <name>`. The current deletion guard explicitly waits for referenced tenants, namespaces, topics, and geo-replications; remove other referenced resources as well to avoid leaving them without a connection.

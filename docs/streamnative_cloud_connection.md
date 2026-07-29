@@ -8,12 +8,12 @@ The `StreamNativeCloudConnection` resource defines a connection to the StreamNat
 
 | Field                           | Description                                                                                                     | Required |
 |--------------------------------|-----------------------------------------------------------------------------------------------------------------|----------|
-| `server`                        | The URL of the API server                                                                                       | Yes      |
+| `server`                        | URL of the API server. Defaults to `https://api.streamnative.cloud`.                                             | No       |
 | `auth.credentialsRef`          | Reference to the service account credentials secret                                                             | Yes      |
-| `logs.serviceUrl`              | URL of the logging service. Required if logs configuration is specified.                                         | No*      |
-| `organization`                  | The organization to use in the API server. If not specified, the connection name will be used                   | No       |
+| `logs.serviceUrl`              | Logging service URL. Required by the CRD when `logs` is present, but not consumed by the current connection or resource clients. | Conditional |
+| `organization`                  | Organization namespace used by StreamNative Cloud resource clients. Required before reconciling any dependent cloud resource. | Conditional |
 
-*Note: If `logs` configuration is specified, `serviceUrl` becomes required.
+The connection health check itself does not require `organization`, but `ComputeWorkspace`, `ComputeFlinkDeployment`, `Secret`, `ServiceAccount`, `ServiceAccountBinding`, `APIKey`, and `RoleBinding` controllers reject an empty value. There is no fallback to the Kubernetes resource name in the current implementation.
 
 ## Status
 
@@ -102,6 +102,8 @@ You can update the connection by modifying the YAML file and reapplying it. Most
 - Organization
 - Credentials reference
 
+`logs` is currently stored by Kubernetes but does not affect controller behavior.
+
 After applying changes, verify the status to ensure the connection is working properly.
 
 ## Delete Connection
@@ -112,4 +114,4 @@ To delete a StreamNativeCloudConnection resource:
 kubectl delete streamnativecloudconnection test-connection
 ```
 
-Note that deleting the connection will affect any resources that depend on it, such as ComputeWorkspaces or ComputeFlinkDeployments.
+The controller keeps its finalizer while dependent cloud resources in the same namespace still reference this connection. Delete or repoint those resources first. This includes direct references and `ComputeFlinkDeployment` references inherited through `ComputeWorkspace`.

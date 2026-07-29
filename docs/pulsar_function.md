@@ -47,6 +47,8 @@ spec:
 
 This table lists specifications available for the `PulsarFunction` resource.
 
+Configure exactly one package field: `jar`, `py`, or `go`. The controller requires a non-empty package URL and checks these fields in that order.
+
 | Option                           | Description                                                                                                                                           | Required or not |
 |----------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|-----------------|
 | `autoAck`                        | Whether to automatically acknowledge messages.                                                                                                        | Optional        |
@@ -59,8 +61,8 @@ This table lists specifications available for the `PulsarFunction` resource.
 | `forwardSourceMessageProperty`   | Whether to forward the source message property.                                                                                                       | Optional        |
 | `inputs`                         | The input topics.                                                                                                                                     | Yes             |
 | `jar`                            | The JAR package URL, can be used by Java runtime.                                                                                                     | Optional        |
-| `py`                             | The Python package URL, can be used by Java runtime.                                                                                                  | Optional        |
-| `go`                             | The Go package URL, can be used by Java runtime.                                                                                                      | Optional        |
+| `py`                             | The Python package URL for the Python runtime.                                                                                                        | Optional        |
+| `go`                             | The Go package URL for the Go runtime.                                                                                                                | Optional        |
 | `lifecyclePolicy`                | The resource lifecycle policy. Available options are `CleanUpAfterDeletion` and `KeepAfterDeletion`. By default, it is set to `CleanUpAfterDeletion`. | Optional        |
 | `logTopic`                       | The log topic.                                                                                                                                        | Optional        |
 | `maxMessageRetries`              | The maximum number of message retries.                                                                                                                | Optional        |
@@ -93,8 +95,6 @@ This table lists specifications available for the `PulsarFunction` resource.
 | `inputSpecs`                     | The input specs.                                                                                                                                      | Optional        |
 | `inputTypeClassName`             | The input type class name of the function.                                                                                                            | Optional        |
 | `maxPendingAsyncRequests`        | The maximum number of pending async requests.                                                                                                         | Optional        |
-| `exposePulsarAdminClientEnabled` | Whether to expose the Pulsar admin client.                                                                                                            | Optional        |
-| `skipToLatest`                   | Whether to skip to the latest.                                                                                                                        | Optional        |
 
 2. Apply the YAML file to create the function.
 
@@ -102,7 +102,7 @@ This table lists specifications available for the `PulsarFunction` resource.
 kubectl apply -f function.yaml
 ```
 
-3. Check the resource status. When column Ready is true, it indicates the resource is created successfully in the pulsar cluster
+3. Check the resource status. `READY=True` indicates that the function was created successfully in the Pulsar cluster.
 
 ```shell
 kubectl get pulsarfunction

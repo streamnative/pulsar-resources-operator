@@ -30,8 +30,9 @@ spec:
   # maxUnAckedMessagesPerSubscription: 4
   # retentionTime: 1h
   # retentionSize: 10Gi
-  # backlogQuotaLimitTime: 24h
+  # backlogQuotaType: destination_storage
   # backlogQuotaLimitSize: 1Gi
   # backlogQuotaRetentionPolicy: producer_request_hold
+  # For an age-based quota, set backlogQuotaType: message_age and use backlogQuotaLimitTime instead.
   # compactionThreshold: 104857600  # 100MB in bytes
   lifecyclePolicy: CleanUpAfterDeletion

@@ -74,6 +74,8 @@ The `OBSERVED_GENERATION` should increment, and `READY` should become `True` whe
 
 ## Delete A Pulsar ns-isolation-policy
 
+`PulsarNSIsolationPolicy` does not expose `lifecyclePolicy`. Deleting the custom resource always asks Pulsar to delete the remote namespace-isolation policy, then removes the finalizer.
+
 To delete a PulsarNSIsolationPolicy resource, use the following kubectl command:
 
 ```shell

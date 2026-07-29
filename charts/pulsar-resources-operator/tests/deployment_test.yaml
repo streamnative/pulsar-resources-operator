@@ -87,3 +87,35 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.memory
           value: 128Mi
+
+  - it: should merge GCS credentials and extra volumes
+    set:
+      cloudStorage.gcs.enabled: true
+      cloudStorage.gcs.serviceAccount.useWorkloadIdentity: false
+      extraVolumeMounts:
+        - name: connection-credentials
+          mountPath: /var/secrets/connection
+          readOnly: true
+      extraVolumes:
+        - name: connection-credentials
+          secret:
+            secretName: connection-credentials
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: gcs-credentials
+              secret:
+                secretName: gcs-credentials
+            - name: connection-credentials
+              secret:
+                secretName: connection-credentials
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts
+          value:
+            - name: gcs-credentials
+              mountPath: /var/secrets/google
+              readOnly: true
+            - name: connection-credentials
+              mountPath: /var/secrets/connection
+              readOnly: true

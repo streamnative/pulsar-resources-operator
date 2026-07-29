@@ -30,14 +30,14 @@ spec:
 
 | Field | Type | Description | Required |
 | --- | --- | --- | --- |
-| `spec.apiServerRef` | [LocalObjectReference](https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.18/#localobjectreference-v1-core) | Reference to a StreamNativeCloudConnection in the same namespace. | Yes |
+| `spec.apiServerRef` | `corev1.LocalObjectReference` | Reference to a StreamNativeCloudConnection in the same namespace. | Yes |
 | `spec.lifecyclePolicy` | string | Whether to delete the remote role binding or keep it when the Kubernetes resource is deleted. Defaults to cleanup when omitted. | No |
 | `spec.clusterRole` | string | The name of the `ClusterRole` to be granted. See [Predefined RBAC Roles](https://docs.streamnative.io/cloud/security/access/rbac/predefined-rbac-roles). | Yes |
 | `spec.users` | []string | A list of user emails that will be granted the role. | No |
 | `spec.identityPools` | []string | A list of identity pools that will be granted the role. | No |
 | `spec.serviceAccounts` | []string | A list of service accounts that will be granted the role. | No |
 | `spec.cel` | string | An optional CEL (Common Expression Language) expression for conditional role binding. | No |
-| `spec.srnOrganization` | []string | The organization scope for the SRN. | No |
+| `spec.srnOrganization` | []string | Values are not copied into resource names; organization always comes from `StreamNativeCloudConnection.spec.organization`. Its array length still controls the number of entries, so unmatched indexes emit organization-only entries. | No |
 | `spec.srnInstance` | []string | The Pulsar instance scope for the SRN. | No |
 | `spec.srnCluster` | []string | The cluster scope for the SRN. | No |
 | `spec.srnTenant` | []string | The tenant scope for the SRN. | No |
@@ -55,8 +55,8 @@ spec:
 | --- | --- | --- |
 | `status.conditions` | []Condition | Represents the latest available observations of the `RoleBinding`'s state. |
 | `status.observedGeneration`| int64 | The last generation of the resource that was observed by the controller. |
-| `status.failedClusters` | []string | A list of clusters where applying the role binding failed. |
-| `status.syncedClusters` | map[string]string | A map of clusters where the role binding has been successfully synced. The key is the cluster name and the value is the sync status. |
+| `status.failedClusters` | []string | Reserved field; the current controller does not populate it. |
+| `status.syncedClusters` | map[string]string | Reserved field; the current controller does not populate it. |
 
 
 ## Conditional Role Bindings
@@ -67,7 +67,7 @@ While basic role bindings associate a role with a subject, conditional role bind
 
 You can scope permissions by specifying one or more `spec.srn*` fields. This is the simplest way to limit a role to specific resources like tenants, namespaces, or topics.
 
-The SRN fields are provided as arrays to allow granting the same role across multiple resources of the same type in a single `RoleBinding`.
+SRN arrays are combined **by index**, not as a Cartesian product. The controller creates one resource-name entry for each index up to the longest array; missing values at an index remain empty. Repeat shared scope values so every intended entry is complete.
 
 For example, to grant the `tenant-admin` role to a user for two specific tenants (`finance` and `marketing`) within an instance:
 
@@ -86,11 +86,12 @@ spec:
   # Define the scope of this binding
   srnInstance:
   - "my-cloud-instance"
+  - "my-cloud-instance"
   srnTenant:
   - "finance"
   - "marketing"
 ```
-The controller will create a separate binding in the cloud for each combination of SRN values provided.
+This produces two resource-name entries: `(my-cloud-instance, finance)` and `(my-cloud-instance, marketing)`. `srnOrganization` values are not copied; the connection's organization is used for both. Its array length still participates in the entry count. Do not make it longer than the narrower SRN arrays: unmatched indexes become organization-only entries, and setting it alone creates only organization-wide entries.
 
 ### Using CEL Expressions
 

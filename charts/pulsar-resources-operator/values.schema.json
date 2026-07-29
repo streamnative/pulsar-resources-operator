@@ -123,6 +123,10 @@
                 "alwaysUpdatePulsarResource": {
                     "type": "boolean"
                 },
+                "maxConcurrentReconciles": {
+                    "type": "integer",
+                    "minimum": 0
+                },
                 "resyncPeriod": {
                     "type": "integer"
                 },

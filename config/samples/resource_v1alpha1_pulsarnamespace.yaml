@@ -21,11 +21,12 @@ spec:
   name: tenant-one/testns
   connectionRef:
     name: pulsarconnection-sample
+  backlogQuotaType: destination_storage
   backlogQuotaLimitSize: 1Gi
-  backlogQuotaLimitTime: 2h
   backlogQuotaRetentionPolicy: producer_request_hold
-  # default is destination_storage
+  # For an age-based quota, use these fields instead of backlogQuotaLimitSize:
   # backlogQuotaType: message_age
+  # backlogQuotaLimitTime: 2h
   bundles: 16
   messageTTL: 1h
   maxProducersPerTopic: 2

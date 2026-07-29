@@ -1,8 +1,8 @@
-# tests
+# Integration tests
 
-tests is an individul module beside pulsar resources operator
+`tests` is a separate Go module included by the repository's `go.work` file.
 
-`go mod tidy` to download modules for tests
+Run `go mod download` from this directory to prefetch its dependencies without rewriting module files.
 
 
 ## Requirements
@@ -12,7 +12,9 @@ tests is an individul module beside pulsar resources operator
 
 ## Run tests
 
-`ginkgo --trace --progress ./operator`
+```bash
+go run github.com/onsi/ginkgo/v2/ginkgo --trace ./operator
+```
 
 Optionally, if you have an external pulsar cluster (e.g. deployed on minikube) and you want to test the operator without deploying it in kubernetes:
 
@@ -20,7 +22,7 @@ Optionally, if you have an external pulsar cluster (e.g. deployed on minikube) a
 
 ```bash
 make install
-go run .
+make run
 ```
 
 2. In another terminal run
@@ -33,7 +35,8 @@ export NAMESPACE=pulsar
 # your pulsar broker name
 export BROKER_NAME=pulsar-mini
 # your pulsar proxy url
-export PROXY_URL=http://localhost:80
+export PROXY_URL=pulsar://localhost:6650
 
-ginkgo --trace --progress ./operator
+cd tests
+go run github.com/onsi/ginkgo/v2/ginkgo --trace ./operator
 ```
