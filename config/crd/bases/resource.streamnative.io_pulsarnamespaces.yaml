@@ -113,12 +113,23 @@ spec:
                 - message_age
                 type: string
               bookieAffinityGroup:
-                description: BookieAffinityGroup is the name of the namespace isolation
-                  policy to apply to the namespace.
+                description: |-
+                  BookieAffinityGroup pins the namespace's ledgers to the bookies that belong to the
+                  named BookKeeper rack/affinity groups. This is the storage half of a namespace
+                  carve-out; pair it with a PulsarNSIsolationPolicy to also pin the namespace to a
+                  dedicated set of brokers.
+                  Omitting this field removes any affinity group previously set for the namespace.
                 properties:
                   bookkeeperAffinityGroupPrimary:
+                    description: BookkeeperAffinityGroupPrimary is the group bookies
+                      are selected from first.
+                    minLength: 1
                     type: string
                   bookkeeperAffinityGroupSecondary:
+                    description: |-
+                      BookkeeperAffinityGroupSecondary is the group bookies are selected from when the
+                      primary group cannot satisfy the ensemble.
+                    minLength: 1
                     type: string
                 required:
                 - bookkeeperAffinityGroupPrimary

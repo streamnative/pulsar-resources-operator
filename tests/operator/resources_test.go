@@ -1200,6 +1200,103 @@ var _ = Describe("Resources", func() {
 			})
 		})
 
+		Context("PulsarNamespace Bookie Affinity Group", Ordered, func() {
+			var (
+				bookieAffinityNamespace     *v1alphav1.PulsarNamespace
+				bookieAffinityNamespaceName string = "test-bookie-affinity-namespace"
+			)
+
+			BeforeAll(func() {
+				bookieAffinityNamespace = utils.MakePulsarNamespaceWithBookieAffinityGroup(
+					namespaceName,
+					bookieAffinityNamespaceName,
+					"cloud/bookie-affinity",
+					pconnName,
+					lifecyclePolicy,
+				)
+			})
+
+			It("should create namespace with bookie affinity group successfully", func() {
+				err := k8sClient.Create(ctx, bookieAffinityNamespace)
+				Expect(err == nil || apierrors.IsAlreadyExists(err)).Should(BeTrue())
+			})
+
+			It("should be ready", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns)
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should have correct bookie affinity group configuration", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				Expect(ns.Spec.BookieAffinityGroup).ShouldNot(BeNil())
+				Expect(ns.Spec.BookieAffinityGroup.BookkeeperAffinityGroupPrimary).Should(Equal("group-primary"))
+				Expect(ns.Spec.BookieAffinityGroup.BookkeeperAffinityGroupSecondary).Should(Equal("group-secondary"))
+			})
+
+			It("should update the bookie affinity group successfully", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				ns.Spec.BookieAffinityGroup.BookkeeperAffinityGroupPrimary = "group-primary-updated"
+				ns.Spec.BookieAffinityGroup.BookkeeperAffinityGroupSecondary = ""
+				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
+			})
+
+			It("should be ready after update", func() {
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns) &&
+						ns.Status.ObservedGeneration == ns.Generation
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			It("should reject an empty primary affinity group", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				ns.Spec.BookieAffinityGroup.BookkeeperAffinityGroupPrimary = ""
+				Expect(k8sClient.Update(ctx, ns)).ShouldNot(Succeed())
+			})
+
+			It("should remove the affinity policy when the field is dropped", func() {
+				ns := &v1alphav1.PulsarNamespace{}
+				tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+				Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+
+				ns.Spec.BookieAffinityGroup = nil
+				Expect(k8sClient.Update(ctx, ns)).Should(Succeed())
+
+				Eventually(func() bool {
+					ns := &v1alphav1.PulsarNamespace{}
+					Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+					return v1alphav1.IsPulsarResourceReady(ns) &&
+						ns.Status.ObservedGeneration == ns.Generation
+				}, "20s", "100ms").Should(BeTrue())
+			})
+
+			AfterAll(func() {
+				if bookieAffinityNamespace != nil {
+					Eventually(func(g Gomega) {
+						ns := &v1alphav1.PulsarNamespace{}
+						tns := types.NamespacedName{Namespace: namespaceName, Name: bookieAffinityNamespaceName}
+						g.Expect(k8sClient.Get(ctx, tns, ns)).Should(Succeed())
+						g.Expect(k8sClient.Delete(ctx, ns)).Should(Succeed())
+					}).Should(Succeed())
+				}
+			})
+		})
+
 		Context("PulsarTopic Auto Subscription Creation", Ordered, func() {
 			var (
 				autoSubscriptionTopic     *v1alphav1.PulsarTopic
