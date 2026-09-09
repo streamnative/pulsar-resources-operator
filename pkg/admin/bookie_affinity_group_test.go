@@ -215,3 +215,100 @@ func TestApplyBookieAffinityGroupPropagatesReadFailure(t *testing.T) {
 		t.Fatalf("error reason = %v, want %v", reason, ReasonForbidden)
 	}
 }
+
+const autoTopicCreationPath = "/admin/v2/namespaces/public/default/autoTopicCreation"
+
+// affinityDenialServer answers the bookie affinity endpoint with status and records every
+// path the reconcile touches, so a test can assert what still ran after the denial.
+func affinityDenialServer(t *testing.T, status int, paths *[]string) *httptest.Server {
+	t.Helper()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		*paths = append(*paths, r.URL.EscapedPath())
+		if r.URL.EscapedPath() == bookieAffinityPath {
+			http.Error(w, "Don't have admin permission", status)
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	t.Cleanup(server.Close)
+	return server
+}
+
+func contains(paths []string, want string) bool {
+	for _, p := range paths {
+		if p == want {
+			return true
+		}
+	}
+	return false
+}
+
+// Reading the bookie affinity group is superuser-only in Pulsar, so a tenant-admin
+// connection is denied on it even for a namespace that never asked for a group. That
+// denial must not abort the reconcile: every policy after it would be skipped and the
+// namespace would never reach Ready.
+func TestApplyNamespacePoliciesToleratesDeniedAffinityReadWhenUnset(t *testing.T) {
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			var paths []string
+			server := affinityDenialServer(t, status, &paths)
+
+			client, err := pulsaradmin.New(&config.Config{WebServiceURL: server.URL})
+			if err != nil {
+				t.Fatalf("create Pulsar admin client: %v", err)
+			}
+
+			adminClient := &PulsarAdminClient{adminClient: client}
+			err = adminClient.applyNamespacePolicies("public/default", &NamespaceParams{
+				BookieAffinityGroup: nil,
+				TopicAutoCreationConfig: &resourcev1alpha1.TopicAutoCreationConfig{
+					Allow: true,
+					Type:  "non-partitioned",
+				},
+			})
+			if err != nil {
+				t.Fatalf("apply namespace policies: %v", err)
+			}
+
+			if !contains(paths, bookieAffinityPath) {
+				t.Fatalf("bookie affinity was never read, paths = %v", paths)
+			}
+			// The policy that follows the affinity block must still have been applied.
+			if !contains(paths, autoTopicCreationPath) {
+				t.Fatalf("a later policy was skipped after the denied read, paths = %v", paths)
+			}
+		})
+	}
+}
+
+// A group the user explicitly asked for is the opposite case: the operator has been told
+// to write it, so a permission failure has to surface rather than be silently skipped.
+func TestApplyNamespacePoliciesFailsOnDeniedAffinityReadWhenRequested(t *testing.T) {
+	for _, status := range []int{http.StatusUnauthorized, http.StatusForbidden} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			var paths []string
+			server := affinityDenialServer(t, status, &paths)
+
+			client, err := pulsaradmin.New(&config.Config{WebServiceURL: server.URL})
+			if err != nil {
+				t.Fatalf("create Pulsar admin client: %v", err)
+			}
+
+			adminClient := &PulsarAdminClient{adminClient: client}
+			err = adminClient.applyNamespacePolicies("public/default", &NamespaceParams{
+				BookieAffinityGroup: &resourcev1alpha1.BookieAffinityGroupData{
+					BookkeeperAffinityGroupPrimary: "group-a",
+				},
+			})
+			if err == nil {
+				t.Fatal("apply namespace policies succeeded, want error")
+			}
+			if !IsPermissionDenied(err) {
+				t.Fatalf("error reason = %v, want a permission denial", ErrorReason(err))
+			}
+			if contains(paths, autoTopicCreationPath) {
+				t.Fatalf("reconcile continued past a required write it could not make, paths = %v", paths)
+			}
+		})
+	}
+}

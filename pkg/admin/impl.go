@@ -26,10 +26,15 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
+
+// bookieAffinityLog reports the one case where this package cannot converge a policy and
+// deliberately does not fail the reconcile, which would otherwise be invisible.
+var bookieAffinityLog = logf.Log.WithName("bookie-affinity-group")
 
 // PulsarAdminClient define the client to call pulsar
 type PulsarAdminClient struct {
@@ -1211,15 +1216,31 @@ func (p *PulsarAdminClient) getBookieAffinityGroup(completeNSName string) (*util
 // applyBookieAffinityGroup moves the namespace's bookie affinity group towards the desired
 // state, writing only when it actually differs from what Pulsar reports.
 //
-// Setting, clearing and reading the affinity group all require superuser access in Pulsar
-// (NamespacesBase#internalSetBookieAffinityGroupAsync validates it, and the delete path is
-// implemented as a set of a null group). Reconciling unconditionally would therefore make
-// every namespace depend on superuser credentials, even ones that never use the feature,
-// so an unset-to-unset transition must not touch Pulsar at all.
+// Reading, setting and clearing the affinity group are all superuser-only in Pulsar
+// (internalGetBookieAffinityGroupAsync and internalSetBookieAffinityGroupAsync both call
+// validateSuperUserAccessAsync, and the delete path is implemented as a set of a null
+// group). A tenant-admin connection is therefore denied on every one of them, including
+// the read, on namespaces that never use the feature.
+//
+// So when no group is requested there is nothing to converge, and a denied read must not
+// fail the reconcile: that error would abort applyNamespacePolicies before every policy
+// that follows and leave the namespace short of Ready. The trade-off is that a group set
+// out of band is left in place rather than removed, which is why it is logged.
+//
+// A group that was explicitly requested is different: there the operator has been told to
+// write, and a permission failure has to surface rather than be silently skipped.
 func (p *PulsarAdminClient) applyBookieAffinityGroup(completeNSName string,
 	desired *v1alpha1.BookieAffinityGroupData) error {
 	current, err := p.getBookieAffinityGroup(completeNSName)
 	if err != nil {
+		if desired == nil && IsPermissionDenied(err) {
+			bookieAffinityLog.Info(
+				"Cannot read the bookie affinity group, and none is requested; leaving it as is. "+
+					"Reading it requires superuser access in Pulsar. If a group was set out of band "+
+					"it is retained, not removed.",
+				"namespace", completeNSName, "reason", ErrorReason(err))
+			return nil
+		}
 		return err
 	}
 

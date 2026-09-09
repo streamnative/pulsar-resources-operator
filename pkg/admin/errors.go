@@ -75,6 +75,17 @@ func IsNotFound(err error) bool {
 	return ErrorReason(err) == ReasonNotFound
 }
 
+// IsPermissionDenied returns true if the error indicates the connection lacks the
+// permission the operation requires, either because it did not authenticate (401) or
+// because the authenticated role is not allowed to perform it (403).
+//
+// Some Pulsar endpoints are superuser-only regardless of tenant role, so a tenant-admin
+// connection can hit this on a namespace it otherwise fully controls.
+func IsPermissionDenied(err error) bool {
+	reason := ErrorReason(err)
+	return reason == ReasonUnauthorized || reason == ReasonForbidden
+}
+
 // IsAlreadyExist returns true if the error indicates the resource already exist
 func IsAlreadyExist(err error) bool {
 	if err == nil {
