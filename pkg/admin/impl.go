@@ -26,6 +26,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
@@ -1388,7 +1389,16 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	} else {
 		err = p.adminClient.Namespaces().DeleteBookieAffinityGroup(completeNSName)
 		if err != nil {
-			return err
+			// Clearing an omitted policy requires superuser access, even when no group exists.
+			// Tenant admins must still be able to apply the remaining namespace policies.
+			switch ErrorReason(err) {
+			case ReasonUnauthorized, ReasonForbidden:
+				log.Log.WithName("pulsar-admin").Info(
+					"Skipping bookie affinity group deletion: insufficient permissions; any existing group is retained",
+					"namespace", completeNSName, "error", err)
+			default:
+				return err
+			}
 		}
 	}
 

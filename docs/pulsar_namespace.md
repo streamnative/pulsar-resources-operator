@@ -51,6 +51,12 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 
 Note: Valid time units are "s" (seconds), "m" (minutes), "h" (hours), "d" (days), "w" (weeks).
 
+Setting `bookieAffinityGroup` requires Pulsar superuser access. When the field is omitted,
+the operator attempts to clear the existing group. If that deletion returns HTTP 401 or 403,
+the operator logs the skipped deletion and continues applying other namespace policies;
+any existing affinity group is retained. Other deletion errors and failures to set an
+explicitly configured group still fail reconciliation.
+
 ## Backlog Quota Selection
 
 `backlogQuotaRetentionPolicy` is required whenever a backlog quota is configured. `backlogQuotaType` selects which limit the operator sends to Pulsar:
