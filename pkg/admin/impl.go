@@ -26,10 +26,15 @@ import (
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/utils/ptr"
+	logf "sigs.k8s.io/controller-runtime/pkg/log"
 
 	"github.com/streamnative/pulsar-resources-operator/api/v1alpha1"
 	rutils "github.com/streamnative/pulsar-resources-operator/pkg/utils"
 )
+
+// bookieAffinityLog reports the one case where this package cannot converge a policy and
+// deliberately does not fail the reconcile, which would otherwise be invisible.
+var bookieAffinityLog = logf.Log.WithName("bookie-affinity-group")
 
 // PulsarAdminClient define the client to call pulsar
 type PulsarAdminClient struct {
@@ -1187,6 +1192,79 @@ func (p *PulsarAdminClient) RemoveTopicProperty(name string, persistent *bool, k
 	return nil
 }
 
+// getBookieAffinityGroup returns the bookie affinity group currently configured for the
+// namespace, or nil when none is set.
+//
+// Pulsar reports "no affinity group" in two different ways: a 404 ("Namespace
+// local-policies does not exist") when the namespace has no local policies at all, and a
+// 200 carrying an empty group when local policies exist but the affinity group was
+// cleared. Both are normalized to nil here.
+func (p *PulsarAdminClient) getBookieAffinityGroup(completeNSName string) (*utils.BookieAffinityGroupData, error) {
+	current, err := p.adminClient.Namespaces().GetBookieAffinityGroup(completeNSName)
+	if err != nil {
+		if IsNotFound(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	if current == nil || current.BookkeeperAffinityGroupPrimary == "" {
+		return nil, nil
+	}
+	return current, nil
+}
+
+// applyBookieAffinityGroup moves the namespace's bookie affinity group towards the desired
+// state, writing only when it actually differs from what Pulsar reports.
+//
+// Reading, setting and clearing the affinity group are all superuser-only in Pulsar
+// (internalGetBookieAffinityGroupAsync and internalSetBookieAffinityGroupAsync both call
+// validateSuperUserAccessAsync, and the delete path is implemented as a set of a null
+// group). A tenant-admin connection is therefore denied on every one of them, including
+// the read, on namespaces that never use the feature.
+//
+// So when no group is requested there is nothing to converge, and a denied read must not
+// fail the reconcile: that error would abort applyNamespacePolicies before every policy
+// that follows and leave the namespace short of Ready. The trade-off is that a group set
+// out of band is left in place rather than removed, which is why it is logged.
+//
+// A group that was explicitly requested is different: there the operator has been told to
+// write, and a permission failure has to surface rather than be silently skipped.
+func (p *PulsarAdminClient) applyBookieAffinityGroup(completeNSName string,
+	desired *v1alpha1.BookieAffinityGroupData) error {
+	current, err := p.getBookieAffinityGroup(completeNSName)
+	if err != nil {
+		if desired == nil && IsPermissionDenied(err) {
+			bookieAffinityLog.Info(
+				"Cannot read the bookie affinity group, and none is requested; leaving it as is. "+
+					"Reading it requires superuser access in Pulsar. If a group was set out of band "+
+					"it is retained, not removed.",
+				"namespace", completeNSName, "reason", ErrorReason(err))
+			return nil
+		}
+		return err
+	}
+
+	if desired == nil {
+		if current == nil {
+			return nil
+		}
+		if err := p.adminClient.Namespaces().DeleteBookieAffinityGroup(completeNSName); err != nil &&
+			!IsNotFound(err) {
+			return err
+		}
+		return nil
+	}
+
+	target := utils.BookieAffinityGroupData{
+		BookkeeperAffinityGroupPrimary:   desired.BookkeeperAffinityGroupPrimary,
+		BookkeeperAffinityGroupSecondary: desired.BookkeeperAffinityGroupSecondary,
+	}
+	if current != nil && *current == target {
+		return nil
+	}
+	return p.adminClient.Namespaces().SetBookieAffinityGroup(completeNSName, target)
+}
+
 func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params *NamespaceParams) error {
 	naName, err := utils.GetNamespaceName(completeNSName)
 	if err != nil {
@@ -1377,19 +1455,9 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 	// The pulsar-client-go library doesn't have DeletePersistence for namespaces,
 	// and sending empty PersistencePolicies{} with BookkeeperEnsemble=0 causes
 	// validation errors (Bookkeeper-Ensemble must be > 0 and <= 5).
-	if params.BookieAffinityGroup != nil {
-		err = p.adminClient.Namespaces().SetBookieAffinityGroup(completeNSName, utils.BookieAffinityGroupData{
-			BookkeeperAffinityGroupPrimary:   params.BookieAffinityGroup.BookkeeperAffinityGroupPrimary,
-			BookkeeperAffinityGroupSecondary: params.BookieAffinityGroup.BookkeeperAffinityGroupSecondary,
-		})
-		if err != nil {
-			return err
-		}
-	} else {
-		err = p.adminClient.Namespaces().DeleteBookieAffinityGroup(completeNSName)
-		if err != nil {
-			return err
-		}
+
+	if err := p.applyBookieAffinityGroup(completeNSName, params.BookieAffinityGroup); err != nil {
+		return err
 	}
 
 	// Handle topic auto-creation configuration

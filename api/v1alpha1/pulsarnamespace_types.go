@@ -253,7 +253,12 @@ type PulsarNamespaceSpec struct {
 	// +optional
 	Deduplication *bool `json:"deduplication,omitempty"`
 
-	// BookieAffinityGroup is the name of the namespace isolation policy to apply to the namespace.
+	// BookieAffinityGroup pins the namespace's ledgers to the bookies that belong to the
+	// named BookKeeper rack/affinity groups. This is the storage half of a namespace
+	// carve-out; pair it with a PulsarNSIsolationPolicy to also pin the namespace to a
+	// dedicated set of brokers.
+	// Omitting this field removes any affinity group previously set for the namespace.
+	// +optional
 	BookieAffinityGroup *BookieAffinityGroupData `json:"bookieAffinityGroup,omitempty"`
 
 	// TopicAutoCreationConfig controls whether automatic topic creation is allowed in this namespace
@@ -344,9 +349,17 @@ type PulsarNamespaceSpec struct {
 	SchemaAutoUpdateCompatibilityStrategy *adminutils.SchemaAutoUpdateCompatibilityStrategy `json:"schemaAutoUpdateCompatibilityStrategy,omitempty"`
 }
 
+// BookieAffinityGroupData selects the BookKeeper rack/affinity groups that a namespace's
+// ledgers are placed on. The group names must match the rack metadata already registered
+// for the bookies; the operator does not create group membership.
 type BookieAffinityGroupData struct {
+	// BookkeeperAffinityGroupPrimary is the group bookies are selected from first.
+	// +kubebuilder:validation:MinLength=1
 	BookkeeperAffinityGroupPrimary string `json:"bookkeeperAffinityGroupPrimary"`
 
+	// BookkeeperAffinityGroupSecondary is the group bookies are selected from when the
+	// primary group cannot satisfy the ensemble.
+	// +kubebuilder:validation:MinLength=1
 	// +optional
 	BookkeeperAffinityGroupSecondary string `json:"bookkeeperAffinityGroupSecondary,omitempty"`
 }
