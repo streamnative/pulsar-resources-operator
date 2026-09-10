@@ -112,6 +112,17 @@ func MakePulsarNamespaceWithOffloadPolicies(namespace, name, namespaceName, conn
 	return ns
 }
 
+// MakePulsarNamespaceWithBookieAffinityGroup will generate a PulsarNamespace pinned to a
+// pair of BookKeeper affinity groups
+func MakePulsarNamespaceWithBookieAffinityGroup(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
+	ns := MakePulsarNamespace(namespace, name, namespaceName, connectionName, policy)
+	ns.Spec.BookieAffinityGroup = &v1alpha1.BookieAffinityGroupData{
+		BookkeeperAffinityGroupPrimary:   "group-primary",
+		BookkeeperAffinityGroupSecondary: "group-secondary",
+	}
+	return ns
+}
+
 // MakePulsarNamespaceWithRateLimiting will generate a PulsarNamespace with rate limiting configurations
 func MakePulsarNamespaceWithRateLimiting(namespace, name, namespaceName, connectionName string, policy v1alpha1.PulsarResourceLifeCyclePolicy) *v1alpha1.PulsarNamespace {
 	backlogSize := resource.MustParse("5Gi")

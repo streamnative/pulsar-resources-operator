@@ -88,3 +88,62 @@ func TestIsAlreadyExist(t *testing.T) {
 		})
 	}
 }
+
+func TestIsPermissionDenied(t *testing.T) {
+	tests := []struct {
+		name     string
+		err      error
+		expected bool
+	}{
+		{
+			name:     "rest.Error with 401",
+			err:      rest.Error{Code: 401, Reason: "Need to authenticate to perform the request"},
+			expected: true,
+		},
+		{
+			name:     "rest.Error with 403",
+			err:      rest.Error{Code: 403, Reason: "Don't have admin permission"},
+			expected: true,
+		},
+		{
+			name:     "rest.Error pointer with 403",
+			err:      &rest.Error{Code: 403, Reason: "Don't have admin permission"},
+			expected: true,
+		},
+		{
+			name:     "wrapped rest.Error with 403",
+			err:      fmt.Errorf("wrapped: %w", rest.Error{Code: 403, Reason: "Don't have admin permission"}),
+			expected: true,
+		},
+		{
+			// 404 is how Pulsar reports a namespace with no local policies, which is a
+			// legitimate "nothing set" answer rather than a denial.
+			name:     "rest.Error with 404",
+			err:      rest.Error{Code: 404, Reason: "Namespace local-policies does not exist"},
+			expected: false,
+		},
+		{
+			name:     "rest.Error with 500",
+			err:      rest.Error{Code: 500, Reason: "Internal server error"},
+			expected: false,
+		},
+		{
+			name:     "non-REST error",
+			err:      errors.New("connection refused"),
+			expected: false,
+		},
+		{
+			name:     "nil error",
+			err:      nil,
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := IsPermissionDenied(tt.err); got != tt.expected {
+				t.Errorf("IsPermissionDenied(%v) = %v, want %v", tt.err, got, tt.expected)
+			}
+		})
+	}
+}

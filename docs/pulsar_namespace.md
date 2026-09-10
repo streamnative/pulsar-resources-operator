@@ -27,7 +27,7 @@ The `PulsarNamespace` resource defines a namespace in a Pulsar cluster. It allow
 | `geoReplicationRefs`          | List of references to PulsarGeoReplication resources, used to configure geo-replication for this namespace. Use only when using PulsarGeoReplication for setting up geo-replication between two Pulsar instances. | No       |
 | `replicationClusters`         | List of clusters to which the namespace is replicated. Use only if replicating clusters within the same Pulsar instance.                                                                                          | No       |
 | `deduplication`               | Whether to enable message deduplication for the namespace.                                                                                                                                                        | No       |
-| `bookieAffinityGroup`         | Set the bookie-affinity group for the namespace, which has two sub fields: `bookkeeperAffinityGroupPrimary(String)` is required, and `bookkeeperAffinityGroupSecondary(String)` is optional.                      | No       |
+| `bookieAffinityGroup`         | Pins the namespace's ledgers to the bookies belonging to the named BookKeeper rack/affinity groups. Two sub fields: `bookkeeperAffinityGroupPrimary(String)` is required, `bookkeeperAffinityGroupSecondary(String)` is optional. See [Broker and Bookie Isolation](#broker-and-bookie-isolation). | No       |
 | `topicAutoCreationConfig`     | Configures automatic topic creation behavior within this namespace. Contains settings for whether auto-creation is allowed, the type of topics created, and default number of partitions.                          | No       |
 | `schemaCompatibilityStrategy` | Schema compatibility strategy for this namespace. Controls how schema evolution is handled for topics within this namespace. Options: `UNDEFINED`, `ALWAYS_INCOMPATIBLE`, `ALWAYS_COMPATIBLE`, `BACKWARD`, `FORWARD`, `FULL`, `BACKWARD_TRANSITIVE`, `FORWARD_TRANSITIVE`, `FULL_TRANSITIVE`.                                                          | No       |
 | `schemaValidationEnforced`    | Controls whether schema validation is enforced for this namespace. When enabled, producers must provide a schema when publishing messages. If not specified, the cluster's default schema validation enforcement setting will be used.                                                                                                  | No       |
@@ -282,6 +282,93 @@ persistencePolicies:
   bookkeeperAckQuorum: 1
   managedLedgerMaxMarkDeleteRate: "10.0"
 ```
+
+## Broker and Bookie Isolation
+
+A namespace carve-out on a shared cluster has two halves, and they are configured through
+two different resources:
+
+| Half | Pins | Resource |
+| --- | --- | --- |
+| Brokers | Which brokers may own the namespace's bundles | [`PulsarNSIsolationPolicy`](pulsar_ns_isolation_policy.md) |
+| Bookies | Which bookies the namespace's ledgers are written to | `PulsarNamespace.spec.bookieAffinityGroup` |
+
+The two are independent — configure either on its own, or both together for a full
+"virtual cluster" per tenant or subsystem.
+
+### Bookie Affinity Groups
+
+`bookieAffinityGroup` is the declarative equivalent of
+`pulsar-admin namespaces set-bookie-affinity-group`:
+
+```yaml
+bookieAffinityGroup:
+  bookkeeperAffinityGroupPrimary: subsystem-a      # required
+  bookkeeperAffinityGroupSecondary: subsystem-a-dr # optional
+```
+
+Bookies are selected from the primary group first, falling back to the secondary group when
+the primary cannot satisfy the ensemble. Removing the `bookieAffinityGroup` field from the
+CR removes the affinity policy from the namespace, returning it to cluster-wide bookie
+placement.
+
+**Prerequisite:** the group names must match rack metadata that the bookies already carry
+(`bookkeeper-rack-aware` placement, set through bookie configuration or BookKeeper metadata).
+The operator selects among existing groups; it does not create group membership. Setting an
+affinity group whose members cannot satisfy the namespace's ensemble size will cause writes
+to fail, so verify group membership before applying.
+
+**Permissions:** Pulsar requires superuser access to read, set, or clear a namespace's bookie
+affinity group. A `PulsarConnection` whose credentials are only tenant-admin can manage
+namespaces normally, but cannot use this field.
+
+### Complete Carve-Out Example
+
+Pinning `finance/transactions` to dedicated brokers *and* dedicated bookies:
+
+```yaml
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarNSIsolationPolicy
+metadata:
+  name: finance-isolation
+  namespace: default
+spec:
+  name: finance-isolation
+  cluster: my-pulsar-cluster
+  connectionRef:
+    name: my-connection
+  namespaces:
+    - finance/.*
+  primary:
+    - broker-finance-.*\.example\.com
+  secondary:
+    - broker-shared-.*\.example\.com
+  autoFailoverPolicyType: min_available
+  autoFailoverPolicyParams:
+    min_limit: "1"
+    usage_threshold: "80"
+---
+apiVersion: resource.streamnative.io/v1alpha1
+kind: PulsarNamespace
+metadata:
+  name: finance-transactions
+  namespace: default
+spec:
+  name: finance/transactions
+  connectionRef:
+    name: my-connection
+  bookieAffinityGroup:
+    bookkeeperAffinityGroupPrimary: finance
+    bookkeeperAffinityGroupSecondary: shared
+  persistencePolicies:
+    bookkeeperEnsemble: 3
+    bookkeeperWriteQuorum: 3
+    bookkeeperAckQuorum: 2
+```
+
+Note that `persistencePolicies` and `bookieAffinityGroup` work together: the affinity group
+decides *which* bookies are eligible, and the ensemble/quorum settings decide *how many* of
+them each ledger uses. The eligible groups must contain at least `bookkeeperEnsemble` bookies.
 
 ## Topic Management Policies
 

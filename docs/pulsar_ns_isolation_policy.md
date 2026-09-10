@@ -4,6 +4,8 @@
 
 The `PulsarNSIsolationPolicy` resource defines a ns-isolation-policy in a Pulsar cluster. It allows you to configure namespace isolation policies to limit the set of brokers that can be used for assignment.
 
+This resource covers the broker half of a namespace carve-out. To also pin a namespace's storage to a dedicated set of bookies, pair it with `bookieAffinityGroup` on the [`PulsarNamespace`](pulsar_namespace.md#broker-and-bookie-isolation) resource.
+
 ## Specifications
 
 | Field                      | Description                                                                                          | Required |
