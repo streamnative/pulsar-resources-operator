@@ -60,6 +60,8 @@ nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
+  # -- Optional; null preserves Kubernetes' default token mounting behavior.
+  automountServiceAccountToken: null
   # -- Specifies whether a service account should be created
   create: true
   # -- Annotations to add to the service account
