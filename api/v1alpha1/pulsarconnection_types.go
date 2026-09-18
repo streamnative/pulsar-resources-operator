@@ -78,11 +78,11 @@ type PulsarConnectionSpec struct {
 	// TLSEnableHostnameVerification indicates whether to verify the hostname of the broker.
 	// Only used when using secure urls.
 	// +optional
-	TLSEnableHostnameVerification bool `json:"tlsEnableHostnameVerification,omitempty"`
+	TLSEnableHostnameVerification bool `json:"tlsEnableHostnameVerification"`
 
 	// TLSAllowInsecureConnection indicates whether to allow insecure connection to the broker.
 	// +optional
-	TLSAllowInsecureConnection bool `json:"tlsAllowInsecureConnection,omitempty"`
+	TLSAllowInsecureConnection bool `json:"tlsAllowInsecureConnection"`
 
 	// TLSTrustCertsFilePath Path for the TLS certificate used to validate the broker endpoint when using TLS.
 	// +optional
