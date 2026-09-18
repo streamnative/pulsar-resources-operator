@@ -60,6 +60,8 @@ nameOverride: ""
 fullnameOverride: ""
 
 serviceAccount:
+  # -- (bool/null) Optional token automount setting for the chart-created ServiceAccount. Null preserves Kubernetes' default behavior. When false, explicitly mount Kubernetes API credentials; see the hardened configuration example in the README.
+  automountServiceAccountToken: null
   # -- Specifies whether a service account should be created
   create: true
   # -- Annotations to add to the service account
