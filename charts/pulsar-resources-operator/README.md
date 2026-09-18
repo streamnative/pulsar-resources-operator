@@ -52,6 +52,84 @@ kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources
 kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources-operator/refs/tags/pulsar-resources-operator-v0.21.0/charts/pulsar-resources-operator/crds/resource.streamnative.io_streamnativecloudconnections.yaml
 ```
 
+## Hardened Configuration
+
+The chart leaves ServiceAccount token automount and security contexts unchanged by default. Set
+`serviceAccount.automountServiceAccountToken` to `true` or `false` to configure the chart-created
+ServiceAccount explicitly; omit it or use `null` to leave the field unset. When `serviceAccount.create=false`,
+configure automount on the externally managed ServiceAccount instead. Changing only the ServiceAccount
+setting does not trigger a Deployment rollout; recreate the operator Pods for the change to take effect.
+
+The operator needs Kubernetes API credentials for watches, status updates, and leader election.
+Setting automount to `false` without supplying credentials breaks the standard in-cluster configuration.
+To disable automatic mounting while retaining API access, save the following as `values-hardened.yaml`.
+It explicitly projects a short-lived ServiceAccount token at client-go's default path and provides
+writable temporary storage while keeping the container root filesystem read-only:
+
+```yaml
+serviceAccount:
+  automountServiceAccountToken: false
+
+securityContext:
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  runAsNonRoot: true
+  capabilities:
+    drop:
+      - ALL
+
+extraVolumes:
+  - name: kube-api-access
+    projected:
+      sources:
+        - serviceAccountToken:
+            path: token
+            expirationSeconds: 3600
+        - configMap:
+            name: kube-root-ca.crt
+            items:
+              - key: ca.crt
+                path: ca.crt
+        - downwardAPI:
+            items:
+              - path: namespace
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.namespace
+  - name: tmp
+    emptyDir: {}
+
+extraVolumeMounts:
+  - name: kube-api-access
+    mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+    readOnly: true
+  - name: tmp
+    mountPath: /tmp
+```
+
+Apply the override alongside your existing release values:
+
+```console
+$ helm -n <namespace> upgrade --install my-release streamnative/pulsar-resources-operator -f values.yaml -f values-hardened.yaml
+```
+
+- Merge any existing `extraVolumes` and `extraVolumeMounts` into the override before applying it: Helm
+  replaces lists rather than appending to them. Preserve existing authentication and cloud storage mounts.
+- The cluster must support ServiceAccount token projection and provide the `kube-root-ca.crt` ConfigMap
+  in the release namespace. With no explicit audience, the token uses the API server's default audience.
+  The kubelet rotates the token, and client-go refreshes credentials from the mounted file. Do not use a
+  `subPath` mount for the token because it would prevent projected updates from reaching the container.
+- Keep `/tmp` writable by the container's runtime UID: inline OAuth2 credentials and PulsarPackage
+  downloads create temporary files there. Verify these operations, not just operator startup, when
+  enabling a read-only root filesystem. Size temporary storage according to package sizes and concurrency.
+- This example does not pin a UID or GID, so the image or cluster can supply the appropriate non-root
+  identity. Validate the actual image and any additional security requirements in your environment.
+- Explicit token projection does not remove API credentials or reduce the ServiceAccount's RBAC
+  permissions. Check the rendered ServiceAccount and Deployment, the admitted Pod, and your policy reports.
+  A policy forbidding all API tokens still requires an approved exception or another authentication method.
+- Before rollout, verify leader election, resource reconciliation, token rotation, and the OAuth2 and
+  package operations you use in a test environment. Rendering this example is not a runtime or policy check.
+
 ## Values
 
 | Key | Type | Default | Description |
@@ -76,7 +154,8 @@ kubectl apply -f https://raw.githubusercontent.com/streamnative/pulsar-resources
 | replicaCount | int | `1` | The replicas of pod |
 | resources | object | `{}` | Add resource limits and requests |
 | securityContext | object | `{}` | Add security context for container |
-| serviceAccount.annotations | object | `{}` |  |
+| serviceAccount.annotations | object | `{}` | Annotations to add to the service account |
+| serviceAccount.automountServiceAccountToken | bool/null | `nil` | Optional token automount setting for the chart-created ServiceAccount. Null preserves Kubernetes' default behavior. When false, explicitly mount Kubernetes API credentials; see the hardened configuration example in the README. |
 | serviceAccount.create | bool | `true` | Specifies whether a service account should be created |
 | serviceAccount.name | string | `""` |  |
 | terminationGracePeriodSeconds | int | `10` | The period seconds that pod will be termiated gracefully |

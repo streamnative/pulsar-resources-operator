@@ -40,9 +40,17 @@ tests:
       - isNull:
           path: spec.template.spec.containers[0].resources.limits
       - isNull:
-          path: spec.template.spec.containers[1].volumeMounts
+          path: spec.template.spec.containers[0].volumeMounts
       - isNull:
           path: spec.template.spec.volumes
+      - notExists:
+          path: spec.template.spec.automountServiceAccountToken
+      - equal:
+          path: spec.template.spec.securityContext
+          value: {}
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value: {}
 
   - it: should update the image version successfully
     set:
@@ -87,3 +95,118 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].resources.requests.memory
           value: 128Mi
+
+  - it: should merge GCS credentials and extra volumes
+    set:
+      cloudStorage.gcs.enabled: true
+      cloudStorage.gcs.serviceAccount.useWorkloadIdentity: false
+      extraVolumeMounts:
+        - name: connection-credentials
+          mountPath: /var/secrets/connection
+          readOnly: true
+      extraVolumes:
+        - name: connection-credentials
+          secret:
+            secretName: connection-credentials
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: gcs-credentials
+              secret:
+                secretName: gcs-credentials
+            - name: connection-credentials
+              secret:
+                secretName: connection-credentials
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts
+          value:
+            - name: gcs-credentials
+              mountPath: /var/secrets/google
+              readOnly: true
+            - name: connection-credentials
+              mountPath: /var/secrets/connection
+              readOnly: true
+
+  - it: should support explicit API credentials and writable tmp with a read-only root filesystem
+    set:
+      serviceAccount.automountServiceAccountToken: false
+      serviceAccount.name: operator
+      securityContext:
+        readOnlyRootFilesystem: true
+        allowPrivilegeEscalation: false
+        runAsNonRoot: true
+        capabilities:
+          drop:
+            - ALL
+      extraVolumes:
+        - name: kube-api-access
+          projected:
+            sources:
+              - serviceAccountToken:
+                  path: token
+                  expirationSeconds: 3600
+              - configMap:
+                  name: kube-root-ca.crt
+                  items:
+                    - key: ca.crt
+                      path: ca.crt
+              - downwardAPI:
+                  items:
+                    - path: namespace
+                      fieldRef:
+                        apiVersion: v1
+                        fieldPath: metadata.namespace
+        - name: tmp
+          emptyDir: {}
+      extraVolumeMounts:
+        - name: kube-api-access
+          mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          readOnly: true
+        - name: tmp
+          mountPath: /tmp
+    asserts:
+      - equal:
+          path: spec.template.spec.serviceAccountName
+          value: operator
+      - notExists:
+          path: spec.template.spec.automountServiceAccountToken
+      - equal:
+          path: spec.template.spec.containers[0].securityContext
+          value:
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop:
+                - ALL
+      - equal:
+          path: spec.template.spec.volumes
+          value:
+            - name: kube-api-access
+              projected:
+                sources:
+                  - serviceAccountToken:
+                      path: token
+                      expirationSeconds: 3600
+                  - configMap:
+                      name: kube-root-ca.crt
+                      items:
+                        - key: ca.crt
+                          path: ca.crt
+                  - downwardAPI:
+                      items:
+                        - path: namespace
+                          fieldRef:
+                            apiVersion: v1
+                            fieldPath: metadata.namespace
+            - name: tmp
+              emptyDir: {}
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts
+          value:
+            - name: kube-api-access
+              mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
