@@ -384,7 +384,7 @@ type ComputeFlinkDeploymentList struct {
 
 // VvpRestoreStrategy defines the restore strategy of the deployment
 type VvpRestoreStrategy struct {
-	AllowNonRestoredState bool   `json:"allowNonRestoredState,omitempty"`
+	AllowNonRestoredState bool   `json:"allowNonRestoredState"`
 	Kind                  string `json:"kind,omitempty"`
 }
 

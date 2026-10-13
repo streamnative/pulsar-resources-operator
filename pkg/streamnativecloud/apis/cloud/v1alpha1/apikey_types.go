@@ -53,7 +53,7 @@ type APIKeySpec struct {
 	// Revoke is a boolean that defines if the token of this API key should be revoked.
 	// +kubebuilder:default=false
 	// +optional
-	Revoke bool `json:"revoke,omitempty" protobuf:"bytes,5,opt,name=revoke"`
+	Revoke bool `json:"revoke" protobuf:"bytes,5,opt,name=revoke"`
 
 	// EncryptionKey is a public key to encrypt the API Key token.
 	// Please provide an RSA key with modulus length of at least 2048 bits.
