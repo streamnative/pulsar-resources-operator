@@ -19,6 +19,9 @@ kind: ClusterRole
 metadata:
   creationTimestamp: null
   name: {{ include "pulsar-resources-operator.clusterRoleManagerName" . }}
+  labels:
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
 rules:
 - apiGroups:
   - ""
