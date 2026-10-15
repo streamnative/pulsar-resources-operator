@@ -15,6 +15,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -1213,6 +1214,58 @@ func (p *PulsarAdminClient) getBookieAffinityGroup(completeNSName string) (*util
 	return current, nil
 }
 
+// getNamespaceAntiAffinityGroup returns the anti-affinity group currently configured for
+// the namespace, or "" when none is set.
+//
+// Pulsar answers 204 with no body when there is no group, and otherwise the group name as
+// a JSON string.
+func (p *PulsarAdminClient) getNamespaceAntiAffinityGroup(completeNSName string) (string, error) {
+	raw, err := p.adminClient.Namespaces().GetNamespaceAntiAffinityGroup(completeNSName)
+	if err != nil {
+		if IsNotFound(err) {
+			return "", nil
+		}
+		return "", err
+	}
+	if raw == "" {
+		return "", nil
+	}
+	var group string
+	if err := json.Unmarshal([]byte(raw), &group); err != nil {
+		return "", fmt.Errorf("decode anti-affinity group of %s: %w", completeNSName, err)
+	}
+	return group, nil
+}
+
+// applyNamespaceAntiAffinityGroup moves the namespace's anti-affinity group towards the
+// desired state, writing only when it differs from what Pulsar reports.
+//
+// Clearing a group that is not set is not a no-op in Pulsar: the broker rewrites the
+// namespace's local policies, and a namespace has none until a bundle of it is first
+// loaded (a topic is created or looked up). On a namespace created moments earlier that
+// write fails with a 500 (MetadataStoreException$NotFoundException), so a PulsarNamespace
+// would never become Ready on its own. Reading first avoids the write.
+func (p *PulsarAdminClient) applyNamespaceAntiAffinityGroup(completeNSName string, desired *string) error {
+	current, err := p.getNamespaceAntiAffinityGroup(completeNSName)
+	if err != nil {
+		return err
+	}
+	if desired == nil {
+		if current == "" {
+			return nil
+		}
+		if err := p.adminClient.Namespaces().DeleteNamespaceAntiAffinityGroup(completeNSName); err != nil &&
+			!IsNotFound(err) {
+			return err
+		}
+		return nil
+	}
+	if current == *desired {
+		return nil
+	}
+	return p.adminClient.Namespaces().SetNamespaceAntiAffinityGroup(completeNSName, *desired)
+}
+
 // applyBookieAffinityGroup moves the namespace's bookie affinity group towards the desired
 // state, writing only when it actually differs from what Pulsar reports.
 //
@@ -1706,18 +1759,8 @@ func (p *PulsarAdminClient) applyNamespacePolicies(completeNSName string, params
 		}
 	}
 
-	// Handle anti-affinity group
-	if params.AntiAffinityGroup != nil {
-		err = p.adminClient.Namespaces().SetNamespaceAntiAffinityGroup(completeNSName, *params.AntiAffinityGroup)
-		if err != nil {
-			return err
-		}
-	} else {
-		// Remove anti-affinity group if not specified
-		err = p.adminClient.Namespaces().DeleteNamespaceAntiAffinityGroup(completeNSName)
-		if err != nil && !IsNotFound(err) {
-			return err
-		}
+	if err := p.applyNamespaceAntiAffinityGroup(completeNSName, params.AntiAffinityGroup); err != nil {
+		return err
 	}
 
 	// Handle schema auto update compatibility strategy
