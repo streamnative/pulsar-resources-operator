@@ -39,13 +39,16 @@ COPY pkg/ pkg/
 # Build
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
-# Use distroless as minimal base image to package the manager binary
-# Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM alpine:3.22
+# Package the manager with the distribution's current CA trust store.
+FROM alpine:3.23 AS runtime
 
 # Upgrade all packages to get latest versions with security fixes
-RUN apk upgrade --no-cache
+RUN apk upgrade --no-cache \
+    && apk add --no-cache --upgrade \
+      'ca-certificates>=20261020-r0' 'ca-certificates-bundle>=20261020-r0' \
+    && update-ca-certificates
 
+FROM runtime
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
