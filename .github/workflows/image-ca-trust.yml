@@ -21,6 +21,7 @@ on:
       - .ci/verify-image-ca-trust.sh
       - hack/verify-ca-trust/**
       - .github/workflows/image-ca-trust.yml
+      - .github/workflows/release-operator.yml
 
 permissions:
   contents: read
@@ -38,7 +39,11 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.26.9'
+          cache: false
       - uses: docker/setup-qemu-action@v3
+        if: matrix.arch != 'amd64'
+        with:
+          platforms: arm64
       - name: Run checker unit tests
         run: GOWORK=off go test ./hack/verify-ca-trust
       - name: Verify runtime trust store without network access

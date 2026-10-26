@@ -40,7 +40,7 @@ COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o manager main.go
 
 # Package the manager with the distribution's current CA trust store.
-FROM alpine:3.22 AS runtime
+FROM alpine:3.23 AS runtime
 
 # Upgrade all packages to get latest versions with security fixes
 RUN apk upgrade --no-cache \

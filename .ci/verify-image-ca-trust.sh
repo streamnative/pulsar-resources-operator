@@ -17,11 +17,11 @@ set -euo pipefail
 
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 platform=${PLATFORM:-linux/amd64}
-arch=${platform#linux/}
-case "$arch" in
-  amd64|arm64) ;;
+case "$platform" in
+  linux/amd64|linux/arm64) ;;
   *) echo "Unsupported platform: $platform" >&2; exit 1 ;;
 esac
+arch=${platform#linux/}
 
 image=${1:-pulsar-resources-operator-ca-test:$arch}
 if [ "$#" -eq 0 ]; then
@@ -32,8 +32,11 @@ fi
 
 work_dir=$(mktemp -d)
 trap 'rm -rf "$work_dir"' EXIT
-GOWORK=off CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -trimpath \
-  -o "$work_dir/verify-ca-trust" "$repo_dir/hack/verify-ca-trust/main.go"
+(
+  cd "$repo_dir"
+  GOWORK=off CGO_ENABLED=0 GOOS=linux GOARCH="$arch" go build -mod=readonly -trimpath \
+    -o "$work_dir/verify-ca-trust" ./hack/verify-ca-trust
+)
 chmod 755 "$work_dir/verify-ca-trust"
 
 docker run --rm --platform "$platform" --read-only --network none \

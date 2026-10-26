@@ -81,6 +81,7 @@ jobs:
           export IMG=$IMAGE_TAG_BASE_DOCKERHUB:v$VERSION
           echo "resource-operator-image=$IMG" >> $GITHUB_OUTPUT
           make docker-build
+          bash .ci/verify-image-ca-trust.sh "$IMG"
           make docker-push
 
       - name: Build image And Publish to Quay
