@@ -127,6 +127,35 @@ func TestVerifyChainAcceptsValidChain(t *testing.T) {
 	}
 }
 
+// CVE-2026-111943: the Go runtime must reject compromised intermediates even
+// when an application's explicit root pool still trusts their issuers.
+func TestVerifyChainRejectsDistrustedIntermediatesWithExplicitRoots(t *testing.T) {
+	data, err := os.ReadFile("testdata/roots.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(data) {
+		t.Fatal("failed to load the affected root fixtures")
+	}
+	paths, err := filepath.Glob("testdata/*.we-have-a-problem.com.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) != expectedCompromisedChainCount {
+		t.Fatalf("expected %d fixture chains, found %d", expectedCompromisedChainCount, len(paths))
+	}
+	for _, path := range paths {
+		t.Run(filepath.Base(path), func(t *testing.T) {
+			err := verifyChain(path, roots)
+			// Verify filters otherwise valid chains containing a distrusted SPKI.
+			if err == nil || err.Error() != "x509: no valid chains built" {
+				t.Fatalf("expected Go to distrust the intermediate despite its trusted root, got %v", err)
+			}
+		})
+	}
+}
+
 func TestVerifyChainRejectsIncompleteFixture(t *testing.T) {
 	data, err := os.ReadFile("testdata/valid-isrg-chain.pem")
 	if err != nil {
