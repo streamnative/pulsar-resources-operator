@@ -20,7 +20,7 @@ Docker must support the selected architecture (native or through QEMU).
 The script compiles the standalone Go checker package with no external Go package
 dependencies, builds the real runtime stage, and runs as UID 65532 with a read-only
 filesystem and no network. No Kubernetes cluster or private-module credentials
-are needed. The PR workflow runs both architectures with Go 1.26.9, matching the
+are needed. The PR workflow runs both architectures with Go 1.26.10, matching the
 production builder, so a newer Go certificate blocklist cannot mask a stale OS
 bundle. The checker also explicitly tests certificate fingerprints in the bundle.
 
