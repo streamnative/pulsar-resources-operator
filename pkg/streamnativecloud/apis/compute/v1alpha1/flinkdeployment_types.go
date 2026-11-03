@@ -135,7 +135,7 @@ type VvpDeploymentDetails struct {
 
 // VvpRestoreStrategy defines the restore strategy of the deployment
 type VvpRestoreStrategy struct {
-	AllowNonRestoredState bool `json:"allowNonRestoredState,omitempty" protobuf:"varint,1,opt,name=allowNonRestoredState"`
+	AllowNonRestoredState bool `json:"allowNonRestoredState" protobuf:"varint,1,opt,name=allowNonRestoredState"`
 
 	Kind string `json:"kind,omitempty" protobuf:"bytes,2,opt,name=kind"`
 }
